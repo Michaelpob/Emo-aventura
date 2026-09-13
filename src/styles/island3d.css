@@ -407,6 +407,52 @@
   .i3d-day p { font-size: 0.78rem; }
 }
 
+/* ------------------------------------- reflejos e inhibicion (Al rojo vivo) */
+
+.i3d-wave {
+  position: absolute;
+  right: 16px;
+  bottom: 18px;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: rgba(8, 16, 22, 0.55);
+  backdrop-filter: blur(4px);
+  font-size: 0.86rem;
+  color: #fff;
+}
+.i3d-wave b { font-size: 1.05rem; color: #ffd166; }
+
+/* quemadura: un destello rojo en los bordes que no intercepta el dedo */
+.i3d-burn {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(255, 70, 30, 0.6));
+  animation: i3d-burn 460ms ease-out forwards;
+}
+@keyframes i3d-burn {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* erupcion: velo rojo mientras el volcan se desahoga */
+.i3d-erupt {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(255, 60, 20, 0.16), rgba(110, 10, 0, 0.55));
+  animation: i3d-night-in 500ms ease forwards;
+}
+.i3d-erupt.is-out { animation: i3d-night-out 650ms ease forwards; }
+
+@media (max-width: 720px) {
+  .i3d-wave { right: 10px; bottom: 12px; padding: 7px 10px; font-size: 0.78rem; }
+  /* sin joystick, las barras vuelven abajo del todo */
+  .i3d--anger .i3d__bars { bottom: 18px; }
+}
+
 /* ------------------------------------- instrucciones al empezar una isla */
 
 .i3d-intro {

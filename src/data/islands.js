@@ -43,9 +43,9 @@ export const islands = [
   {
     id: 'anger',
     name: 'Enojo',
-    displayName: 'Volcan de las Emociones',
+    displayName: 'Al rojo vivo',
     emoji: '🔥',
-    subtitle: 'El volcan se agita. Llega a los focos y sosten la respiracion.',
+    subtitle: 'Las rocas llegan ardiendo. Espera a que se enfrien antes de tocarlas.',
     chapter: 3,
     badge: 'Guardian de la Ira',
     reward: 'Gota de Calma',
@@ -59,7 +59,7 @@ export const islands = [
     position: [3.5, 0, -3],
     radius: 1.4,
     height: 0.48,
-    minigame: 'anger-volcano'
+    minigame: 'anger-lava'
   },
   {
     id: 'fear',
@@ -126,6 +126,7 @@ export const islands = [
 ];
 
 export const minigameLabels = {
+  'anger-lava': 'Al rojo vivo',
   'anger-volcano': 'Volcan de las Emociones',
   'fear-night': 'Bosque de la Noche',
   'sadness-days': 'Un dia a la vez',

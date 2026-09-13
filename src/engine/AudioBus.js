@@ -62,7 +62,15 @@ const RECIPES = {
   water:     (ctx) => noiseBuffer(ctx, 3.0, 1200, (p) => 0.22 + Math.sin(p * Math.PI * 3) * 0.08),
   swamp:     (ctx) => noiseBuffer(ctx, 3.0, 260, (p) => 0.3 + Math.sin(p * Math.PI * 2) * 0.12),
   chime:     (ctx) => toneBuffer(ctx, 1.6, 523, 523, (p) => Math.pow(1 - p, 2) * 0.7, 5),
-  pad:       (ctx) => toneBuffer(ctx, 4.0, 174, 176, () => 0.28, 3)
+  pad:       (ctx) => toneBuffer(ctx, 4.0, 174, 176, () => 0.28, 3),
+  // Isla del Enojo: rocas al rojo, chispas y erupcion
+  thud:      (ctx) => noiseBuffer(ctx, 0.26, 140, (p) => decay(p) * 0.9),
+  sizzle:    (ctx) => noiseBuffer(ctx, 0.55, 2600, (p) => Math.min(1, p * 10) * Math.pow(1 - p, 1.4) * 0.7),
+  buzz:      (ctx) => toneBuffer(ctx, 0.42, 190, 300, (p) => bell(p) * (0.6 + 0.4 * Math.sin(p * 60)), 5),
+  tick:      (ctx) => toneBuffer(ctx, 0.1, 1040, 1040, decay, 2),
+  stone:     (ctx) => toneBuffer(ctx, 0.3, 150, 110, soft, 3),
+  spit:      (ctx) => noiseBuffer(ctx, 0.5, 220, (p) => Math.min(1, p * 6) * Math.pow(1 - p, 1.8) * 0.8),
+  erupt:     (ctx) => noiseBuffer(ctx, 1.8, 80, (p) => Math.min(1, p * 5) * Math.pow(1 - p, 0.9))
 };
 
 export class AudioBus {

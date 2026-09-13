@@ -32,7 +32,7 @@ botones de saltar/interactuar.
 
 | Isla | Emoción | Vista | Verbo | Reto |
 |---|---|---|---|---|
-| Volcán de las Emociones | Ira | 1ª persona | **mantener bajo presión** | 4 focos de tensión con respiración 4-4-4-4 manteniendo pulsado; el mundo se calma con cada uno |
+| Al rojo vivo | Ira | cámara fija | **distinguir y contenerte** (go / no-go) | Las rocas caen al rojo: tocarlas quema y el volcán sube; hay que esperar a que se enfríen para atraparlas y hacer el puente. Las chispas nunca se enfrían |
 | Bosque de la Noche | Miedo | 1ª persona | **explorar en la oscuridad** | Linterna con batería: correr la gasta, respirar la recarga; encender 5 faroles |
 | El mundo que vuelve | Tristeza | 3ª persona | **encontrar y restaurar** | 6 fragmentos de recuerdo; cada uno hace brotar vegetación, reconstruye una estructura y añade una capa de audio |
 | Valle de la Luz | Alegría | 3ª persona | **saltar y recoger** | 12 orbes entre plataformas flotantes, con combo si no tocas el suelo |
@@ -57,7 +57,7 @@ src/
 │   ├── Stage.js              motor 2D (tarjetas psicoeducativas)
 │   └── activities.js         actividades 2D reutilizables
 ├── minigames/
-│   ├── anger/AngerVolcanoGame.js      fear/FearNightGame.js
+│   ├── anger/AngerLavaGame.js         fear/FearNightGame.js
 │   ├── sadness/SadnessRestoreGame.js  joy/JoyOrbsGame.js
 │   ├── disgust/DisgustSortGame.js     surprise/SurpriseObserveGame.js
 │   └── index.js                        registro de minijuegos

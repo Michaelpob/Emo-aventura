@@ -275,7 +275,7 @@ forma de fallar propios. Tres de las seis dejan de ser juegos de caminar.
 | Isla | Género | Lo que se te exige | Cómo se "falla" | Estado |
 |---|---|---|---|---|
 | Miedo | Tensión continua | Administrar tu ritmo al acercarte | Retrocedes unos metros | ⏳ |
-| Ira | Reflejos + inhibición | Distinguir y contenerte | El volcán sube | ⏳ |
+| **Ira** | **Reflejos + inhibición** | **Distinguir y contenerte** | **El volcán sube** | **✅** |
 | **Tristeza** | **Economía por turnos** | **Elegir en qué gastas la energía** | **Mañana sigues igual** | **✅** |
 | Alegría | Ritmo | Precisión temporal | Esa capa no entra | ⏳ |
 | Asco | Deducción | Buscar información antes de decidir | Descartas algo bueno | ⏳ |
@@ -311,6 +311,55 @@ insignia y herramienta. 31 draw calls, ~8.200 triángulos, sin errores de consol
 
 El minijuego 3D anterior de Tristeza (`sadness-restore`, «El mundo que vuelve»)
 queda registrado pero fuera de la isla.
+
+## Ira · «Al rojo vivo» (implementada)
+
+`src/minigames/anger/AngerLavaGame.js` · **cámara fija, se juega tocando**.
+Es una tarea *go / no-go*: la habilidad que se entrena es la pausa entre el
+impulso y la acción.
+
+- El volcán escupe **rocas** que caen en la cornisa delante del jugador, **al
+  rojo vivo**. Tocarlas así quema: destello, temblor y **el volcán sube** (la
+  lava se acerca a la cornisa). Al enfriarse pasan a gris y aparece un anillo
+  azul bajo la roca; entonces se atrapan y vuelan a formar el **puente** de
+  salida. Si no se atrapan a tiempo, ruedan al borde y caen a la lava.
+- **Chispas**: salen del cráter, zumban delante y, en las oleadas altas,
+  orbitan encima de una roca para que un toque descuidado las alcance primero.
+  Nunca se enfrían: tocarlas también sube el volcán. Se apagan solas.
+- **Una sola regla**: solo se toca lo que ya no está al rojo. Todo lo demás
+  (esperar, dejar pasar) es inhibición.
+- **La lava es la barra de fallo**: sube con cada quemadura (+0,22), chispa
+  (+0,18) y roca perdida (+0,07); baja un poco con cada acierto y sola con el
+  tiempo. Cuando llega a la cornisa hay **erupción**: la cornisa se vacía, el
+  juego se para tres segundos con «QUIETO · RESPIRA» y **tocar cualquier cosa
+  reinicia la cuenta**. Nada de lo construido se pierde; después sigue la misma
+  oleada.
+- **Tres oleadas** de 4 rocas, cada una más rápida, con rocas que tardan más en
+  enfriarse, menos margen una vez frías y más chispas. Con 12 bloques el volcán
+  se enfría (cielo azul, lava oscura) y aparece el portal, que se toca para
+  salir.
+- Una **reflexión al cerrar cada oleada**, sin cortar la partida: *Al rojo
+  vivo* (lo primero que sale, sale al rojo), *Las chispas no se enfrían* (no
+  hace falta responder a lo que solo busca reacción) y *Fría, la misma roca
+  sirve* (el enojo no desaparece: se usa cuando baja la temperatura). La
+  primera erupción trae una cuarta: parar también es una decisión. La tarjeta
+  final las recoge.
+- Todo se reutiliza: 4 rocas, 4 chispas y 12 bloques creados una vez; el toque
+  se resuelve con un test rayo-esfera (sin raycast contra mallas), y las rocas
+  vuelan con una parábola calculada para caer exactamente en su sitio.
+
+**Verificado (avanzando el juego con `step(dt)`):** vuelo y aterrizaje de la
+roca en su objetivo, enfriado y anillo, atrapar (bloque colocado), quemadura
+(+0,22 y aviso), chispa (+0,18), erupción con la cornisa vacía y los bloques
+intactos, reinicio de la cuenta al tocar durante la erupción y reanudación con
+lava a cero, las 3 oleadas completas con un bot que solo toca rocas frías (la
+chispa encima de la roca le cazó 2 veces), las 4 reflexiones, portal con
+tooltip y cursor, tarjeta final, insignia y 2 herramientas (Gota de Calma y
+Escudo de Autocontrol), y `dispose()` sin nodos huérfanos. 19-25 draw calls,
+~3.500-4.400 triángulos.
+
+El minijuego anterior de Ira (`anger-volcano`, «Volcán de las Emociones», los
+4 focos de respiración) queda registrado pero fuera de la isla.
 
 ## Ajuste · Iluminación de la Isla del Miedo
 
@@ -369,3 +418,4 @@ en el orden en que aparecieron.
 
 `MinigameBase.showNote()` queda disponible para cualquier isla que quiera decir
 algo sin interrumpir.
+
