@@ -5,7 +5,6 @@ import { getPlayer, savePlayer, hasPlayer, avatars, favoriteColors } from '../da
 import {
   gameState,
   loadProgress,
-  isUnlocked,
   lockedIslands,
   completeIsland,
   allIslandsCompleted,
@@ -14,15 +13,6 @@ import {
 } from '../data/gameState.js';
 import { BADGES } from '../data/tools.js';
 import { openToolbox, openProgress, openFinal } from './screens.js';
-
-const ISLAND_NAMES = {
-  fear: 'Isla del Miedo',
-  joy: 'Valle de la Luz',
-  anger: 'Volcan de las Emociones',
-  disgust: 'Guardianes del Desagrado',
-  sadness: 'El mundo que vuelve',
-  surprise: 'Isla de la Sorpresa'
-};
 
 export class EmotionIslandApp {
   constructor(root) {
@@ -364,10 +354,9 @@ export class EmotionIslandApp {
       this.overlayRoot.appendChild(prompt);
     }
     const completed = this.completed.has(island.id);
-    const locked = !isUnlocked(island.id);
     prompt.innerHTML = `
-      <strong>${locked ? '🔒 ' : ''}${island.displayName}</strong>
-      <span>${locked ? 'Bloqueada' : completed ? 'Volver a jugar' : 'Presiona E para entrar'}</span>
+      <strong>${island.displayName}</strong>
+      <span>${completed ? 'Volver a jugar' : 'Presiona E para entrar'}</span>
     `;
     prompt.style.setProperty('--accent', island.palette.ui);
   }
@@ -392,24 +381,7 @@ export class EmotionIslandApp {
     this.state = 'island';
     this.world.focusOnIsland(id);
 
-    if (!isUnlocked(id)) {
-      const previous = ISLAND_CHAIN[ISLAND_CHAIN.indexOf(id) - 1];
-      this.overlayRoot.innerHTML = `
-        <section class="island-panel island-panel--locked" style="--accent:${island.palette.ui}">
-          <p class="eyebrow">🔒 Isla bloqueada</p>
-          <h2>${island.displayName}</h2>
-          <p>Para entrar aqui primero necesitas completar <strong>${ISLAND_NAMES[previous] ?? 'la isla anterior'}</strong>.</p>
-          <div class="panel-actions">
-            <button class="primary-action" type="button" data-go-previous>Ir a ${ISLAND_NAMES[previous] ?? 'la isla anterior'}</button>
-            <button class="secondary-action" type="button" data-back>Mapa</button>
-          </div>
-        </section>
-      `;
-      this.overlayRoot.querySelector('[data-go-previous]').addEventListener('click', () => this.selectIsland(previous));
-      this.overlayRoot.querySelector('[data-back]').addEventListener('click', () => this.showMap());
-      return;
-    }
-
+    // todas las islas estan abiertas: nunca hay panel de "bloqueada"
     const completed = this.completed.has(id);
     const chapter = island.chapter ? `Capitulo ${island.chapter}` : island.name;
     this.overlayRoot.innerHTML = `
@@ -459,18 +431,17 @@ export class EmotionIslandApp {
     this.currentMinigame?.dispose();
     this.currentMinigame = null;
     this.world.setPaused(false);
-    let unlockedId = null;
     if (result.success) {
       this.completed.add(result.islandId);
       window.localStorage.setItem('emotion-islands-progress', JSON.stringify([...this.completed]));
       if (ISLAND_CHAIN.includes(result.islandId) || result.emoAventura) {
-        unlockedId = completeIsland(result.islandId);
+        completeIsland(result.islandId);
       }
       this.syncWorldState();
     }
 
     if (result.emoAventura && result.success) {
-      this.showIslandComplete(result, unlockedId);
+      this.showIslandComplete(result);
       return;
     }
 
@@ -491,10 +462,9 @@ export class EmotionIslandApp {
     this.overlayRoot.querySelector('[data-back-map]').addEventListener('click', () => this.showMap());
   }
 
-  /** Cierre de una isla de EMO-AVENTURA: insignia, herramientas y desbloqueo */
-  showIslandComplete(result, unlockedId) {
+  /** Cierre de una isla de EMO-AVENTURA: insignia y herramientas */
+  showIslandComplete(result) {
     const badge = BADGES[result.badge ?? result.islandId];
-    const nextName = unlockedId ? ISLAND_NAMES[unlockedId] : null;
     const finished = allIslandsCompleted();
 
     this.overlayRoot.innerHTML = `
@@ -514,11 +484,6 @@ export class EmotionIslandApp {
           <span>🧰 ${gameState.tools.length} herramientas</span>
           <span>🏅 ${gameState.badges.length}/4 insignias</span>
         </div>
-        ${nextName ? `
-          <div class="island-complete__unlock" data-unlock>
-            <span class="island-complete__lock" aria-hidden="true">🔓</span>
-            <p>Se desbloqueo <strong>${nextName}</strong></p>
-          </div>` : ''}
         <div class="panel-actions">
           <button class="primary-action" type="button" data-back-map>${finished ? 'Ver el final' : 'Volver al mapa'}</button>
           <button class="secondary-action" type="button" data-toolbox>Mi caja</button>

@@ -5,16 +5,21 @@ import { TOOLS, BADGES } from './tools.js';
 
 const STORAGE_KEY = 'emo-aventura-state';
 
-// Cadena de desbloqueo: Miedo -> Alegria -> Ira -> Desagrado
+// Orden de la aventura: Miedo -> Alegria -> Ira -> Desagrado. Solo ordena
+// capitulos, progreso e insignias: NO es una cadena de desbloqueo. Todas las
+// islas estan abiertas desde el principio; se puede entrar a cualquiera sin
+// haber jugado otra antes.
 export const ISLAND_CHAIN = ['fear', 'joy', 'anger', 'disgust'];
 
-// Islas del mapa que no forman parte de la aventura (siguen visibles, sin candado)
+// Islas del mapa que no forman parte de la aventura
 export const FREE_ISLANDS = ['sadness', 'surprise'];
+
+export const ALL_ISLANDS = [...ISLAND_CHAIN, ...FREE_ISLANDS];
 
 function baseState() {
   return {
     currentIsland: null,
-    unlockedIslands: ['fear'],
+    unlockedIslands: [...ALL_ISLANDS],
     completedIslands: [],
     emotionalPoints: 0,
     rewards: [],
@@ -61,7 +66,10 @@ export function loadProgress() {
         .forEach((key) => {
           if (!Array.isArray(gameState[key])) gameState[key] = [];
         });
-      if (!gameState.unlockedIslands.includes('fear')) gameState.unlockedIslands.push('fear');
+      // guardados de cuando habia cadena de desbloqueo: se abren todas
+      ALL_ISLANDS.forEach((id) => {
+        if (!gameState.unlockedIslands.includes(id)) gameState.unlockedIslands.push(id);
+      });
       if (!gameState.settings) gameState.settings = { sound: false, reduceMotion: false };
     }
   } catch (err) {
@@ -159,9 +167,9 @@ export function getBadges() {
 
 /* ---------------------------------------------------------------- islas */
 
-export function isUnlocked(islandId) {
-  if (FREE_ISLANDS.includes(islandId)) return true;
-  return gameState.unlockedIslands.includes(islandId);
+/** Todas las islas estan abiertas siempre */
+export function isUnlocked() {
+  return true;
 }
 
 export function isCompleted(islandId) {
@@ -176,24 +184,13 @@ export function unlockIsland(islandId) {
   return true;
 }
 
-export function nextIslandOf(islandId) {
-  const idx = ISLAND_CHAIN.indexOf(islandId);
-  if (idx === -1 || idx === ISLAND_CHAIN.length - 1) return null;
-  return ISLAND_CHAIN[idx + 1];
-}
-
-/** Marca una isla como completada, entrega insignia y desbloquea la siguiente.
- *  Devuelve el id de la isla desbloqueada (o null). */
+/** Marca una isla como completada y entrega su insignia */
 export function completeIsland(islandId) {
   if (!gameState.completedIslands.includes(islandId)) {
     gameState.completedIslands.push(islandId);
   }
   addBadge(islandId);
-  const next = nextIslandOf(islandId);
-  let unlocked = null;
-  if (next && unlockIsland(next)) unlocked = next;
   saveProgress();
-  return unlocked;
 }
 
 export function allIslandsCompleted() {
@@ -201,8 +198,7 @@ export function allIslandsCompleted() {
 }
 
 export function lockedIslands() {
-  const all = [...ISLAND_CHAIN, ...FREE_ISLANDS];
-  return all.filter((id) => !isUnlocked(id));
+  return ALL_ISLANDS.filter((id) => !isUnlocked(id));
 }
 
 /* -------------------------------------------------------------- intensidad */

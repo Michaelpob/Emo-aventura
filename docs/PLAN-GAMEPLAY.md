@@ -419,3 +419,21 @@ en el orden en que aparecieron.
 `MinigameBase.showNote()` queda disponible para cualquier isla que quiera decir
 algo sin interrumpir.
 
+
+## Ajuste · Todas las islas abiertas
+
+Se elimina la cadena de desbloqueo (Miedo → Alegría → Ira → Desagrado). Quien
+quiera entrar a cualquier isla puede hacerlo directamente, sin haber jugado
+otra antes:
+
+- `isUnlocked()` devuelve siempre `true`; el estado inicial trae las seis islas
+  en `unlockedIslands`, y los guardados antiguos se migran al cargar (se añaden
+  las que faltaban).
+- `completeIsland()` ya no desbloquea nada: solo marca la isla y entrega la
+  insignia. Desaparecen el panel «Isla bloqueada», el candado del mapa y el
+  aviso «Se desbloqueó…» de la pantalla de isla completada.
+- `ISLAND_CHAIN` se conserva únicamente para numerar capítulos, contar el
+  progreso de la aventura (4 islas) y ordenar las insignias.
+- La pantalla de progreso toma los nombres de las islas de `islands.js`, así
+  siempre muestra el nombre actual de cada minijuego.
+

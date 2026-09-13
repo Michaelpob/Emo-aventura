@@ -74,9 +74,10 @@ checklist de verificación y las medidas de rendimiento por isla.
 
 `src/data/gameState.js` guarda en `localStorage` puntos, herramientas,
 insignias, actividades, intensidades, reevaluaciones y desbloqueos. Cada isla 3D
-entrega sus herramientas y su insignia al cruzar el portal. La cadena de
-desbloqueo del mapa es **Miedo → Alegría → Ira → Desagrado**; Tristeza y Sorpresa
-están siempre abiertas.
+entrega sus herramientas y su insignia al cruzar el portal. **Todas las islas
+están abiertas desde el principio**: se puede entrar a cualquiera sin haber
+jugado otra antes. El orden Miedo → Alegría → Ira → Desagrado solo numera los
+capítulos de la aventura; Tristeza y Sorpresa van aparte.
 
 ## Añadir una isla
 

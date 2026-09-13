@@ -3,15 +3,10 @@
 
 import { TOOL_LIST, TOOLS, BADGES } from '../data/tools.js';
 import { gameState, getProgressSummary, ISLAND_CHAIN } from '../data/gameState.js';
+import { islands } from '../data/islands.js';
 
-const ISLAND_NAMES = {
-  fear: 'Isla del Miedo',
-  joy: 'Valle de la Luz',
-  anger: 'Volcan de las Emociones',
-  disgust: 'Guardianes del Desagrado',
-  sadness: 'El mundo que vuelve',
-  surprise: 'Isla de la Sorpresa'
-};
+// nombres actuales de las islas, los mismos que ve el jugador en el mapa
+const ISLAND_NAMES = Object.fromEntries(islands.map((i) => [i.id, i.displayName]));
 
 function mountOverlay(host, html, { label = 'Pantalla' } = {}) {
   const layer = document.createElement('div');
@@ -121,12 +116,11 @@ export function openProgress(host) {
         <ul class="progress__islands">
           ${ISLAND_CHAIN.map((id) => {
             const done = gameState.completedIslands.includes(id);
-            const unlocked = gameState.unlockedIslands.includes(id);
             return `
-              <li class="${done ? 'is-done' : unlocked ? 'is-open' : 'is-locked'}">
-                <span aria-hidden="true">${done ? BADGES[id].icon : unlocked ? '🔓' : '🔒'}</span>
+              <li class="${done ? 'is-done' : 'is-open'}">
+                <span aria-hidden="true">${done ? BADGES[id].icon : '🔓'}</span>
                 <strong>${ISLAND_NAMES[id]}</strong>
-                <em>${done ? 'Completada' : unlocked ? 'Disponible' : 'Bloqueada'}</em>
+                <em>${done ? 'Completada' : 'Disponible'}</em>
               </li>
             `;
           }).join('')}

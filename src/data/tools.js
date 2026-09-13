@@ -171,8 +171,8 @@ export const TOOL_LIST = Object.values(TOOLS).sort((a, b) => a.order - b.order);
 export const BADGES = {
   fear: { id: 'fear', icon: '🕯️', name: 'Guardian del Miedo', island: 'Isla del Miedo' },
   joy: { id: 'joy', icon: '🌻', name: 'Guardian de la Alegria', island: 'Valle de la Luz' },
-  anger: { id: 'anger', icon: '🌋', name: 'Guardian de la Ira', island: 'Volcan de las Emociones' },
+  anger: { id: 'anger', icon: '🌋', name: 'Guardian de la Ira', island: 'Al rojo vivo' },
   disgust: { id: 'disgust', icon: '🍃', name: 'Guardian del Desagrado', island: 'Guardianes del Desagrado' },
-  sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'El mundo que vuelve' },
+  sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'Un dia a la vez' },
   surprise: { id: 'surprise', icon: '✨', name: 'Guardian de la Sorpresa', island: 'Isla de la Sorpresa' }
 };
