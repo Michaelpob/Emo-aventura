@@ -31,6 +31,18 @@ button {
   inset: 0;
 }
 
+/* Safari en iOS: con la barra del navegador desplegada, `inset: 0` mide el
+   viewport "grande" (como si la barra estuviera plegada) y el borde inferior
+   queda escondido tras ella. dvh sigue al alto que realmente se ve. */
+@supports (height: 100dvh) {
+  .shell,
+  .scene-host,
+  .overlay-root {
+    bottom: auto;
+    height: 100dvh;
+  }
+}
+
 .scene-host canvas,
 .game-canvas canvas {
   display: block;
@@ -356,6 +368,7 @@ p {
   backdrop-filter: blur(18px);
   transform: translateX(-50%);
   max-height: calc(100vh - 36px);
+  max-height: calc(100dvh - 36px);
   overflow-y: auto;
 }
 
