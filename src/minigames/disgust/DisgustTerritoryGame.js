@@ -148,6 +148,31 @@ const PATHS = {
 };
 const PATH_ORDER = ['respira', 'atencion', 'acepta', 'presente', 'reevalua', 'apoyo'];
 
+// Orden en que se abren los caminos segun el nivel del termometro: primero
+// los que el documento asigna a ese nivel, despues el resto.
+const PATH_SEQUENCE = {
+  1: ['respira', 'atencion', 'acepta', 'presente', 'reevalua', 'apoyo'],
+  2: ['atencion', 'acepta', 'respira', 'presente', 'reevalua', 'apoyo'],
+  3: ['presente', 'reevalua', 'apoyo', 'respira', 'atencion', 'acepta']
+};
+
+// Recorrido lineal de la isla: cada etapa se abre al terminar la anterior.
+const STAGES = [
+  { id: 'thermo', icon: '🌡️', label: 'Termómetro' },
+  { id: 'explore', icon: '🗺️', label: 'Explora' },
+  { id: 'mirror', icon: '🪞', label: 'Espejo' },
+  { id: 'paths', icon: '🧰', label: 'Herramientas' },
+  { id: 'reeval', icon: '🔁', label: 'Reevalúa' },
+  { id: 'boss', icon: '🛡️', label: 'Protege la isla' }
+];
+
+const ZONE_INTROS = {
+  olores: 'En el pantano el aire trae olores fuertes. Acércate y responde con el cuerpo a lo que aparezca.',
+  sabores: 'En la cueva hay comidas y sabores. Algunos pueden estar en mal estado: tu cuerpo lo notará.',
+  imagenes: 'Entre los árboles aparecen imágenes y sonidos. No todo lo que ves o escuchas genera desagrado.',
+  rechazo: 'Aquí el desagrado aparece frente a situaciones y conductas, no frente a cosas.'
+};
+
 const ACCEPT_STEPS = [
   { key: 'RECONOCER', phrase: 'Estoy sintiendo desagrado.' },
   { key: 'COMPRENDER', phrase: 'Algo de esta situación está generando rechazo o incomodidad en mí.' },
@@ -274,8 +299,56 @@ function makeText(text, opts = {}) {
   return sprite;
 }
 
+/** Textura redonda y suave para particulas (Points): sin ella se ven cuadrados. */
+let _dotTexture = null;
+function dotTexture() {
+  if (_dotTexture) return _dotTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.45, 'rgba(255,255,255,0.55)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 64, 64);
+  _dotTexture = new THREE.CanvasTexture(c);
+  return _dotTexture;
+}
+
 function makeEmoji(emoji, size = 1) {
   return makeText(emoji, { size, px: 96, bg: 'transparent', pad: 8, maxChars: 4 });
+}
+
+/* ------------------------------------------------ voz, memoria y diario */
+
+const VOICE_KEY = 'emo-desagrado-voz';        // 'on' | 'off'
+const CUSTOM_KEY = 'emo-desagrado-estimulos'; // textos que el nino escribio
+const DIARY_KEY = 'emo-desagrado-diario';     // resumen de cada partida
+
+/** Texto plano apto para el sintetizador: sin HTML, emojis ni comillas. */
+function cleanForSpeech(html) {
+  const div = document.createElement('div');
+  div.innerHTML = String(html ?? '');
+  return (div.textContent || '')
+    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}]/gu, ' ')
+    .replace(/[«»"]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function readStore(key, fallback) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+function writeStore(key, value) {
+  try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* sin almacenamiento */ }
+}
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 /* ================================================================== isla */
@@ -284,22 +357,27 @@ export class DisgustTerritoryGame extends MinigameBase {
   constructor(opts) {
     super({ ...opts, mode: 'first' });
     this.time = 0;
+    this.customTexts = null;   // estimulos escritos por el nino (sobreviven al reinicio)
+    this.voice = null;
   }
 
   /* ------------------------------------------------------------ estado */
 
   initState() {
-    this.phase = 'explore';
+    this.phase = 'thermo';
+    this.stage = null;             // etapa activa del recorrido lineal
+    this.stageDone = new Set();
     this.time = 0;
     this.answers = [];
     this.explored = 0;
+    this.zoneIndex = -1;
     this.learned = new Set();
     this.rewards = [];
     this.level = 0;
     this.initialLevel = 0;
     this.finalLevel = 0;
     this.standLevel = 0;
-    this.reevalReady = false;
+    this.pathQueue = [];
     this.beacons = [];
     this.gazeTargets = [];
     this.doorSets = [];
@@ -310,6 +388,10 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.notesShown = new Set();
     this.provocations = [];
     this.soundLoops = [];
+    this.diary = { grows: 0, altars: [] };
+    this.noteQueue = [];
+    this.noteCurrent = null;
+    this.bannerUntil = 0;
   }
 
   /* ============================================================ escenario */
@@ -319,9 +401,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.initState();
     const scene = this.scene;
 
-    scene.fog = new THREE.FogExp2(FOG.base, 0.02);
+    scene.fog = new THREE.FogExp2(FOG.base, 0.016);
     // radio < far de la camara (220) - distancia maxima del jugador: sin agujeros negros en el cielo
-    this.sky = createSky({ top: '#47603c', bottom: '#9ab86e', size: 150 });
+    this.sky = createSky({ top: '#3f6b58', bottom: '#b6d88c', size: 150 });
     scene.add(this.sky);
 
     this.buildGround();
@@ -333,15 +415,17 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.sun = this.lights.userData.sun;
 
     this.buildVegetation();
+    this.buildAmbience();
     this.buildZones();
     this.buildMirror();
     this.buildThermometer();
     this.buildPaths();
     this.buildArena();
     this.buildHud();
+    this.initVoice();
+    this.applyCustomStimuli();
     this.hookInput();
-
-    this.setObjective(6, '◆');
+    this.renderStages();
   }
 
   buildGround() {
@@ -356,6 +440,21 @@ export class DisgustTerritoryGame extends MinigameBase {
     for (let i = 0; i < pos.count; i += 1) pos.setY(i, this.heightAt(pos.getX(i), pos.getZ(i)));
     pos.needsUpdate = true;
     ground.geometry.computeVertexNormals();
+    // color por altura: hondonadas oscuras, lomas claras. Da relieve sin coste.
+    const colors = new Float32Array(pos.count * 3);
+    const lo = new THREE.Color('#3f5c3a');
+    const hi = new THREE.Color('#86b862');
+    for (let i = 0; i < pos.count; i += 1) {
+      const t = Math.max(0, Math.min(1, (pos.getY(i) + 0.5) / 2.6));
+      _c.copy(lo).lerp(hi, t);
+      const n = 0.94 + ((i * 7919) % 13) / 100;   // grano sutil
+      colors[i * 3] = _c.r * n;
+      colors[i * 3 + 1] = _c.g * n;
+      colors[i * 3 + 2] = _c.b * n;
+    }
+    ground.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    ground.material.vertexColors = true;
+    ground.material.color.set('#ffffff');
     ground.userData.heightAt = this.heightAt;
     this.ground = ground;
     this.scene.add(ground);
@@ -392,6 +491,80 @@ export class DisgustTerritoryGame extends MinigameBase {
     }
   }
 
+  /** Esporas flotando y flores de color: la isla respira aunque nadie se mueva. */
+  buildAmbience() {
+    const n = 360;
+    const positions = new Float32Array(n * 3);
+    const seeds = new Float32Array(n);
+    for (let i = 0; i < n; i += 1) {
+      positions[i * 3] = (Math.random() - 0.5) * 84;
+      positions[i * 3 + 1] = 0.4 + Math.random() * 5;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 84;
+      seeds[i] = Math.random() * 6.28;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    this.spores = new THREE.Points(geo, new THREE.PointsMaterial({
+      color: '#eaffc0', size: 0.14, map: dotTexture(), alphaTest: 0.02, transparent: true, opacity: 0.65, depthWrite: false, sizeAttenuation: true
+    }));
+    this.spores.userData.seeds = seeds;
+    this.scene.add(this.spores);
+
+    // luciernagas: puntos calidos y aditivos que brillan sin ser luces
+    const fn = 90;
+    const fpos = new Float32Array(fn * 3);
+    const fseeds = new Float32Array(fn);
+    for (let i = 0; i < fn; i += 1) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 6 + Math.random() * 30;
+      fpos[i * 3] = Math.cos(a) * r;
+      fpos[i * 3 + 1] = 0.8 + Math.random() * 2.2;
+      fpos[i * 3 + 2] = Math.sin(a) * r;
+      fseeds[i] = Math.random() * 6.28;
+    }
+    const fgeo = new THREE.BufferGeometry();
+    fgeo.setAttribute('position', new THREE.BufferAttribute(fpos, 3));
+    this.fireflies = new THREE.Points(fgeo, new THREE.PointsMaterial({
+      color: '#ffe08a', size: 0.24, map: dotTexture(), alphaTest: 0.02, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
+    }));
+    this.fireflies.userData.seeds = fseeds;
+    this.scene.add(this.fireflies);
+
+    // farolillos alrededor de la plaza: postes con una esfera que "brilla" (material plano, sin luz)
+    const postMat = new THREE.MeshStandardMaterial({ color: '#4a3a2a', roughness: 1, flatShading: true });
+    const lampMat = new THREE.MeshBasicMaterial({ color: '#ffd166' });
+    this.lamps = [];
+    for (let i = 0; i < 10; i += 1) {
+      const a = (i / 10) * Math.PI * 2 + 0.3;
+      const x = CENTER.x + Math.cos(a) * 9.6;
+      const z = CENTER.z + Math.sin(a) * 9.6;
+      const y = this.heightAt(x, z);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.4, 6), postMat);
+      post.position.set(x, y + 1.2, z);
+      this.scene.add(post);
+      const lamp = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), lampMat);
+      lamp.position.set(x, y + 2.55, z);
+      this.scene.add(lamp);
+      const glow = makeEmoji('✨', 0.7);
+      glow.position.set(x, y + 2.55, z);
+      this.scene.add(glow);
+      this.lamps.push({ lamp, glow, seed: i });
+    }
+
+    const flowerColors = ['#ff9ac9', '#ffd166', '#f4f1de'];
+    flowerColors.forEach((color, ci) => {
+      const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25, roughness: 0.9, flatShading: true });
+      const flowers = scatterInstanced(new THREE.IcosahedronGeometry(0.16, 0), mat, 70, (i) => {
+        const a = i * 2.399 + ci * 1.3;
+        const r = 12 + ((i * 37 + ci * 11) % 260) / 10;
+        const x = Math.cos(a) * r;
+        const z = Math.sin(a) * r;
+        return { x, y: this.heightAt(x, z) + 0.22, z, ry: a, scale: 0.8 + (i % 3) * 0.3 };
+      });
+      this.scene.add(flowers);
+    });
+  }
+
   makeBeacon(x, z, color = '#a8e06a') {
     const g = new THREE.Group();
     const m = new THREE.Mesh(
@@ -400,12 +573,17 @@ export class DisgustTerritoryGame extends MinigameBase {
     );
     m.position.y = 14;
     g.add(m);
-    const l = new THREE.PointLight(color, 1.4, 14, 2);
-    l.position.y = 2.2;
-    g.add(l);
+    const halo = new THREE.Mesh(
+      new THREE.TorusGeometry(1.1, 0.12, 6, 28),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 0.2;
+    g.add(halo);
     g.position.set(x, this.heightAt(x, z), z);
     g.visible = false;
     g.userData.beam = m;
+    g.userData.halo = halo;
     this.scene.add(g);
     this.beacons.push(g);
     return g;
@@ -416,10 +594,10 @@ export class DisgustTerritoryGame extends MinigameBase {
     list.forEach((b) => { if (b) b.visible = true; });
   }
 
-  makeDome(x, z, r = 9, opacity = 0.5) {
+  makeDome(x, z, r = 9, opacity = 0.5, color = '#7aa35a') {
     const dome = new THREE.Mesh(
       new THREE.SphereGeometry(r, 18, 12),
-      new THREE.MeshBasicMaterial({ color: '#7aa35a', transparent: true, opacity, side: THREE.DoubleSide, depthWrite: false })
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide, depthWrite: false })
     );
     dome.position.set(x, this.heightAt(x, z) - 1, z);
     this.scene.add(dome);
@@ -431,13 +609,13 @@ export class DisgustTerritoryGame extends MinigameBase {
   buildZones() {
     this.zones = ZONES.map((def) => {
       const y = this.heightAt(def.x, def.z);
-      const zone = { ...def, y, answered: 0, done: false, current: null, cooldown: 0, entered: false };
+      const zone = { ...def, y, answered: 0, done: false, unlocked: false, current: null, cooldown: 0, entered: false };
       this.decorateZone(zone);
-      zone.label = makeText(`${def.icon} ${def.name}`, { size: 0.9, maxChars: 30 });
+      zone.label = makeText(`🔒 ${def.name}`, { size: 0.9, maxChars: 30, color: '#d8e0cc' });
       zone.label.position.set(def.x, y + 3.6, def.z);
       this.scene.add(zone.label);
+      zone.dome = this.makeDome(def.x, def.z, 8.5, 0.38, '#6f8a6a');
       zone.beacon = this.makeBeacon(def.x, def.z);
-      zone.beacon.visible = true;
       zone.stimuli = def.stimuli.map((st) => this.makeStimulus(st));
       return zone;
     });
@@ -510,12 +688,18 @@ export class DisgustTerritoryGame extends MinigameBase {
       new THREE.MeshStandardMaterial({ color: '#d9ecc4', emissive: '#7fb35a', emissiveIntensity: 0.5, transparent: true, opacity: 0.85, roughness: 0.4, flatShading: true })
     );
     g.add(orb);
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.95, 0.05, 6, 30),
+      new THREE.MeshBasicMaterial({ color: '#cfffa0', transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    ring.rotation.x = Math.PI / 2;
+    g.add(ring);
     const icon = makeEmoji(def.icon, 0.9);
     icon.position.y = 1.05;
     g.add(icon);
     g.visible = false;
     this.scene.add(g);
-    return { ...def, group: g, orb, phase: Math.random() * 6 };
+    return { ...def, group: g, orb, ring, phase: Math.random() * 6 };
   }
 
   /* ---------------------------------------------------------- espejo (2) */
@@ -541,7 +725,12 @@ export class DisgustTerritoryGame extends MinigameBase {
     title.position.set(0, 5.8, 0.4);
     g.add(title);
 
-    this.mirrorAvatar = makeAvatar({ color: '#cfe6b8', accent: '#f2f2e8' });
+    // el reflejo es el propio jugador: su emoji y su color favorito del perfil
+    this.mirrorAvatar = makeAvatar({
+      color: this.player?.favoriteColor ?? '#cfe6b8',
+      accent: '#f2f2e8',
+      emoji: this.player?.avatar ?? null
+    });
     this.mirrorAvatar.position.set(0, 0.05, 1.1);
     this.mirrorAvatar.visible = false;
     g.add(this.mirrorAvatar);
@@ -664,7 +853,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       path.sign.position.set(def.x, y + 4.2, def.z);
       group.add(path.sign);
       // el letrero se ve incluso cerrado: asi el jugador sabe que hay un camino
-      path.closedSign = makeText(`${def.icon} ${def.name}\n(camino cerrado)`, { size: 0.75, maxChars: 26, color: '#cfd8c4' });
+      path.closedSign = makeText(`🔒 ${def.name}\n(se abre en su momento)`, { size: 0.75, maxChars: 26, color: '#cfd8c4' });
       path.closedSign.position.set(def.x, y + 4.2, def.z);
       this.scene.add(path.closedSign);
       this.paths[id] = path;
@@ -1105,7 +1294,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     const hud = document.createElement('div');
     hud.className = 'dg-hud';
     hud.innerHTML = `
+      <div class="dg-stages" data-dg-stages aria-label="Etapas de la isla"></div>
       <div class="dg-task" data-dg-task hidden></div>
+      <div class="dg-banner" data-dg-banner aria-live="polite"></div>
       <div class="dg-ask" data-dg-ask hidden>
         <span class="dg-ask__icon" data-dg-ask-icon aria-hidden="true"></span>
         <div class="dg-ask__body">
@@ -1120,7 +1311,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     `;
     this.root.appendChild(hud);
     this.dg = {
+      stages: hud.querySelector('[data-dg-stages]'),
       task: hud.querySelector('[data-dg-task]'),
+      banner: hud.querySelector('[data-dg-banner]'),
       ask: hud.querySelector('[data-dg-ask]'),
       askIcon: hud.querySelector('[data-dg-ask-icon]'),
       askQ: hud.querySelector('[data-dg-ask-q]'),
@@ -1144,7 +1337,453 @@ export class DisgustTerritoryGame extends MinigameBase {
     el.className = 'dg-toast';
     el.textContent = text;
     this.dg.toasts.appendChild(el);
-    this.later(() => el.remove(), 3400);
+    this.later(() => el.remove(), 4200);
+    this.speak(text, { interrupt: false });
+  }
+
+  /* ============================================== etapas, avisos y banner */
+
+  setStage(id) {
+    this.stage = id;
+    this.phase = id;
+    this.renderStages();
+  }
+
+  /** Mapa de etapas en la parte superior: hecho / activa / bloqueada. */
+  renderStages() {
+    if (!this.dg?.stages) return;
+    this.dg.stages.innerHTML = STAGES.map((st) => {
+      const state = this.stageDone.has(st.id) ? 'done' : st.id === this.stage ? 'active' : 'locked';
+      const extra = st.id === 'paths' && (state !== 'locked') ? ` ${this.learned.size}/6` : '';
+      return `<span class="dg-chip" data-state="${state}" title="${st.label}"><i>${state === 'done' ? '✓' : state === 'locked' ? '🔒' : st.icon}</i><b>${st.label}${extra}</b></span>`;
+    }).join('<span class="dg-chip-sep" aria-hidden="true"></span>');
+  }
+
+  /** Tarjeta grande y animada al abrirse una etapa. Tambien se lee en voz alta. */
+  showStageBanner({ icon, title, text, eyebrow = 'Nueva etapa', seconds = 6 }) {
+    this.dg.banner.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'dg-stage';
+    el.innerHTML = `
+      <span class="dg-stage__icon" aria-hidden="true">${icon}</span>
+      <div class="dg-stage__body">
+        <p class="dg-stage__eyebrow">${eyebrow}</p>
+        <h3>${title}</h3>
+        <p>${text}</p>
+      </div>
+    `;
+    this.dg.banner.appendChild(el);
+    this.bannerUntil = Date.now() + seconds * 1000;
+    this.clearNotes();
+    this.noteClose?.();
+    this.audio.play('chime', { volume: 0.45 });
+    this.speak(`${title}. ${text}`);
+    this.later(() => {
+      el.classList.add('is-out');
+      this.later(() => el.remove(), 450);
+    }, seconds * 1000);
+  }
+
+  /**
+   * Avisos en cola: uno a la vez, nunca encimados, y con una duracion que
+   * depende del largo del texto para que se puedan leer con calma.
+   */
+  showNote(opts = {}) {
+    const words = cleanForSpeech(`${opts.title ?? ''} ${opts.text ?? ''}`).split(' ').length;
+    const seconds = Math.min(40, Math.max(opts.seconds ?? 0, 6 + words * 0.55));
+    if (opts.replace) { this.noteQueue.length = 0; this.noteClose?.(); }
+    this.noteQueue.push({ ...opts, seconds });
+    if (this.noteQueue.length > 3) this.noteQueue.shift();
+    this.pumpNotes();
+    return null;
+  }
+
+  pumpNotes() {
+    if (this.noteCurrent || !this.noteQueue.length || this.disposedFlag) return;
+    if (Date.now() < this.bannerUntil) { this.later(() => this.pumpNotes(), 500); return; }
+    const n = this.noteQueue.shift();
+    const note = document.createElement('div');
+    note.className = 'i3d-note dg-note';
+    note.style.setProperty('--dur', `${n.seconds}s`);
+    note.innerHTML = `
+      ${n.icon ? `<span class="dg-note__icon" aria-hidden="true">${n.icon}</span>` : ''}
+      <div class="dg-note__body">
+        ${n.title ? `<p class="i3d-note__title">${n.title}</p>` : ''}
+        <p class="i3d-note__text">${n.text}</p>
+      </div>
+      <button class="i3d-note__x" type="button" aria-label="Cerrar">&times;</button>
+      <span class="i3d-note__bar" aria-hidden="true"></span>
+    `;
+    this.el.notes.appendChild(note);
+    this.noteCurrent = note;
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      note.classList.add('is-out');
+      this.later(() => {
+        note.remove();
+        if (this.noteCurrent === note) this.noteCurrent = null;
+        this.pumpNotes();
+      }, 300);
+    };
+    note.querySelector('.i3d-note__x').addEventListener('click', () => { this.stopSpeaking(); close(); });
+    this.noteClose = close;
+    this.later(close, n.seconds * 1000);
+    this.speak(`${n.title ? `${n.title}. ` : ''}${n.text}`);
+  }
+
+  clearNotes() {
+    this.noteQueue.length = 0;
+  }
+
+  /** El texto breve del centro no se muestra encima del banner de etapa. */
+  say(text, ms = 1600) {
+    if (Date.now() < this.bannerUntil) return;
+    super.say(text, ms);
+  }
+
+  /* ================================================== recorrido lineal */
+
+  startThermoStage() {
+    this.setStage('thermo');
+    this.thermo.enabled = true;
+    this.thermoInteract.enabled = true;
+    this.standLevel = 0;
+    this.setBeacons([this.thermoBeacon]);
+    this.showStageBanner({
+      icon: '🌡️', title: 'El Termómetro del Desagrado',
+      text: '¿Qué tan intenso es tu desagrado ahora? Ve a la plaza, sube por las terrazas hasta tu nivel y confirma con E.'
+    });
+    this.later(() => this.showNote({
+      icon: '🌡️',
+      title: 'Solo tú puedes identificar qué tan intenso estás sintiendo el desagrado',
+      text: 'Nivel 1, leve: «me incomoda, pero puedo manejarlo». Nivel 2, moderado: «mi desagrado está aumentando». Nivel 3, intenso: «mi emoción está muy fuerte y necesito detenerme». La isla cambiará según lo que elijas.'
+    }), 6200);
+  }
+
+  startExploreStage() {
+    this.setStage('explore');
+    this.showStageBanner({
+      icon: '🗺️', title: 'Primera parte: explora la isla',
+      text: 'Las cuatro zonas se abren una a una. Los estímulos vendrán hacia ti: aléjate si te generan desagrado, o deja que se acerquen si no.'
+    });
+    this.later(() => this.unlockZone(0), 5200);
+  }
+
+  unlockZone(i) {
+    const zone = this.zones[i];
+    if (!zone) return;
+    this.zoneIndex = i;
+    zone.unlocked = true;
+    zone.label.userData.setText(`${zone.icon} ${zone.name}`, { color: '#ffffff' });
+    this.feedback.tweenValue(zone.dome.material, 'opacity', 0, 1.8);
+    this.later(() => { zone.dome.visible = false; }, 1900);
+    this.feedback.burst(_v.set(zone.x, zone.y + 2, zone.z), { count: 30, color: '#a8e06a', speed: 3, life: 1.4, gravity: -0.6 });
+    this.audio.play('light', { volume: 0.45 });
+    this.setBeacons([zone.beacon]);
+    this.say(`ZONA ${i + 1}/4 · ${zone.name.toUpperCase()}`, 2600);
+    let text = ZONE_INTROS[zone.id];
+    if (zone.id === 'rechazo' && this.customTexts?.length) text += ' También te esperan las cosas que tú escribiste.';
+    this.showNote({ icon: zone.icon, title: `Se abre: ${zone.name}`, text: `${text} Sigue la columna de luz.` });
+  }
+
+  startMirrorStage() {
+    this.setStage('mirror');
+    this.activateMirror();
+    this.showStageBanner({
+      icon: '🪞', title: 'Segunda etapa: el Espejo de las Reacciones',
+      text: 'Al norte, tu reflejo mostrará expresiones y comportamientos del desagrado. Párate sobre la baldosa que diga lo que ves.'
+    });
+  }
+
+  startPathsStage() {
+    this.setStage('paths');
+    this.pathQueue = [...(PATH_SEQUENCE[this.level] ?? PATH_ORDER)];
+    const name = (LEVELS[this.level]?.title.split('— ')[1] ?? '').toLowerCase();
+    this.showStageBanner({
+      icon: '🧰', title: 'Cuarta etapa: elige tu herramienta',
+      text: `Tu desagrado está en ${name}. Los seis caminos se abren uno a uno, empezando por el que más te sirve ahora. Cada uno te da una recompensa.`
+    });
+    this.later(() => this.unlockNextPath(), 6200);
+  }
+
+  unlockNextPath() {
+    const id = this.pathQueue.shift();
+    if (!id) {
+      this.stageDone.add('paths');
+      this.startReevalStage();
+      return;
+    }
+    const path = this.paths[id];
+    this.openPath(id);
+    this.setBeacons([path.beacon]);
+    const n = 6 - this.pathQueue.length;
+    this.say(`CAMINO ${n}/6 · ${path.name.toUpperCase()}`, 2800);
+    const forLevel = path.levels.includes(this.level) ? ' Es el camino que el documento sugiere para tu nivel.' : '';
+    this.showNote({ icon: path.icon, title: `Se abre el camino «${path.name}»`, text: `Técnica: ${path.technique}.${forLevel} Sigue la columna de luz dorada.` });
+  }
+
+  startReevalStage() {
+    this.setStage('reeval');
+    this.thermo.enabled = true;
+    this.thermoInteract.enabled = true;
+    this.standLevel = 0;
+    this.setBeacons([this.thermoBeacon]);
+    this.showStageBanner({
+      icon: '🔁', title: 'Reevaluación',
+      text: 'Ya practicaste las seis herramientas. Vuelve al termómetro: ¿cómo está ahora tu desagrado? Sube a tu nivel y confirma con E.'
+    });
+  }
+
+  /* =========================================================== voz (🔊) */
+
+  /**
+   * Lectura en voz alta con la Web Speech API del navegador: sin servidor ni
+   * descargas. Se lee lo que el nino tendria que leer: avisos, instrucciones,
+   * la pregunta de cada estimulo, las elecciones y el cierre.
+   */
+  initVoice() {
+    if (this.voice) { this.buildVoiceButton(); return; }
+    const available = typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    this.voice = { available, on: false, chosen: null };
+    if (!available) return;
+    this.voice.on = readStore(VOICE_KEY, 'on') !== 'off';
+    const pick = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const es = voices.filter((v) => /^es([-_]|$)/i.test(v.lang));
+      this.voice.chosen = es.find((v) => /(Google|Microsoft|Paulina|Mónica|Monica|Sabina|Helena|Laura|Elvira)/i.test(v.name)) || es[0] || null;
+    };
+    pick();
+    window.speechSynthesis.addEventListener?.('voiceschanged', pick);
+    this.listeners.push(() => window.speechSynthesis.removeEventListener?.('voiceschanged', pick));
+    this.buildVoiceButton();
+  }
+
+  buildVoiceButton() {
+    if (!this.voice?.available) return;
+    this.el.hud.querySelector('[data-dg-voice]')?.remove();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'i3d__btn dg-voice';
+    btn.dataset.dgVoice = '';
+    btn.addEventListener('click', () => this.setVoice(!this.voice.on));
+    this.el.hud.appendChild(btn);
+    this.voiceBtn = btn;
+    this.renderVoiceButton();
+  }
+
+  renderVoiceButton() {
+    if (!this.voiceBtn) return;
+    const on = this.voice.on;
+    this.voiceBtn.textContent = on ? '🔊' : '🔇';
+    this.voiceBtn.setAttribute('aria-label', on ? 'Lectura en voz alta activada' : 'Lectura en voz alta desactivada');
+    this.voiceBtn.title = on ? 'Voz: activada (toca para silenciar)' : 'Voz: silenciada (toca para activar)';
+    this.voiceBtn.dataset.on = on ? 'true' : 'false';
+  }
+
+  setVoice(on) {
+    if (!this.voice?.available) return;
+    this.voice.on = on;
+    writeStore(VOICE_KEY, on ? 'on' : 'off');
+    this.renderVoiceButton();
+    if (!on) this.stopSpeaking();
+    else this.speak('Lectura en voz alta activada.');
+  }
+
+  speak(text, { interrupt = true } = {}) {
+    const v = this.voice;
+    if (!v?.available || !v.on || this.finished) return;
+    const plain = cleanForSpeech(text);
+    if (!plain) return;
+    try {
+      if (interrupt) window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(plain);
+      u.lang = v.chosen?.lang ?? 'es-ES';
+      if (v.chosen) u.voice = v.chosen;
+      u.rate = 0.95;
+      u.pitch = 1.05;
+      window.speechSynthesis.speak(u);
+    } catch { /* el navegador no quiso hablar: no pasa nada */ }
+  }
+
+  stopSpeaking() {
+    try { window.speechSynthesis?.cancel(); } catch { /* nada que parar */ }
+  }
+
+  /** La tarjeta de instrucciones tambien se lee (el clic en Jugar ya autorizo la voz). */
+  interactionIntro() {
+    const promise = super.interactionIntro();
+    const { goal, hint } = this._intro ?? {};
+    this.later(() => this.speak(`${goal ?? ''}. ${hint ?? ''}`), 300);
+    return promise;
+  }
+
+  togglePause(on) {
+    super.togglePause(on);
+    if (this.paused) this.stopSpeaking();
+  }
+
+  /* ============================================ estimulos escritos por el nino */
+
+  /**
+   * Antes de explorar, el nino puede escribir una o dos cosas que a el le den
+   * desagrado. Aparecen despues como estimulos en la Zona de rechazo: el
+   * documento insiste en que no todas las personas reaccionan igual.
+   */
+  askCustomStimuli() {
+    const saved = readStore(CUSTOM_KEY, []);
+    this.paused = true;
+    this.controller.enabled = false;
+    return new Promise((resolve) => {
+      const box = document.createElement('div');
+      box.className = 'i3d-intro';
+      box.innerHTML = `
+        <div class="i3d-intro__card dg-custom" role="dialog" aria-modal="true" aria-label="Tus propios estímulos">
+          <p class="i3d-intro__eyebrow">Antes de empezar · opcional</p>
+          <h3>¿Hay algo que a ti te dé desagrado?</h3>
+          <p class="i3d-intro__hint">Escríbelo y aparecerá en la isla como un estímulo más. No todas las personas reaccionan igual: lo tuyo también cuenta.</p>
+          <label class="dg-custom__field"><span>1.</span><input type="text" maxlength="60" placeholder="Por ejemplo: el olor a pescado" value="${escapeHtml(saved[0] ?? '')}" data-custom="0" autocomplete="off"></label>
+          <label class="dg-custom__field"><span>2.</span><input type="text" maxlength="60" placeholder="Por ejemplo: que alguien mastique con la boca abierta" value="${escapeHtml(saved[1] ?? '')}" data-custom="1" autocomplete="off"></label>
+          <div class="i3d-panel__actions">
+            <button class="i3d-btn i3d-btn--primary" type="button" data-ok>Añadir a la isla</button>
+            <button class="i3d-btn" type="button" data-skip>Saltar</button>
+          </div>
+        </div>
+      `;
+      this.el.overlay.appendChild(box);
+      const inputs = [...box.querySelectorAll('[data-custom]')];
+      const close = (texts) => {
+        box.remove();
+        this.paused = false;
+        this.controller.enabled = true;
+        this.controller.keys = Object.create(null);
+        this.clock.getDelta();
+        this.customTexts = texts;
+        writeStore(CUSTOM_KEY, texts);
+        this.applyCustomStimuli();
+        resolve(texts);
+      };
+      box.querySelector('[data-ok]').addEventListener('click', () => {
+        close(inputs.map((i) => i.value.trim()).filter(Boolean).slice(0, 2));
+      });
+      box.querySelector('[data-skip]').addEventListener('click', () => close([]));
+      inputs.forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') box.querySelector('[data-ok]').click(); }));
+      this.speak('¿Hay algo que a ti te dé desagrado? Puedes escribirlo, o saltar este paso.');
+      inputs[0]?.focus({ preventScroll: true });
+    });
+  }
+
+  /** Anade los textos del nino como estimulos de la Zona de rechazo. */
+  applyCustomStimuli() {
+    const zone = this.zones?.find((z) => z.id === 'rechazo');
+    if (!zone || !this.customTexts?.length || zone.customApplied) return;
+    zone.customApplied = true;
+    this.customTexts.forEach((text) => {
+      const label = text.length > 1 ? text[0].toUpperCase() + text.slice(1) : text;
+      zone.stimuli.push(this.makeStimulus({
+        label: `✍️ ${label}`,
+        icon: '✍️',
+        custom: true,
+        yes: `Tú mismo lo escribiste: «${label}» te genera desagrado. Reconocerlo con claridad es el primer paso para decidir qué hacer.`,
+        no: `Dejaste que «${label}» se acercara. Lo que nos da desagrado puede cambiar según el día, el lugar o con quién estemos.`
+      }));
+    });
+  }
+
+  /* ================================================== diario del Guardián */
+
+  /**
+   * Resumen personal de la partida: sirve para que el nino lo repase con un
+   * adulto (psicologo, profe, familia). Se guarda en el navegador y se puede
+   * copiar como texto.
+   */
+  buildDiary() {
+    const name = this.player?.name ? `${this.player.name}` : 'Explorador/a';
+    const yes = this.answers.filter((a) => a.yes).map((a) => a.label);
+    const no = this.answers.filter((a) => !a.yes).map((a) => a.label);
+    const lvl = (n) => (LEVELS[n]?.title.split('— ')[1] ?? '').toLowerCase();
+    const ini = this.initialLevel;
+    const fin = this.finalLevel;
+    const trend = !ini || !fin ? '' : fin < ini ? 'disminuyó' : fin === ini ? 'se mantuvo' : 'aumentó';
+    const learned = [...this.learned].map((id) => `${PATHS[id].name} (${PATHS[id].technique})`);
+    const altars = [...new Set(this.diary.altars)];
+    const rewards = this.rewards.map((id) => TOOLS[id]?.name ?? id);
+    const entry = {
+      fecha: new Date().toISOString(),
+      nombre: name,
+      desagrado_si: yes,
+      desagrado_no: no,
+      nivel_inicial: lvl(ini),
+      nivel_final: lvl(fin),
+      tendencia: trend,
+      herramientas: learned,
+      criatura_crecio: this.diary.grows,
+      altares: altars,
+      recompensas: rewards
+    };
+    const history = readStore(DIARY_KEY, []);
+    history.push(entry);
+    writeStore(DIARY_KEY, history.slice(-20));
+
+    const items = [
+      `<strong>Me generó desagrado:</strong> ${yes.length ? yes.map(escapeHtml).join(' · ') : 'nada de lo que apareció'} <em>(${yes.length} de ${this.answers.length})</em>`,
+      no.length ? `<strong>Dejé que se acercara:</strong> ${no.map(escapeHtml).join(' · ')}` : '',
+      ini ? `<strong>Termómetro:</strong> empecé en <em>${lvl(ini)}</em> y terminé en <em>${lvl(fin)}</em> (${trend})` : '',
+      learned.length ? `<strong>Herramientas que practiqué:</strong> ${learned.map(escapeHtml).join(' · ')}` : '',
+      `<strong>La Reacción Impulsiva</strong> creció ${this.diary.grows} ${this.diary.grows === 1 ? 'vez' : 'veces'}${altars.length ? ` y la encogí con: ${altars.map(escapeHtml).join(' · ')}` : ''}`
+    ].filter(Boolean);
+
+    const plain = [
+      `DIARIO DEL GUARDIÁN · ${name} · ${new Date().toLocaleDateString('es')}`,
+      `Me generó desagrado (${yes.length}/${this.answers.length}): ${yes.join(' · ') || 'nada'}`,
+      no.length ? `Dejé que se acercara: ${no.join(' · ')}` : '',
+      ini ? `Termómetro: ${lvl(ini)} → ${lvl(fin)} (${trend})` : '',
+      learned.length ? `Herramientas: ${learned.join(' · ')}` : '',
+      `La Reacción Impulsiva creció ${this.diary.grows} veces${altars.length ? `; la encogí con: ${altars.join(' · ')}` : ''}`,
+      rewards.length ? `Recompensas: ${rewards.join(' · ')}` : ''
+    ].filter(Boolean).join('\n');
+
+    return { name, items, plain };
+  }
+
+  /** Tarjeta de cierre con el diario debajo (y boton para copiarlo). */
+  showClosingCard({ title, lines = [], diary = null, onDone }) {
+    this.controller.frozen = true;
+    this.el.overlay.innerHTML = `
+      <div class="i3d-panel i3d-panel--card" role="dialog" aria-modal="true" aria-label="${title}">
+        <h3>${title}</h3>
+        ${lines.map((l) => `<p>${l}</p>`).join('')}
+        ${diary ? `
+          <section class="dg-diary" aria-label="Diario del Guardián">
+            <h4>📔 Diario del Guardián · ${escapeHtml(diary.name)}</h4>
+            <ul>${diary.items.map((i) => `<li>${i}</li>`).join('')}</ul>
+            <p class="dg-diary__hint">Guárdalo o cuéntaselo a alguien de confianza: repasar lo que sentiste también es cuidarte.</p>
+            <button class="i3d-btn dg-diary__copy" type="button" data-copy>📋 Copiar diario</button>
+          </section>` : ''}
+        <div class="i3d-panel__actions">
+          <button class="i3d-btn i3d-btn--primary" type="button" data-ok>Continuar</button>
+        </div>
+      </div>
+    `;
+    const ok = this.el.overlay.querySelector('[data-ok]');
+    ok.focus({ preventScroll: true });
+    ok.addEventListener('click', () => {
+      this.stopSpeaking();
+      this.el.overlay.innerHTML = '';
+      onDone?.();
+    });
+    const copy = this.el.overlay.querySelector('[data-copy]');
+    copy?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(diary.plain);
+        copy.textContent = '✓ Copiado';
+      } catch {
+        copy.textContent = 'No se pudo copiar';
+      }
+      this.later(() => { copy.textContent = '📋 Copiar diario'; }, 2200);
+    });
+    this.speak(lines.join('. '));
   }
 
   noteOnce(key, opts) {
@@ -1203,41 +1842,39 @@ export class DisgustTerritoryGame extends MinigameBase {
       touch: [['Joystick', 'moverte'], ['Arrastra', 'mirar'], ['E', 'interactuar']]
     });
     this.ambient = this.audio.ambient('swamp', { volume: 0.35, rate: 0.9 });
-    this.say('EXPLORA LA ISLA', 2600);
-    this.later(() => this.showNote({
-      title: 'PRIMERA PARTE · Explora la isla',
-      text: 'Recorre el Pantano de los olores, la Cueva de los sabores, el Bosque de las imágenes y la Zona de rechazo. En cada espacio aparecen estímulos distintos. Sigue las columnas de luz.',
-      seconds: 10
-    }), 1200);
+    if (!this.customTexts) await this.askCustomStimuli();
+    this.startThermoStage();
   }
 
   /* ============================================================ (1) zonas */
 
   updateExplore(dt) {
+    const zone = this.zones[this.zoneIndex];
+    if (!zone || !zone.unlocked || zone.done) return;
     const p = this.controller.position;
-    for (const zone of this.zones) {
-      if (zone.done) continue;
-      const dz = Math.hypot(p.x - zone.x, p.z - zone.z);
-      if (!zone.current) {
-        zone.cooldown = Math.max(0, zone.cooldown - dt);
-        if (dz < 8.5 && zone.cooldown <= 0) this.activateStimulus(zone);
-        continue;
-      }
-      const st = zone.current;
-      const m = st.group;
-      const dx = p.x - m.position.x;
-      const dzz = p.z - m.position.z;
-      const d = Math.hypot(dx, dzz);
-      if (d > 0.01) {
-        m.position.x += (dx / d) * STIM_SPEED * dt;
-        m.position.z += (dzz / d) * STIM_SPEED * dt;
-      }
-      m.position.y = this.heightAt(m.position.x, m.position.z) + 1.25 + Math.sin(this.time * 2.2 + st.phase) * 0.15;
-      st.orb.rotation.y += dt;
-      this.dg.askMeter.style.width = `${Math.max(0, Math.min(1, (d - 1.9) / (8.2 - 1.9))) * 100}%`;
-      if (d < 1.9) this.resolveStimulus(zone, st, false);
-      else if (d > 8.2) this.resolveStimulus(zone, st, true);
+    const dz = Math.hypot(p.x - zone.x, p.z - zone.z);
+    if (!zone.current) {
+      zone.cooldown = Math.max(0, zone.cooldown - dt);
+      if (dz < 8.5 && zone.cooldown <= 0) this.activateStimulus(zone);
+      return;
     }
+    const st = zone.current;
+    const m = st.group;
+    const dx = p.x - m.position.x;
+    const dzz = p.z - m.position.z;
+    const d = Math.hypot(dx, dzz);
+    if (d > 0.01) {
+      m.position.x += (dx / d) * STIM_SPEED * dt;
+      m.position.z += (dzz / d) * STIM_SPEED * dt;
+    }
+    m.position.y = this.heightAt(m.position.x, m.position.z) + 1.25 + Math.sin(this.time * 2.2 + st.phase) * 0.15;
+    st.orb.rotation.y += dt;
+    st.ring.rotation.z += dt * 1.5;
+    st.ring.scale.setScalar(1 + Math.sin(this.time * 4) * 0.12);
+    this.feedback.drizzle(m.position, 0.5, { color: '#cfffa0', life: 1.2, speed: 0.3, gravity: -0.4 });
+    this.dg.askMeter.style.width = `${Math.max(0, Math.min(1, (d - 1.9) / (8.2 - 1.9))) * 100}%`;
+    if (d < 1.9) this.resolveStimulus(zone, st, false);
+    else if (d > 8.2) this.resolveStimulus(zone, st, true);
   }
 
   activateStimulus(zone) {
@@ -1257,58 +1894,55 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.dg.ask.hidden = false;
     this.dg.ask.dataset.result = '';
     this.audio.play('buzz', { volume: 0.18, rate: 0.8 });
+    this.speak(`¿Esto me genera desagrado? ${st.label}. Si te genera desagrado, aléjate. Si no, deja que se acerque.`);
   }
 
   resolveStimulus(zone, st, yes) {
     zone.current = null;
-    zone.cooldown = 1.6;
+    zone.cooldown = 2.2;
     zone.answered += 1;
     st.group.visible = false;
-    this.answers.push({ label: st.label, yes });
-    this.feedback.burst(st.group.position, { count: 14, color: yes ? '#ff9d8a' : '#a8e06a', speed: 2.2, life: 0.8 });
+    this.answers.push({ label: st.label, yes, custom: !!st.custom });
+    this.feedback.burst(st.group.position, { count: 18, color: yes ? '#ff9d8a' : '#a8e06a', speed: 2.4, life: 0.9 });
     this.audio.play(yes ? 'soften' : 'collect', { volume: 0.45 });
     this.dg.askQ.textContent = yes ? 'Te alejaste' : 'Dejaste que se acercara';
     this.dg.askHint.textContent = yes ? 'Respuesta: sí me genera desagrado.' : 'Respuesta: no me genera desagrado.';
     this.dg.ask.dataset.result = yes ? 'yes' : 'no';
     this.dg.askMeter.style.width = '0%';
-    this.later(() => { if (!zone.current) this.dg.ask.hidden = true; }, 1500);
-    this.showNote({ title: st.label, text: yes ? st.yes : st.no, seconds: 7 });
+    this.later(() => { if (!zone.current) this.dg.ask.hidden = true; }, 1800);
+    this.showNote({ icon: st.icon, title: st.label, text: yes ? st.yes : st.no });
 
     if (zone.answered >= zone.stimuli.length) {
       zone.done = true;
       zone.beacon.visible = false;
-      zone.label.userData.setText(`${zone.icon} ${zone.name} ✓`);
+      zone.label.userData.setText(`✓ ${zone.icon} ${zone.name}`, { color: '#a8e06a' });
       this.explored += 1;
       this.audio.play('light', { volume: 0.4 });
-      if (this.explored >= this.zones.length) this.later(() => this.finishExplore(), 1200);
-      else this.say(`ZONAS: ${this.explored}/4`, 1600);
+      this.feedback.burst(_v.set(zone.x, zone.y + 2.5, zone.z), { count: 24, color: '#a8e06a', speed: 3, life: 1.3, gravity: -0.5 });
+      if (this.explored >= this.zones.length) this.later(() => this.finishExplore(), 1400);
+      else {
+        this.say(`ZONA LISTA · ${this.explored}/4`, 2200);
+        this.later(() => this.unlockZone(this.zoneIndex + 1), 2600);
+      }
     }
   }
 
   finishExplore() {
-    if (this.phase !== 'explore') return;
-    this.phase = 'mirror';
-    this.advanceObjective();
+    if (this.stage !== 'explore') return;
+    this.stageDone.add('explore');
+    this.renderStages();
     completeActivity('disgust-explorador', 10);
     const yes = this.answers.filter((a) => a.yes).length;
     this.showNote({
+      icon: '🧭',
       title: '¿Esto me genera desagrado?',
-      text: `Marcaste ${yes} de ${this.answers.length} situaciones como desagradables. El desagrado puede aparecer frente a diferentes estímulos y no todas las personas reaccionan de la misma manera.`,
-      seconds: 11
+      text: `Marcaste ${yes} de ${this.answers.length} situaciones como desagradables. El desagrado puede aparecer frente a diferentes estímulos y no todas las personas reaccionan de la misma manera.`
     });
     this.later(() => {
       this.toast('🏆 Insignia de Explorador del Desagrado');
       this.audio.play('success', { volume: 0.5 });
-    }, 900);
-    this.later(() => {
-      this.activateMirror();
-      this.say('VE AL ESPEJO DE LAS REACCIONES', 3200);
-      this.showNote({
-        title: 'SEGUNDA ETAPA · El Espejo del Desagrado',
-        text: 'Al norte te espera El Espejo de las Reacciones. Tu reflejo mostrará expresiones y comportamientos: párate sobre la baldosa que diga lo que ves.',
-        seconds: 10
-      });
-    }, 5200);
+    }, 1200);
+    this.later(() => this.startMirrorStage(), 9000);
   }
 
   /* =========================================================== (2) espejo */
@@ -1424,26 +2058,16 @@ export class DisgustTerritoryGame extends MinigameBase {
     mr.current = null;
     this.mirrorGesture.visible = false;
     this.setTask('');
-    this.phase = 'thermo';
-    this.advanceObjective();
+    this.stageDone.add('mirror');
+    this.renderStages();
     completeActivity('disgust-espejo', 10);
     this.audio.play('success', { volume: 0.5 });
     this.showNote({
+      icon: '🪞',
       title: '¡Bien hecho!',
-      text: 'Ahora sabes que las emociones también pueden aparecer en nuestro cuerpo, pensamientos y comportamientos.',
-      seconds: 9
+      text: 'Ahora sabes que las emociones también pueden aparecer en nuestro cuerpo, pensamientos y comportamientos.'
     });
-    this.later(() => {
-      this.thermo.enabled = true;
-      this.thermoInteract.enabled = true;
-      this.setBeacons([this.thermoBeacon]);
-      this.say('BUSCA EL TERMÓMETRO', 3000);
-      this.showNote({
-        title: 'TERCERA ETAPA · El Termómetro del Desagrado',
-        text: 'En la plaza central hay un enorme termómetro. ¿Qué tan intenso es tu desagrado? Sube por las terrazas hasta el nivel que sientes y pulsa E para confirmarlo. Solo tú puedes identificar qué tan intenso estás sintiendo el desagrado.',
-        seconds: 12
-      });
-    }, 4200);
+    this.later(() => this.startPathsStage(), 7000);
   }
 
   /* ====================================================== (3) termómetro */
@@ -1463,7 +2087,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.mercury.material.emissive.copy(this.mercury.material.color).multiplyScalar(0.5);
     // el mundo responde en vivo: mas nivel, mas niebla verde
     const fogT = lvl / 3;
-    this.scene.fog.density += (lerp(0.02, 0.045, fogT) - this.scene.fog.density) * Math.min(1, dt * 1.5);
+    this.scene.fog.density += (lerp(0.016, 0.04, fogT) - this.scene.fog.density) * Math.min(1, dt * 1.5);
     _c.set(lvl === 3 ? FOG.high : lvl === 2 ? FOG.mid : FOG.base);
     this.scene.fog.color.lerp(_c, Math.min(1, dt * 1.5));
   }
@@ -1473,9 +2097,10 @@ export class DisgustTerritoryGame extends MinigameBase {
     const L = LEVELS[lvl];
     this.audio.play('tick', { volume: 0.35, rate: 0.8 + lvl * 0.15 });
     this.showNote({
+      icon: ['', '🙂', '😐', '😖'][lvl],
       title: L.title,
       text: `«${L.quote}» Puede aparecer: ${L.signs}. Pulsa E para confirmar este nivel.`,
-      seconds: 9
+      replace: true
     });
   }
 
@@ -1486,56 +2111,46 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.thermo.enabled = false;
     this.thermoInteract.enabled = false;
     this.audio.play('chime', { volume: 0.45 });
-    this.feedback.burst(_v.set(CENTER.x, this.heightAt(CENTER.x, CENTER.z) + 1.4 + lvl * 2, CENTER.z), { count: 20, color: LEVEL_COLORS[lvl], speed: 2.5, life: 1 });
+    this.feedback.burst(_v.set(CENTER.x, this.heightAt(CENTER.x, CENTER.z) + 1.4 + lvl * 2, CENTER.z), { count: 24, color: LEVEL_COLORS[lvl], speed: 2.6, life: 1.1 });
 
-    if (this.phase === 'thermo') {
+    if (this.stage === 'thermo') {
       this.initialLevel = lvl;
       this.level = lvl;
       setInitialIntensity(INTENSITY[lvl]);
       this.applyLevelWorld(lvl);
-      this.phase = 'paths';
-      this.advanceObjective();
-      this.openPaths(lvl);
+      this.stageDone.add('thermo');
+      this.renderStages();
+      this.setBeacons([]);
+      this.say(`NIVEL ${lvl} CONFIRMADO`, 2200);
+      this.later(() => this.startExploreStage(), lvl === 3 ? 7000 : 2800);
       return;
     }
-    if (this.reevalReady) this.finishReevaluation(lvl);
+    if (this.stage === 'reeval') this.finishReevaluation(lvl);
   }
 
   applyLevelWorld(lvl) {
     const fog = this.scene.fog;
-    const target = lvl === 3 ? { c: FOG.high, d: 0.05, sky: ['#2f4a2a', '#6f9a5a'], sun: 1.0, speed: 0.6 }
-      : lvl === 2 ? { c: FOG.mid, d: 0.03, sky: ['#3f5a36', '#8ab06a'], sun: 1.3, speed: 1 }
-        : { c: FOG.base, d: 0.02, sky: ['#47603c', '#9ab86e'], sun: 1.5, speed: 1 };
+    const target = lvl === 3 ? { c: FOG.high, d: 0.04, sky: ['#2f4a2a', '#6f9a5a'], sun: 1.05, speed: 0.75 }
+      : lvl === 2 ? { c: FOG.mid, d: 0.026, sky: ['#3a5f48', '#95bd74'], sun: 1.3, speed: 1 }
+        : { c: FOG.base, d: 0.016, sky: ['#3f6b58', '#b6d88c'], sun: 1.5, speed: 1 };
     this.feedback.tweenColor(fog.color, target.c, 2.5);
     this.feedback.tweenValue(fog, 'density', target.d, 2.5);
     this.sky.userData.setColors(target.sky[0], target.sky[1]);
     this.feedback.tweenValue(this.sun, 'intensity', target.sun, 2.5);
     this.controller.speedScale = target.speed;
     if (lvl === 3) {
-      this.say('TU DESAGRADO ESTÁ MUY INTENSO', 3000);
       this.showNote({
-        title: 'Haz una pausa antes de actuar',
-        text: 'Tu desagrado está muy intenso. Haz una pausa antes de actuar. La isla se cubre de niebla verde y tu personaje se mueve más lento.',
-        seconds: 9
+        icon: '🌫️',
+        title: 'Tu desagrado está muy intenso. Haz una pausa antes de actuar.',
+        text: 'La isla se cubre de niebla verde y tu personaje se mueve más lento. Cuando practiques tu primera herramienta, recuperarás el ritmo.'
       });
     }
   }
 
   /* ========================================================= (4) caminos */
 
-  openPaths(lvl) {
-    const ids = PATH_ORDER.filter((id) => PATHS[id].levels.includes(lvl));
-    ids.forEach((id) => this.openPath(id));
-    const names = ids.map((id) => `«${PATHS[id].name}»`).join(', ');
-    this.later(() => {
-      this.showNote({
-        title: 'CUARTA ETAPA · Elige tu herramienta',
-        text: `${ids.length === 1 ? 'Se abre el camino' : `Se abren ${ids.length} caminos`}: ${names}. Sigue las columnas de luz doradas.`,
-        seconds: 11
-      });
-      this.say('ELIGE TU HERRAMIENTA', 3000);
-    }, lvl === 3 ? 3200 : 600);
-    this.setBeacons(ids.map((id) => this.paths[id].beacon));
+  openPaths() {
+    // Sustituido por el recorrido lineal: ver startPathsStage / unlockNextPath.
   }
 
   openPath(id) {
@@ -1561,33 +2176,22 @@ export class DisgustTerritoryGame extends MinigameBase {
     const tool = addReward(path.tool);
     if (tool && !this.rewards.includes(path.tool)) this.rewards.push(path.tool);
     this.audio.play('success', { volume: 0.5 });
-    this.later(() => this.toast(`${path.icon} Recompensa: ${tool?.name ?? path.tool}`), 600);
-    path.sign.userData.setText(`${path.icon} ${path.name} ✓\n${path.technique}`, { color: '#a8e06a' });
+    this.feedback.burst(_v.set(path.x, path.y + 3, path.z), { count: 34, color: '#ffd166', speed: 3.4, life: 1.5, gravity: -0.6 });
+    this.later(() => this.toast(`${path.icon} Recompensa: ${tool?.name ?? path.tool}`), 700);
+    path.sign.userData.setText(`✓ ${path.icon} ${path.name}\n${path.technique}`, { color: '#a8e06a' });
+    this.renderStages();
 
     // los altares del desafio final se encienden con lo aprendido
     this.altars.forEach((al) => { if (al.id === id) this.lightAltar(al); });
 
-    if (!this.reevalReady) {
-      this.reevalReady = true;
-      this.advanceObjective();
-      PATH_ORDER.forEach((pid) => this.openPath(pid));
-      this.later(() => {
-        this.thermo.enabled = true;
-        this.thermoInteract.enabled = true;
-        this.standLevel = 0;
-        this.setBeacons([this.thermoBeacon, ...PATH_ORDER.filter((pid) => !this.paths[pid].done).map((pid) => this.paths[pid].beacon)]);
-        this.say('VUELVE AL TERMÓMETRO CUANDO QUIERAS', 3200);
-        this.showNote({
-          title: 'REEVALUACIÓN',
-          text: 'Puedes volver al termómetro para revisar cómo está ahora tu desagrado, o seguir practicando: los demás caminos también se abrieron. Cada herramienta que aprendas te servirá en el desafío final.',
-          seconds: 12
-        });
-      }, 2600);
-    } else if (this.phase === 'paths') {
-      this.setBeacons([this.thermoBeacon, ...PATH_ORDER.filter((pid) => !this.paths[pid].done).map((pid) => this.paths[pid].beacon)]);
-    } else if (this.phase === 'boss') {
-      this.setBeacons([this.arenaBeacon]);
+    // la primera herramienta devuelve el ritmo si el nivel era intenso
+    if (this.learned.size === 1 && this.controller.speedScale < 1) {
+      this.controller.speedScale = 1;
+      this.feedback.tweenValue(this.scene.fog, 'density', 0.03, 3);
+      this.showNote({ icon: '🌬️', title: 'Recuperas el ritmo', text: 'Practicar una herramienta no borra el desagrado, pero te devuelve el control: ya te mueves con normalidad.' });
     }
+
+    if (this.stage === 'paths') this.later(() => this.unlockNextPath(), 4200);
   }
 
   /** Un camino abierto se pone en marcha cuando el jugador llega a su area. */
@@ -1776,9 +2380,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     const from = g.position.clone();
     const to = new THREE.Vector3(from.x, this.heightAt(from.x, from.z) + 0.6, from.z);
     this.feedback.tween({ from: 0, to: 1, duration: 0.9, onUpdate: (t) => g.position.lerpVectors(from, to, t) });
-    const light = new THREE.PointLight(bf.color, 1.2, 6, 2);
-    light.position.y = 0.4;
-    g.add(light);
+    const glow = makeEmoji('✨', 0.6);
+    glow.position.y = 0.5;
+    g.add(glow);
     this.audio.play('collect', { volume: 0.45 });
     this.feedback.burst(from, { count: 14, color: bf.color, speed: 2, life: 0.9 });
     this.setTask(`🦋 Encuentra 5 objetos de color diferente · ${path.count}/5`);
@@ -2178,6 +2782,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       </div>
     `;
     this.root.appendChild(layer);
+    this.speak(`${title}. ${text}. ${options.map((o, i) => `Opción ${i + 1}: ${o}`).join('. ')}`);
     const first = layer.querySelector('[data-pick]');
     first?.focus({ preventScroll: true });
     layer.querySelectorAll('[data-pick]').forEach((btn) => {
@@ -2197,8 +2802,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     const strategies = [...this.learned].map((id) => PATHS[id].name).join(' + ');
     recordReevaluation('disgust', INTENSITY[ini], strategies || 'Sin estrategia', INTENSITY[lvl]);
     completeActivity('disgust-reevaluacion', 10);
-    this.phase = 'boss';
-    this.advanceObjective();
+    this.stageDone.add('reeval');
+    this.renderStages();
+    this.setBeacons([]);
     const name = (n) => LEVELS[n].title.split('— ')[1].toLowerCase();
     let title, text;
     if (lvl < ini) {
@@ -2212,8 +2818,9 @@ export class DisgustTerritoryGame extends MinigameBase {
       text = `Subió de ${name(ini)} a ${name(lvl)}. A veces pasa: mirar de cerca lo que sentimos lo hace más visible. Respira, y recuerda que los caminos siguen abiertos.`;
     }
     this.applyLevelWorld(Math.max(lvl, 2));
-    this.showNote({ title, text, seconds: 10 });
-    this.later(() => this.startBoss(), 3800);
+    this.controller.speedScale = 1;
+    this.showNote({ icon: '🔁', title, text });
+    this.later(() => this.startBoss(), 7500);
   }
 
   /* ======================================================= (6) el desafío */
@@ -2227,8 +2834,9 @@ export class DisgustTerritoryGame extends MinigameBase {
   startBoss() {
     const b = this.boss;
     b.active = true;
-    b.growCooldown = 5;                 // gracia: la criatura emerge sin castigar a nadie
-    this.phase = 'boss';
+    b.growCooldown = 6;                 // gracia: la criatura emerge sin castigar a nadie
+    this.setStage('boss');
+    this.controller.speedScale = 1;
     const c = b.creature;
     c.visible = true;
     const ay = this.heightAt(ARENA.x, ARENA.z);
@@ -2249,12 +2857,11 @@ export class DisgustTerritoryGame extends MinigameBase {
       if (this.learned.has(al.id)) { al.interact.enabled = true; al.stone.material.emissiveIntensity = 0.6; }
     });
     this.setBeacons([this.arenaBeacon]);
-    this.say('DESAFÍO FINAL · PROTEGE LA ISLA', 3400);
-    this.later(() => this.showNote({
-      title: 'La Reacción Impulsiva',
-      text: 'En el centro de la isla aparece una gran criatura. Crece cuando reaccionas sin pensar, gritas, insultas o actúas impulsivamente: correr, saltar o chocar contra ella la alimentan. Para derrotarla, camina con calma hasta un altar y usa una herramienta aprendida.',
-      seconds: 13
-    }), 2400);
+    this.showStageBanner({
+      icon: '🛡️', title: 'Desafío final: protege la isla',
+      text: 'En el centro aparece La Reacción Impulsiva. Crece cuando reaccionas sin pensar: correr, saltar o chocar contra ella la alimentan. Camina con calma hasta un altar y usa una herramienta aprendida.',
+      seconds: 7
+    });
     this.setTask(this.bossTask());
   }
 
@@ -2349,6 +2956,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (!b.active || b.growCooldown > 0) return;
     b.growCooldown = 4;
     b.size = Math.min(5, b.size + 1);
+    this.diary.grows += 1;
     this.audio.play('rumble', { volume: 0.5 });
     this.feedback.shakeCamera(0.3, 2);
     this.feedback.burst(_v.copy(b.creature.position).setY(b.creature.position.y + 2), { count: 20, color: '#ff5c5c', speed: 3, life: 1 });
@@ -2531,6 +3139,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const b = this.boss;
     altar.busy = false;
     altar.cooldown = 6;
+    this.diary.altars.push(altar.def.technique);
     altar.stone.material.emissiveIntensity = 0.15;
     b.task = null;
     this.altars.forEach((al) => { if (this.learned.has(al.id) && al.cooldown <= 0 && !al.busy) al.interact.enabled = true; });
@@ -2548,7 +3157,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     b.active = false;
     b.wave.visible = false;
     this.phase = 'victory';
-    this.advanceObjective();
+    this.stageDone.add('boss');
+    this.renderStages();
     this.altars.forEach((al) => { al.interact.enabled = false; });
     completeActivity('disgust-protege', 15);
     const tool = addReward('escudo-autocontrol');
@@ -2600,8 +3210,40 @@ export class DisgustTerritoryGame extends MinigameBase {
         bb.scale.setScalar(0.7 + Math.sin(this.time * 2 + i) * 0.15);
       }
     }
+    if (this.spores) {
+      const pos = this.spores.geometry.attributes.position;
+      const seeds = this.spores.userData.seeds;
+      for (let i = 0; i < pos.count; i += 1) {
+        let y = pos.getY(i) + Math.sin(this.time * 0.6 + seeds[i]) * dt * 0.35 + dt * 0.08;
+        if (y > 6) y = 0.4;
+        pos.setY(i, y);
+        pos.setX(i, pos.getX(i) + Math.sin(this.time * 0.3 + seeds[i] * 1.7) * dt * 0.25);
+      }
+      pos.needsUpdate = true;
+    }
+    if (this.fireflies) {
+      const pos = this.fireflies.geometry.attributes.position;
+      const seeds = this.fireflies.userData.seeds;
+      for (let i = 0; i < pos.count; i += 1) {
+        pos.setY(i, pos.getY(i) + Math.sin(this.time * 1.3 + seeds[i]) * dt * 0.5);
+        pos.setX(i, pos.getX(i) + Math.cos(this.time * 0.7 + seeds[i] * 2.1) * dt * 0.6);
+        pos.setZ(i, pos.getZ(i) + Math.sin(this.time * 0.5 + seeds[i] * 1.3) * dt * 0.6);
+      }
+      pos.needsUpdate = true;
+      this.fireflies.material.opacity = 0.7 + Math.sin(this.time * 3) * 0.2;
+    }
+    if (this.lamps) {
+      for (const l of this.lamps) {
+        const k = 0.85 + Math.sin(this.time * 2.2 + l.seed) * 0.15;
+        l.glow.scale.setScalar(0.7 * k);
+        l.glow.material.opacity = 0.6 + Math.sin(this.time * 3 + l.seed) * 0.3;
+      }
+    }
     for (const bc of this.beacons) {
-      if (bc.visible) bc.userData.beam.material.opacity = 0.2 + Math.sin(this.time * 2.5) * 0.08;
+      if (!bc.visible) continue;
+      bc.userData.beam.material.opacity = 0.2 + Math.sin(this.time * 2.5) * 0.08;
+      bc.userData.halo.scale.setScalar(1 + ((this.time * 0.8) % 1) * 1.6);
+      bc.userData.halo.material.opacity = 0.6 * (1 - ((this.time * 0.8) % 1));
     }
     for (const zone of this.zones) {
       zone.stimuli.forEach((st) => { if (st.group.visible && zone.current !== st) st.group.position.y = zone.y + 1.25 + Math.sin(this.time * 2 + st.phase) * 0.15; });
@@ -2660,10 +3302,11 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.altarBubble = null;
     this.altarOrb = null;
     this.altarOrbInteract = null;
+    this.stopSpeaking();
     this.build();
     this.renderer.shadowMap.needsUpdate = true;
     this.ambient = this.audio.ambient('swamp', { volume: 0.35, rate: 0.9 });
-    this.say('EXPLORA LA ISLA', 2400);
+    this.startThermoStage();
   }
 
   /* ============================================================== cierre */
@@ -2686,21 +3329,21 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.controller.exitPointerLock();
     completeActivity('disgust-territorio-3d', 20);
     const rewards = this.rewards.map((id) => `${TOOLS[id]?.icon ?? '🎁'} ${TOOLS[id]?.name ?? id}`).join(' · ');
-    this.showClosingCard({
-      title: 'GUARDIÁN DEL DESAGRADO',
-      lines: [
-        '«Has aprendido que sentir desagrado es válido. Lo importante es reconocerlo, comprender su intensidad y elegir cómo responder.»',
-        '<strong>¡HAS COMPLETADO LA ISLA DE LOS GUARDIANES DEL DESAGRADO!</strong>',
-        'El desagrado puede ayudarnos a reconocer aquello que percibimos como desagradable o que queremos evitar. Puede manifestarse en nuestro cuerpo, pensamientos y comportamientos.',
-        'Sentir desagrado no significa que debamos reaccionar impulsivamente.',
-        '<strong>Primero reconoce. Después respira. Luego decide.</strong>',
-        rewards ? `Recompensas: ${rewards}` : ''
-      ].filter(Boolean),
-      onDone: () => super.finish()
-    });
+    const lines = [
+      '«Has aprendido que sentir desagrado es válido. Lo importante es reconocerlo, comprender su intensidad y elegir cómo responder.»',
+      '<strong>¡HAS COMPLETADO LA ISLA DE LOS GUARDIANES DEL DESAGRADO!</strong>',
+      'El desagrado puede ayudarnos a reconocer aquello que percibimos como desagradable o que queremos evitar. Puede manifestarse en nuestro cuerpo, pensamientos y comportamientos.',
+      'Sentir desagrado no significa que debamos reaccionar impulsivamente.',
+      '<strong>Primero reconoce. Después respira. Luego decide.</strong>',
+      rewards ? `Recompensas: ${rewards}` : ''
+    ].filter(Boolean);
+    const diary = this.buildDiary();
+    this.showClosingCard({ title: 'GUARDIÁN DEL DESAGRADO', lines, diary, onDone: () => super.finish() });
   }
 
   onDispose() {
+    this.disposedFlag = true;
+    this.stopSpeaking();
     this.scene?.traverse((obj) => {
       if (obj.isSprite) {
         obj.material.map?.dispose();

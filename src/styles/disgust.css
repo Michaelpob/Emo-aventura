@@ -272,8 +272,13 @@
 
 /* ===================================================================
    ISLA 3D · GUARDIANES DEL DESAGRADO (DisgustTerritoryGame)
-   HUD propio de la isla: pregunta de los estimulos, tarea actual,
-   anillo de mirada, avisos de recompensa y panel del Guardian.
+   Distribucion de pantalla (nada se encima):
+     fila 1 (14px):  [pausa] [voz]   mapa de etapas
+     fila 2 (60px):  tarea actual
+     desde 104px:    avisos en cola (uno a la vez)
+     34%:            texto breve del centro
+     50%:            banner de etapa / anillo de mirada
+     abajo 30%:      pregunta del estimulo · abajo-derecha: recompensas
    =================================================================== */
 
 .i3d.dg .dg-hud {
@@ -282,19 +287,80 @@
   pointer-events: none;
   z-index: 6;
 }
+.i3d.dg .i3d__notes { top: 104px; }
+.i3d.dg .i3d__objective { display: none; }
 
-.dg-task {
+/* ---- fila 1: voz + mapa de etapas ---- */
+.i3d.dg .dg-voice {
   position: absolute;
-  top: 16px;
+  top: 14px;
   left: 62px;
-  max-width: calc(100% - 210px);
-  padding: 7px 16px;
+  font-size: 1.05rem;
+  transition: transform 160ms ease, background 200ms ease;
+}
+.dg-voice[data-on='true'] { background: rgba(168, 224, 106, 0.28); border-color: rgba(168, 224, 106, 0.6); }
+.dg-voice:active { transform: scale(0.94); }
+
+.dg-stages {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
   border-radius: 999px;
   background: rgba(8, 16, 22, 0.62);
-  border: 1px solid rgba(168, 224, 106, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  max-width: calc(100% - 230px);
+  overflow: hidden;
+}
+.dg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  transition: background 300ms ease, color 300ms ease, transform 300ms ease;
+}
+.dg-chip i { font-style: normal; font-size: 0.95rem; }
+.dg-chip b { font-weight: 700; }
+.dg-chip[data-state='locked'] b { display: none; }
+.dg-chip[data-state='locked'] i { opacity: 0.55; }
+.dg-chip[data-state='done'] { color: #a8e06a; }
+.dg-chip[data-state='done'] i { color: #a8e06a; }
+.dg-chip[data-state='done'] b { display: none; }
+.dg-chip[data-state='active'] {
+  background: linear-gradient(90deg, rgba(255, 209, 102, 0.28), rgba(168, 224, 106, 0.28));
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.6), 0 0 18px rgba(255, 209, 102, 0.35);
+  animation: dg-chip-pulse 2.4s ease-in-out infinite;
+}
+.dg-chip-sep { width: 10px; height: 2px; border-radius: 1px; background: rgba(255, 255, 255, 0.2); flex: none; }
+@keyframes dg-chip-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.6), 0 0 14px rgba(255, 209, 102, 0.25); }
+  50% { box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.9), 0 0 24px rgba(255, 209, 102, 0.5); }
+}
+
+/* ---- fila 2: tarea ---- */
+.dg-task {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgba(8, 16, 22, 0.66);
+  border: 1px solid rgba(168, 224, 106, 0.5);
   color: #fff;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -302,25 +368,91 @@
 }
 .dg-task[hidden] { display: none; }
 
+/* ---- avisos en cola ---- */
+.i3d.dg .dg-note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  width: min(560px, calc(100% - 32px));
+  padding: 14px 40px 18px 16px;
+  backdrop-filter: none;                 /* el desenfoque sobre WebGL costaba fps */
+  border-left: 4px solid #a8e06a;
+  background: linear-gradient(135deg, rgba(10, 22, 18, 0.94), rgba(10, 18, 26, 0.9));
+}
+.dg-note__icon { font-size: 1.7rem; line-height: 1.1; }
+.dg-note__body { min-width: 0; }
+.i3d.dg .dg-note .i3d-note__title { margin: 0 0 4px; }
+.i3d.dg .dg-note .i3d-note__text { margin: 0; font-size: 0.98rem; line-height: 1.55; }
+
+/* ---- banner de etapa ---- */
+.dg-banner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(600px, calc(100% - 32px));
+  display: grid;
+  justify-items: center;
+}
+.dg-stage {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  padding: 18px 22px;
+  border-radius: 22px;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(18, 48, 30, 0.96), rgba(10, 18, 26, 0.94));
+  border: 1px solid rgba(255, 209, 102, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.12), 0 26px 60px rgba(0, 0, 0, 0.55), 0 0 40px rgba(168, 224, 106, 0.25);
+  animation: dg-stage-in 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dg-stage.is-out { animation: dg-stage-out 420ms ease forwards; }
+.dg-stage__icon {
+  font-size: 3rem;
+  line-height: 1;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+  animation: dg-stage-icon 1.8s ease-in-out infinite;
+}
+.dg-stage__body { min-width: 0; text-align: left; }
+.dg-stage__eyebrow { margin: 0 0 4px; font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: #ffd166; }
+.dg-stage h3 { margin: 0 0 6px; font-size: 1.35rem; line-height: 1.2; color: #fff; }
+.dg-stage p { margin: 0; line-height: 1.5; color: rgba(255, 255, 255, 0.9); }
+@keyframes dg-stage-in {
+  0% { opacity: 0; transform: translateY(24px) scale(0.92); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dg-stage-out {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-16px) scale(0.96); }
+}
+@keyframes dg-stage-icon {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
+}
+
+/* ---- pregunta del estimulo (abajo) ---- */
 .dg-ask {
   position: absolute;
-  top: 27%;
+  bottom: 30%;
   left: 50%;
   transform: translateX(-50%);
-  width: min(460px, calc(100% - 32px));
+  width: min(480px, calc(100% - 32px));
   display: flex;
   gap: 14px;
   align-items: center;
   padding: 12px 16px 16px;
   border-radius: 18px;
-  background: rgba(8, 16, 22, 0.8);
+  background: rgba(8, 16, 22, 0.82);
   border: 1px solid rgba(168, 224, 106, 0.55);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), 0 0 26px rgba(168, 224, 106, 0.18);
   color: #fff;
   animation: i3d-pop 260ms ease;
 }
 .dg-ask[hidden] { display: none; }
-.dg-ask__icon { font-size: 2.2rem; line-height: 1; }
+.dg-ask__icon { font-size: 2.2rem; line-height: 1; animation: dg-stage-icon 1.6s ease-in-out infinite; }
 .dg-ask__body { flex: 1; min-width: 0; }
 .dg-ask__q {
   margin: 0;
@@ -329,7 +461,7 @@
   text-transform: uppercase;
   color: #a8e06a;
 }
-.dg-ask__label { margin: 3px 0; font-weight: 800; font-size: 1rem; line-height: 1.3; }
+.dg-ask__label { margin: 3px 0; font-weight: 800; font-size: 1rem; line-height: 1.3; color: #fff; }
 .dg-ask__hint { margin: 0; font-size: 0.8rem; color: rgba(255, 255, 255, 0.78); }
 .dg-ask__hint b { color: #ffd166; }
 .dg-ask__meter {
@@ -354,6 +486,7 @@
 .dg-ask[data-result='yes'] .dg-ask__q { color: #ff9d8a; }
 .dg-ask[data-result='no'] { border-color: #a8e06a; }
 
+/* ---- anillo de mirada ---- */
 .dg-focus {
   position: absolute;
   left: 50%;
@@ -374,33 +507,34 @@
   mask: radial-gradient(circle, transparent 58%, #000 61%);
 }
 
+/* ---- recompensas (abajo a la derecha) ---- */
 .dg-toasts {
   position: absolute;
-  top: 44%;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 16px;
+  bottom: 26%;
   display: grid;
   gap: 8px;
-  justify-items: center;
+  justify-items: end;
 }
 .dg-toast {
   padding: 10px 18px;
   border-radius: 999px;
-  background: rgba(20, 40, 20, 0.92);
-  border: 1px solid #a8e06a;
+  background: linear-gradient(135deg, rgba(40, 70, 30, 0.95), rgba(20, 40, 20, 0.95));
+  border: 1px solid #ffd166;
   color: #fff;
   font-weight: 800;
   white-space: nowrap;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
-  animation: dg-toast 3.4s ease forwards;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), 0 0 22px rgba(255, 209, 102, 0.3);
+  animation: dg-toast 4.2s ease forwards;
 }
 @keyframes dg-toast {
-  0% { opacity: 0; transform: translateY(-10px) scale(0.96); }
-  10% { opacity: 1; transform: translateY(0) scale(1); }
+  0% { opacity: 0; transform: translateX(16px) scale(0.96); }
+  10% { opacity: 1; transform: translateX(0) scale(1); }
   85% { opacity: 1; }
   100% { opacity: 0; transform: translateY(-6px); }
 }
 
+/* ---- panel de eleccion (Guardian) ---- */
 .dg-overlay {
   position: absolute;
   inset: 0;
@@ -421,10 +555,61 @@
 }
 .dg-choice:hover, .dg-choice:focus-visible { background: rgba(168, 224, 106, 0.22); border-color: #a8e06a; }
 
-@media (max-width: 640px) {
-  .dg-ask { top: 24%; padding: 10px 12px 14px; gap: 10px; }
+/* ---- estimulos propios (formulario) ---- */
+.dg-custom__field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  text-align: left;
+}
+.dg-custom__field span { color: #ffd166; font-weight: 800; }
+.dg-custom .i3d-intro__hint { color: rgba(255, 255, 255, 0.85); }
+.dg-custom__field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: inherit;
+}
+.dg-custom__field input:focus { outline: none; border-color: #a8e06a; box-shadow: 0 0 0 3px rgba(168, 224, 106, 0.25); }
+.dg-custom__field input::placeholder { color: rgba(255, 255, 255, 0.45); }
+
+/* ---- diario del Guardian (tarjeta final) ---- */
+.dg-diary {
+  margin: 14px 0 4px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  text-align: left;
+}
+.dg-diary h4 { margin: 0 0 8px; font-size: 1rem; color: #ffd166; }
+.dg-diary ul { margin: 0; padding-left: 18px; }
+.dg-diary li { margin: 6px 0; line-height: 1.45; font-size: 0.92rem; color: rgba(255, 255, 255, 0.9); }
+.dg-diary em { color: #a8e06a; font-style: normal; }
+.dg-diary__hint { margin: 10px 0 8px; font-size: 0.82rem; color: rgba(255, 255, 255, 0.7); }
+.dg-diary__copy { font-size: 0.85rem; min-height: 38px; }
+
+@media (max-width: 720px) {
+  .dg-stages { max-width: calc(100% - 120px); left: auto; right: 12px; transform: none; padding: 4px 6px; gap: 2px; }
+  .dg-chip { padding: 3px 6px; font-size: 0.7rem; }
+  .dg-chip[data-state='active'] b { display: inline; }
+  .dg-chip-sep { width: 5px; }
+  .i3d.dg .dg-voice { left: 58px; }
+  .dg-task { top: 58px; font-size: 0.78rem; max-width: calc(100% - 24px); }
+  .i3d.dg .i3d__notes { top: 98px; }
+  .dg-ask { bottom: 34%; padding: 10px 12px 14px; gap: 10px; }
   .dg-ask__icon { font-size: 1.7rem; }
   .dg-ask__label { font-size: 0.9rem; }
-  .dg-task { top: 14px; left: 56px; font-size: 0.78rem; max-width: calc(100% - 150px); }
-  .dg-toasts { top: 40%; }
+  .dg-toasts { right: 12px; bottom: auto; top: 98px; }
+  .dg-toast { font-size: 0.8rem; padding: 8px 12px; white-space: normal; max-width: 60vw; text-align: right; }
+  .dg-stage { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 16px; }
+  .dg-stage__body { text-align: center; }
+  .dg-stage__icon { font-size: 2.4rem; }
+  .dg-stage h3 { font-size: 1.15rem; }
 }
