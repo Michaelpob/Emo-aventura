@@ -334,6 +334,7 @@ function cleanForSpeech(html) {
     .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}]/gu, ' ')
     .replace(/[«»"]/g, '')
     .replace(/\s+/g, ' ')
+    .replace(/([.!?;:])\s*\.+/g, '$1')      // "hola.. adios" -> "hola. adios"
     .trim();
 }
 function readStore(key, fallback) {
@@ -347,6 +348,19 @@ function readStore(key, fallback) {
 function writeStore(key, value) {
   try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* sin almacenamiento */ }
 }
+/** Frases cortas para el sintetizador: Chrome corta las locuciones largas. */
+function splitSentences(text, max = 170) {
+  const parts = String(text).split(/(?<=[.!?:;])\s+/);
+  const out = [];
+  let cur = '';
+  for (const part of parts) {
+    const next = cur ? `${cur} ${part}` : part;
+    if (next.length > max && cur) { out.push(cur); cur = part; } else cur = next;
+  }
+  if (cur) out.push(cur);
+  return out.flatMap((p) => (p.length <= max * 1.6 ? [p] : p.match(new RegExp(`.{1,${max}}(\\s|$)`, 'g')) ?? [p]));
+}
+
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -359,6 +373,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.time = 0;
     this.customTexts = null;   // estimulos escritos por el nino (sobreviven al reinicio)
     this.voice = null;
+    this.speechQueue = [];
+    this.speechBusy = false;
   }
 
   /* ------------------------------------------------------------ estado */
@@ -604,17 +620,44 @@ export class DisgustTerritoryGame extends MinigameBase {
     return dome;
   }
 
+  /**
+   * Una actividad "emerge" del suelo cuando le toca: el grupo sube, se
+   * activan sus colisiones y hay un estallido de particulas. Asi en el campo
+   * solo esta lo que ya se puede jugar.
+   */
+  reveal(group, { x, z, y, colliders = [], color = '#a8e06a' }) {
+    if (!group || group.userData.revealed) return;
+    group.userData.revealed = true;
+    group.visible = true;
+    const from = group.position.y;
+    this.feedback.tween({
+      from, to: 0, duration: 1.6,
+      onUpdate: (v) => { group.position.y = v; },
+      onDone: () => {
+        group.position.y = 0;
+        colliders.forEach((c) => this.controller.addCollider(c));
+      }
+    });
+    this.feedback.burst(_v.set(x, y + 1.5, z), { count: 36, color, speed: 3.4, life: 1.6, gravity: -0.5 });
+    this.feedback.shakeCamera(0.12, 3);
+    this.audio.play('rumble', { volume: 0.25, rate: 1.3 });
+    this.later(() => this.audio.play('light', { volume: 0.45 }), 900);
+  }
+
   /* ---------------------------------------------------------- zonas (1) */
 
   buildZones() {
     this.zones = ZONES.map((def) => {
       const y = this.heightAt(def.x, def.z);
-      const zone = { ...def, y, answered: 0, done: false, unlocked: false, current: null, cooldown: 0, entered: false };
+      const group = new THREE.Group();
+      group.visible = false;
+      group.position.y = -9;               // emerge del suelo cuando le toca
+      this.scene.add(group);
+      const zone = { ...def, y, group, colliders: [], answered: 0, done: false, unlocked: false, current: null, cooldown: 0, entered: false };
       this.decorateZone(zone);
-      zone.label = makeText(`🔒 ${def.name}`, { size: 0.9, maxChars: 30, color: '#d8e0cc' });
+      zone.label = makeText(`${def.icon} ${def.name}`, { size: 0.9, maxChars: 30 });
       zone.label.position.set(def.x, y + 3.6, def.z);
-      this.scene.add(zone.label);
-      zone.dome = this.makeDome(def.x, def.z, 8.5, 0.38, '#6f8a6a');
+      group.add(zone.label);
       zone.beacon = this.makeBeacon(def.x, def.z);
       zone.stimuli = def.stimuli.map((st) => this.makeStimulus(st));
       return zone;
@@ -622,13 +665,13 @@ export class DisgustTerritoryGame extends MinigameBase {
   }
 
   decorateZone(zone) {
-    const { x, z, y, kind } = zone;
+    const { x, z, y, kind, group } = zone;
     if (kind === 'pantano') {
       const geo = new THREE.CircleGeometry(6, 20);
       geo.rotateX(-Math.PI / 2);
       const pool = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: '#5f7a2e', roughness: 0.35, transparent: true, opacity: 0.9, flatShading: true }));
       pool.position.set(x, y + 0.05, z);
-      this.scene.add(pool);
+      group.add(pool);
       this.pool = pool;
       this.bubbles = [];
       const mat = new THREE.MeshStandardMaterial({ color: '#b9e08a', transparent: true, opacity: 0.5, roughness: 0.2, flatShading: true });
@@ -636,7 +679,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 0), mat);
         b.position.set(x + (Math.random() - 0.5) * 9, y + 0.2, z + (Math.random() - 0.5) * 9);
         b.userData = { baseY: b.position.y, speed: 0.4 + Math.random() * 0.6, phase: Math.random() * 6 };
-        this.scene.add(b);
+        group.add(b);
         this.bubbles.push(b);
       }
     } else if (kind === 'cueva') {
@@ -646,13 +689,13 @@ export class DisgustTerritoryGame extends MinigameBase {
         const rz = z + Math.sin(a) * 5.5 - 1;
         const rock = makeRock({ color: '#5f6b62', scale: 1.6 + (i % 3) * 0.8 });
         rock.position.set(rx, this.heightAt(rx, rz), rz);
-        this.scene.add(rock);
-        this.controller.addCollider({ type: 'sphere', center: new THREE.Vector3(rx, this.heightAt(rx, rz), rz), radius: 0.9 });
+        group.add(rock);
+        zone.colliders.push({ type: 'sphere', center: new THREE.Vector3(rx, this.heightAt(rx, rz), rz), radius: 0.9 });
       }
       const back = makeRock({ color: '#2f3a33', scale: 4.2 });
       back.position.set(x + 2.5, this.heightAt(x + 2.5, z - 2.5) - 0.6, z - 2.5);
-      this.scene.add(back);
-      this.controller.addCollider({ type: 'sphere', center: new THREE.Vector3(x + 2.5, y, z - 2.5), radius: 2.2 });
+      group.add(back);
+      zone.colliders.push({ type: 'sphere', center: new THREE.Vector3(x + 2.5, y, z - 2.5), radius: 2.2 });
     } else if (kind === 'bosque') {
       for (let i = 0; i < 9; i += 1) {
         const a = (i / 9) * Math.PI * 2;
@@ -661,8 +704,8 @@ export class DisgustTerritoryGame extends MinigameBase {
         const tz = z + Math.sin(a) * r;
         const tree = makeTree({ color: i % 2 ? '#3f7a45' : '#5a9a4a', trunkColor: '#5a3f2a', scale: 1.3 + (i % 3) * 0.25 });
         tree.position.set(tx, this.heightAt(tx, tz), tz);
-        this.scene.add(tree);
-        this.controller.addCollider({ type: 'sphere', center: new THREE.Vector3(tx, this.heightAt(tx, tz), tz), radius: 0.55 });
+        group.add(tree);
+        zone.colliders.push({ type: 'sphere', center: new THREE.Vector3(tx, this.heightAt(tx, tz), tz), radius: 0.55 });
       }
     } else if (kind === 'rechazo') {
       const mat = new THREE.MeshStandardMaterial({ color: '#8a6a3a', roughness: 1, flatShading: true });
@@ -673,11 +716,11 @@ export class DisgustTerritoryGame extends MinigameBase {
         const pz = z + Math.sin(a) * 6;
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.4, 0.3), mat);
         post.position.set(px, this.heightAt(px, pz) + 0.7, pz);
-        this.scene.add(post);
+        group.add(post);
       }
       const sign = makeEmoji('🚧', 1.2);
       sign.position.set(x, y + 1.6, z);
-      this.scene.add(sign);
+      group.add(sign);
     }
   }
 
@@ -705,6 +748,11 @@ export class DisgustTerritoryGame extends MinigameBase {
   /* ---------------------------------------------------------- espejo (2) */
 
   buildMirror() {
+    // todo el espejo (marco, reflejo, baldosas) vive en un grupo oculto que emerge en su etapa
+    this.mirrorRoot = new THREE.Group();
+    this.mirrorRoot.visible = false;
+    this.mirrorRoot.position.y = -9;
+    this.scene.add(this.mirrorRoot);
     const g = new THREE.Group();
     const y = this.heightAt(MIRROR.x, MIRROR.z);
     g.position.set(MIRROR.x, y, MIRROR.z);
@@ -743,10 +791,10 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.mirrorSpeech.visible = false;
     g.add(this.mirrorSpeech);
 
-    this.scene.add(g);
-    this.controller.addCollider({ type: 'box', box: new THREE.Box3(
+    this.mirrorRoot.add(g);
+    this.mirrorCollider = { type: 'box', box: new THREE.Box3(
       new THREE.Vector3(MIRROR.x - 3.4, y - 1, MIRROR.z - 0.5), new THREE.Vector3(MIRROR.x + 3.4, y + 6, MIRROR.z + 0.6)
-    ) });
+    ) };
 
     // baldosas en abanico frente al espejo
     const items = shuffle(SIGNALS);
@@ -761,10 +809,10 @@ export class DisgustTerritoryGame extends MinigameBase {
         new THREE.MeshStandardMaterial({ color: '#4c5a4c', emissive: '#88aa66', emissiveIntensity: 0.15, roughness: 0.9, flatShading: true })
       );
       mesh.position.set(px, py + 0.08, pz);
-      this.scene.add(mesh);
+      this.mirrorRoot.add(mesh);
       const label = makeText(`${item.icon} ${item.label}`, { size: 0.42, maxChars: 18 });
       label.position.set(px, py + (i % 2 ? 1.75 : 1.15), pz);
-      this.scene.add(label);
+      this.mirrorRoot.add(label);
       return { item, mesh, label, x: px, z: pz, solved: false };
     });
 
@@ -844,18 +892,14 @@ export class DisgustTerritoryGame extends MinigameBase {
       const group = new THREE.Group();
       group.visible = false;
       this.scene.add(group);
+      group.position.y = -9;               // emerge del suelo cuando se abre
       const path = {
         id, ...def, y, group, open: false, done: false,
-        dome: this.makeDome(def.x, def.z, 9.5, 0.5),
         beacon: this.makeBeacon(def.x, def.z, '#ffd166'),
         sign: makeText(`${def.icon} ${def.name}\n${def.technique}`, { size: 0.9, maxChars: 26 })
       };
       path.sign.position.set(def.x, y + 4.2, def.z);
       group.add(path.sign);
-      // el letrero se ve incluso cerrado: asi el jugador sabe que hay un camino
-      path.closedSign = makeText(`🔒 ${def.name}\n(se abre en su momento)`, { size: 0.75, maxChars: 26, color: '#cfd8c4' });
-      path.closedSign.position.set(def.x, y + 4.2, def.z);
-      this.scene.add(path.closedSign);
       this.paths[id] = path;
       this[`build_${id}`](path);
     });
@@ -1338,7 +1382,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     el.textContent = text;
     this.dg.toasts.appendChild(el);
     this.later(() => el.remove(), 4200);
-    this.speak(text, { interrupt: false });
+    this.speak(text);
   }
 
   /* ============================================== etapas, avisos y banner */
@@ -1427,7 +1471,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         this.pumpNotes();
       }, 300);
     };
-    note.querySelector('.i3d-note__x').addEventListener('click', () => { this.stopSpeaking(); close(); });
+    note.querySelector('.i3d-note__x').addEventListener('click', close);
     this.noteClose = close;
     this.later(close, n.seconds * 1000);
     this.speak(`${n.title ? `${n.title}. ` : ''}${n.text}`);
@@ -1438,9 +1482,14 @@ export class DisgustTerritoryGame extends MinigameBase {
   }
 
   /** El texto breve del centro no se muestra encima del banner de etapa. */
+  /** El texto breve del centro no se muestra encima del banner de etapa; tambien se lee. */
   say(text, ms = 1600) {
     if (Date.now() < this.bannerUntil) return;
     super.say(text, ms);
+    if (text !== this.lastSaid) {
+      this.lastSaid = text;
+      this.speak(text);
+    }
   }
 
   /* ================================================== recorrido lineal */
@@ -1476,16 +1525,12 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (!zone) return;
     this.zoneIndex = i;
     zone.unlocked = true;
-    zone.label.userData.setText(`${zone.icon} ${zone.name}`, { color: '#ffffff' });
-    this.feedback.tweenValue(zone.dome.material, 'opacity', 0, 1.8);
-    this.later(() => { zone.dome.visible = false; }, 1900);
-    this.feedback.burst(_v.set(zone.x, zone.y + 2, zone.z), { count: 30, color: '#a8e06a', speed: 3, life: 1.4, gravity: -0.6 });
-    this.audio.play('light', { volume: 0.45 });
+    this.reveal(zone.group, { x: zone.x, z: zone.z, y: zone.y, colliders: zone.colliders });
     this.setBeacons([zone.beacon]);
     this.say(`ZONA ${i + 1}/4 · ${zone.name.toUpperCase()}`, 2600);
     let text = ZONE_INTROS[zone.id];
     if (zone.id === 'rechazo' && this.customTexts?.length) text += ' También te esperan las cosas que tú escribiste.';
-    this.showNote({ icon: zone.icon, title: `Se abre: ${zone.name}`, text: `${text} Sigue la columna de luz.` });
+    this.showNote({ icon: zone.icon, title: `Aparece: ${zone.name}`, text: `${text} Sigue la columna de luz.` });
   }
 
   startMirrorStage() {
@@ -1521,7 +1566,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const n = 6 - this.pathQueue.length;
     this.say(`CAMINO ${n}/6 · ${path.name.toUpperCase()}`, 2800);
     const forLevel = path.levels.includes(this.level) ? ' Es el camino que el documento sugiere para tu nivel.' : '';
-    this.showNote({ icon: path.icon, title: `Se abre el camino «${path.name}»`, text: `Técnica: ${path.technique}.${forLevel} Sigue la columna de luz dorada.` });
+    this.showNote({ icon: path.icon, title: `Aparece el camino «${path.name}»`, text: `Técnica: ${path.technique}.${forLevel} Sigue la columna de luz dorada.` });
   }
 
   startReevalStage() {
@@ -1591,23 +1636,57 @@ export class DisgustTerritoryGame extends MinigameBase {
     else this.speak('Lectura en voz alta activada.');
   }
 
-  speak(text, { interrupt = true } = {}) {
+  /**
+   * Lee un texto. Por defecto se pone en cola detras de lo que ya se esta
+   * leyendo: ningun mensaje se corta. `priority` solo para lo urgente (la
+   * pregunta de un estimulo que ya viene hacia ti).
+   */
+  speak(text, { priority = false } = {}) {
     const v = this.voice;
     if (!v?.available || !v.on || this.finished) return;
     const plain = cleanForSpeech(text);
     if (!plain) return;
+    if (priority) this.stopSpeaking();
+    const chunks = splitSentences(plain);
+    chunks.forEach((c) => this.speechQueue.push(c));
+    if (this.speechQueue.length > 24) this.speechQueue.splice(0, this.speechQueue.length - 24);
+    this.pumpSpeech();
+  }
+
+  pumpSpeech() {
+    if (this.speechBusy || !this.speechQueue.length || this.paused) return;
+    const v = this.voice;
+    const text = this.speechQueue.shift();
     try {
-      if (interrupt) window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(plain);
+      const u = new SpeechSynthesisUtterance(text);
       u.lang = v.chosen?.lang ?? 'es-ES';
       if (v.chosen) u.voice = v.chosen;
       u.rate = 0.95;
       u.pitch = 1.05;
+      this.speechBusy = true;
+      this._utter = u;                 // si se recoge como basura, Chrome nunca avisa del final
+      const done = () => {
+        if (this._utter !== u) return;
+        this.speechBusy = false;
+        this._utter = null;
+        clearTimeout(this._speechGuard);
+        this.pumpSpeech();
+      };
+      u.onend = done;
+      u.onerror = done;
+      clearTimeout(this._speechGuard);
+      this._speechGuard = setTimeout(done, 1500 + text.length * 95);   // red de seguridad
       window.speechSynthesis.speak(u);
-    } catch { /* el navegador no quiso hablar: no pasa nada */ }
+    } catch {
+      this.speechBusy = false;
+    }
   }
 
   stopSpeaking() {
+    this.speechQueue.length = 0;
+    this.speechBusy = false;
+    this._utter = null;
+    clearTimeout(this._speechGuard);
     try { window.speechSynthesis?.cancel(); } catch { /* nada que parar */ }
   }
 
@@ -1621,7 +1700,10 @@ export class DisgustTerritoryGame extends MinigameBase {
 
   togglePause(on) {
     super.togglePause(on);
-    if (this.paused) this.stopSpeaking();
+    try {
+      if (this.paused) window.speechSynthesis?.pause();
+      else { window.speechSynthesis?.resume(); this.pumpSpeech(); }
+    } catch { /* sin voz */ }
   }
 
   /* ============================================ estimulos escritos por el nino */
@@ -1894,7 +1976,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.dg.ask.hidden = false;
     this.dg.ask.dataset.result = '';
     this.audio.play('buzz', { volume: 0.18, rate: 0.8 });
-    this.speak(`¿Esto me genera desagrado? ${st.label}. Si te genera desagrado, aléjate. Si no, deja que se acerque.`);
+    this.speak(`¿Esto me genera desagrado? ${st.label}. Si te genera desagrado, aléjate. Si no, deja que se acerque.`, { priority: true });
   }
 
   resolveStimulus(zone, st, yes) {
@@ -1951,6 +2033,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const mr = this.mirror;
     mr.active = true;
     mr.order = shuffle(SIGNALS.filter((s) => s.disgust));
+    this.reveal(this.mirrorRoot, { x: MIRROR.x, z: MIRROR.z + 2, y: this.heightAt(MIRROR.x, MIRROR.z), colliders: [this.mirrorCollider], color: '#7fd1ff' });
     this.mirrorAvatar.visible = true;
     this.mirrorGlass.material.emissive.set('#3b6b7a');
     this.mirrorGlass.material.emissiveIntensity = 0.5;
@@ -2157,11 +2240,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const path = this.paths[id];
     if (path.open) return;
     path.open = true;
-    path.group.visible = true;
-    path.closedSign.visible = false;
-    this.feedback.tweenValue(path.dome.material, 'opacity', 0, 2.2);
-    this.later(() => { path.dome.visible = false; }, 2300);
-    this.audio.play('light', { volume: 0.35 });
+    this.reveal(path.group, { x: path.x, z: path.z, y: path.y, color: '#ffd166' });
   }
 
   completePath(id) {
@@ -2782,7 +2861,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       </div>
     `;
     this.root.appendChild(layer);
-    this.speak(`${title}. ${text}. ${options.map((o, i) => `Opción ${i + 1}: ${o}`).join('. ')}`);
+    this.speak(`${title}. ${text}. ${options.map((o, i) => `Opción ${i + 1}: ${o}`).join('. ')}`, { priority: true });
     const first = layer.querySelector('[data-pick]');
     first?.focus({ preventScroll: true });
     layer.querySelectorAll('[data-pick]').forEach((btn) => {
@@ -3344,6 +3423,7 @@ export class DisgustTerritoryGame extends MinigameBase {
   onDispose() {
     this.disposedFlag = true;
     this.stopSpeaking();
+    clearTimeout(this._speechGuard);
     this.scene?.traverse((obj) => {
       if (obj.isSprite) {
         obj.material.map?.dispose();
