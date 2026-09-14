@@ -1,0 +1,1962 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>El Valle de la Luz · Alegría de intensidad alta</title>
+<!--
+  ============================================================================
+  EL VALLE DE LA LUZ · ALEGRÍA DE INTENSIDAD ALTA
+  Dos mini-juegos psicoeducativos en un solo archivo (HTML + CSS + JS, canvas 2D
+  y Web Audio API). Sin librerías ni recursos externos: todo se dibuja y suena
+  por código.
+
+  MAPA MECÁNICA → FASE PSICOEDUCATIVA → CONSTRUCTO TEÓRICO
+  ----------------------------------------------------------------------------
+  | Mecánica                                   | Fase             | Constructo                                              |
+  |--------------------------------------------|------------------|---------------------------------------------------------|
+  | Mantener pulsado con calma baja el medidor | DETENERSE (M1)   | Regulación de la activación; el escenario (brillo,      |
+  | de activación; machacar lo sube            |                  | partículas, tempo, velocidad) es función del estado     |
+  |                                            |                  | emocional → conciencia interoceptiva de la intensidad    |
+  | Detener el foco 1,5 s sobre 5 elementos    | OBSERVAR (M1)    | Bryant & Veroff: atención hacia lo positivo del entorno  |
+  | (la permanencia cuenta, el clic no)        |                  | (savoring: proceso de "atención consciente")             |
+  | Micro-pregunta por elemento, 3 opciones    | APRECIAR (M1)    | Bryant & Veroff: apreciación y elaboración del           |
+  | todas válidas                              |                  | significado; consolida el recuerdo de la experiencia     |
+  | Medidor estabilizado en zona media +       | CONTINUAR (M1)   | Regular ≠ eliminar: se conserva la alegría a un nivel    |
+  | mensaje clínico                            |                  | que permite seguir                                       |
+  | Barra de energía = alegría intensa; se     | ACTIVAR (M2)     | Fredrickson (ampliación y construcción): la emoción      |
+  | gasta al actuar y se recupera con destellos|                  | positiva es un recurso que amplía el repertorio          |
+  | Tres rutas: movimiento / exploración /     | DIRIGIR (M2)     | Fredrickson: tendencias de acción de juego (movimiento), |
+  | creatividad, todas válidas                 |                  | exploración y creación; decisión propia                  |
+  | Obstáculos que cuestan energía, destellos  | ACTUAR (M2)      | Canalización de la activación hacia una meta; sin        |
+  | que la reponen, sin castigo al llegar a 0  |                  | castigo → construcción de recursos, no supresión         |
+  | Activar el mecanismo de luz estabiliza el  | COMPLETAR (M2)   | Cierre orientado a objetivos: la activación se convierte |
+  | escenario                                  |                  | en logro constructivo                                    |
+  | Selección de estrategia con sugerencia no  | Flujo compartido | Autonomía: la estrategia sugerida orienta, no obliga     |
+  | obligatoria                                |                  |                                                         |
+  | Reevaluación BAJA/MEDIA/ALTA sin respuesta | Flujo compartido | Metacognición emocional: comparar intensidad inicial     |
+  | correcta + retroalimentación               |                  | y final (recuerdo y valoración de la experiencia)        |
+  ----------------------------------------------------------------------------
+
+  CÓMO PROBARLO (menos de 5 minutos)
+  1. Abre este archivo con doble clic en cualquier navegador moderno (Chrome,
+     Edge, Firefox, Safari). No hace falta servidor. Para una pasada rápida con
+     umbrales cortos: añade `?rapido=1` a la URL.
+  2. Pantalla de estrategia: pulsa "VER OTRAS ESTRATEGIAS" para ver el aviso de
+     estrategia no sugerida; vuelve a la sugerida o quédate con la otra y pulsa
+     "CONTINUAR CON ESTA ESTRATEGIA".
+  3. Mini-juego 1 (Disfruta sin perder el control), ~90 s:
+     · DETENERSE: mantén pulsada la barra espaciadora (o el dedo en la pantalla)
+       con calma. Prueba a machacar la tecla: el medidor sube. Llévalo a la zona
+       verde (≤35) y mantenlo 3 s.
+     · OBSERVAR: mueve el ratón (o el dedo / flechas) y deja el foco quieto 1,5 s
+       sobre la flor, el ave, el reflejo, el rayo de sol y el personaje. Con 3
+       aparece "Continuar"; con 5, bonus.
+     · APRECIAR: responde una pregunta por elemento (todas las opciones valen).
+     · CONTINUAR: lee el mensaje y guarda la ⭐ Estrella del disfrute.
+  4. Caja de herramientas → Reevaluación (BAJA/MEDIA/ALTA) → Retroalimentación.
+     Pulsa "PRACTICAR OTRA ESTRATEGIA".
+  5. Mini-juego 2 (Utiliza tu energía), ~90 s: ACTIVAR (lee) → DIRIGIR (elige
+     ruta) → ACTUAR:
+     · Movimiento: flechas/A-D para moverte, ESPACIO para saltar (cada salto
+       gasta energía); recoge destellos. Deja que la energía llegue a 0 para ver
+       "Toma un momento…" y los destellos cercanos.
+     · Exploración: flechas/WASD o tocar una casilla vecina; iluminar cuesta
+       energía, las compuertas también; hay una ruta oculta.
+     · Creatividad: flechas para moverte, E (o el botón ✦) para colocar puentes
+       y bloques de luz; ESPACIO da un salto corto.
+     Al final, ESPACIO sobre el mecanismo → COMPLETAR → ⚡ Rayo de energía.
+  6. En la consola: `sessionLog` (partida actual) y `sessionLogs` (todas).
+     `exportarSessionLog()` devuelve el JSON.
+  ============================================================================
+-->
+<style>
+  :root {
+    --oro: #f5b642;
+    --ambar: #e08a1e;
+    --crema: #fff7e4;
+    --tinta: #2a2114;
+    --tinta-suave: #5a4a30;
+    --verde: #6fbf73;
+    --verde-claro: #d8f0c8;
+    --panel: rgba(255, 250, 238, 0.96);
+    --sombra: 0 18px 50px rgba(70, 40, 0, 0.28);
+    --fuente: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    --texto: clamp(16px, 1.55vw, 20px);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #1d160c; color: var(--tinta); font-family: var(--fuente); overflow: hidden; }
+  button { font: inherit; }
+
+  /* ---------------------------------------------------------------- marco */
+  #marco { position: fixed; inset: 0; display: grid; place-items: center; }
+  #escena { position: relative; width: 1280px; height: 720px; }
+  #lienzo { display: block; width: 100%; height: 100%; border-radius: 14px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); touch-action: none; }
+  #capa { position: absolute; inset: 0; pointer-events: none; }
+  #capa > * { pointer-events: auto; }
+
+  /* ------------------------------------------------------------------ HUD */
+  #hud { position: absolute; top: 12px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; pointer-events: none; }
+  #hud > * { pointer-events: auto; }
+  #fases { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 12px; border-radius: 999px; background: rgba(42, 33, 20, 0.72); color: #fff; font-size: clamp(14px, 1.2vw, 17px); letter-spacing: 0.06em; font-weight: 700; backdrop-filter: blur(6px); }
+  #fases:empty { display: none; }
+  #fases span { opacity: 0.45; }
+  #fases span.hecha { opacity: 0.8; }
+  #fases span.actual { opacity: 1; color: var(--oro); }
+  #fases i { font-style: normal; opacity: 0.4; }
+  #opciones { display: flex; gap: 8px; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px; background: rgba(42, 33, 20, 0.72); color: #fff; font-size: 16px; cursor: pointer; backdrop-filter: blur(6px); }
+  .chip input { accent-color: var(--oro); width: 18px; height: 18px; }
+
+  /* medidor vertical de activación (M1) */
+  #medidor { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); display: grid; justify-items: center; gap: 8px; padding: 12px 10px; border-radius: 16px; background: rgba(42, 33, 20, 0.72); color: #fff; backdrop-filter: blur(6px); }
+  #medidor[hidden] { display: none; }
+  #medidor .titulo { font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+  #medidor .tubo { position: relative; width: 26px; height: min(300px, 40vh); border-radius: 999px; overflow: hidden; background: linear-gradient(180deg, #ffb347 0%, #ffd166 35%, #d9e67a 65%, #6fbf73 100%); }
+  #medidor .tubo::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: var(--vacio, 0%); background: rgba(30, 22, 10, 0.78); transition: height 120ms linear; }
+  #medidor .zona { position: absolute; left: -4px; right: -4px; top: 65%; height: 2px; background: #fff; opacity: 0.7; }
+  #medidor .valor { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #medidor .etiqueta { font-size: 14px; opacity: 0.85; }
+
+  /* barra horizontal de energía (M2) */
+  #energia { position: absolute; left: 50%; top: 66px; transform: translateX(-50%); width: min(520px, 70%); padding: 8px 14px 10px; border-radius: 14px; background: rgba(42, 33, 20, 0.72); color: #fff; backdrop-filter: blur(6px); }
+  #energia[hidden] { display: none; }
+  #energia .fila { display: flex; justify-content: space-between; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+  #energia .pista { height: 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.18); overflow: hidden; }
+  #energia .relleno { height: 100%; width: 100%; border-radius: 999px; background: linear-gradient(90deg, #fff2b0, #ffd166, #f5b642); box-shadow: 0 0 14px rgba(255, 209, 102, 0.8); transition: width 140ms linear; }
+
+  /* mensaje breve sobre el juego */
+  #mensaje { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); max-width: min(760px, 90%); padding: 12px 20px; border-radius: 14px; background: rgba(42, 33, 20, 0.78); color: #fff; font-size: var(--texto); line-height: 1.4; text-align: center; backdrop-filter: blur(6px); animation: aparecer 260ms ease; }
+  #mensaje[hidden] { display: none; }
+  #mensaje.suave { background: rgba(255, 250, 238, 0.92); color: var(--tinta); }
+
+  /* controles táctiles */
+  #tactil { position: absolute; inset: 0; pointer-events: none; }
+  #tactil[hidden] { display: none; }
+  #tactil button { pointer-events: auto; position: absolute; width: 64px; height: 64px; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 50%; background: rgba(42, 33, 20, 0.62); color: #fff; font-size: 24px; font-weight: 800; cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  #tactil button.grande { width: 84px; height: 84px; background: rgba(245, 182, 66, 0.85); color: var(--tinta); }
+  #tactil button:active, #tactil button.pulsado { filter: brightness(1.2); transform: scale(0.96); }
+  #tactil .izq { left: 20px; bottom: 90px; }
+  #tactil .der { left: 100px; bottom: 90px; }
+  #tactil .arr { left: 60px; bottom: 160px; }
+  #tactil .aba { left: 60px; bottom: 20px; }
+  #tactil .a { right: 24px; bottom: 90px; }
+  #tactil .b { right: 120px; bottom: 90px; }
+  #tactil .sostener { left: 50%; bottom: 90px; transform: translateX(-50%); width: 150px; height: 150px; font-size: 18px; letter-spacing: 0.08em; }
+
+  /* -------------------------------------------------------------- paneles */
+  #paneles { position: absolute; inset: 0; display: grid; place-items: center; padding: 64px 16px 16px; pointer-events: none; }
+  #paneles:empty { display: none; }
+  .panel { pointer-events: auto; width: min(640px, 100%); max-height: 100%; overflow-y: auto; padding: clamp(18px, 2.6vw, 30px) clamp(18px, 3vw, 34px); border-radius: 22px; background: var(--panel); border: 1px solid rgba(224, 138, 30, 0.35); box-shadow: var(--sombra); animation: aparecer 300ms cubic-bezier(0.22, 1, 0.36, 1); font-size: var(--texto); line-height: 1.5; }
+  .panel.ancho { width: min(900px, 100%); }
+  .panel.abajo { align-self: end; }
+  .panel .eyebrow { margin: 0 0 6px; font-size: clamp(13px, 1.1vw, 15px); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ambar); font-weight: 800; }
+  .panel h2 { margin: 0 0 10px; font-size: clamp(22px, 2.4vw, 30px); line-height: 1.15; color: var(--tinta); }
+  .panel h3 { margin: 12px 0 8px; font-size: clamp(18px, 1.8vw, 22px); }
+  .panel p { margin: 0 0 10px; color: var(--tinta-suave); }
+  .panel p.cita { padding: 10px 14px; border-left: 4px solid var(--oro); background: #fff3d6; color: var(--tinta); font-style: italic; }
+  .panel p.clinico { padding: 14px 16px; border-radius: 12px; background: #fff3d6; color: var(--tinta); font-weight: 600; font-size: clamp(17px, 1.7vw, 22px); line-height: 1.45; }
+  .panel p.nota { font-size: clamp(15px, 1.3vw, 17px); }
+  .acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .boton { min-height: 46px; padding: 10px 18px; border: 1px solid rgba(42, 33, 20, 0.2); border-radius: 12px; background: #fff; color: var(--tinta); font-weight: 800; letter-spacing: 0.04em; cursor: pointer; transition: transform 140ms ease, background 160ms ease; }
+  .boton:hover { transform: translateY(-1px); background: #fff9ea; }
+  .boton.primario { background: linear-gradient(180deg, #ffd166, #f5b642); border-color: transparent; }
+  .boton.secundario { background: rgba(255, 255, 255, 0.6); }
+  .boton:focus-visible, .tarjeta:focus-visible, .chip:focus-within { outline: 3px solid var(--ambar); outline-offset: 3px; }
+  .boton[disabled] { opacity: 0.5; cursor: default; transform: none; }
+
+  /* tarjetas de estrategia / ruta */
+  .tarjetas { display: grid; gap: 12px; margin: 12px 0 4px; }
+  .tarjetas.tres { grid-template-columns: repeat(3, 1fr); }
+  .tarjeta { position: relative; display: grid; gap: 4px; padding: 16px 16px 14px; border: 2px solid rgba(42, 33, 20, 0.15); border-radius: 16px; background: #fff; text-align: left; cursor: pointer; transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+  .tarjeta:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(70, 40, 0, 0.12); }
+  .tarjeta.seleccionada { border-color: var(--ambar); box-shadow: 0 0 0 4px rgba(245, 182, 66, 0.25); }
+  .tarjeta .etiqueta { position: absolute; top: -12px; right: 14px; padding: 4px 10px; border-radius: 999px; background: var(--verde); color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  .tarjeta strong { font-size: clamp(18px, 1.8vw, 22px); color: var(--tinta); }
+  .tarjeta em { font-style: normal; color: var(--ambar); font-weight: 700; font-size: clamp(15px, 1.3vw, 17px); }
+  .tarjeta span { color: var(--tinta-suave); font-size: clamp(15px, 1.3vw, 17px); }
+  .tarjeta small { margin-top: 4px; color: var(--tinta-suave); font-size: 14px; letter-spacing: 0.06em; }
+  .aviso { padding: 12px 14px; border-radius: 12px; background: var(--verde-claro); color: var(--tinta); font-size: clamp(15px, 1.35vw, 18px); }
+  .aviso[hidden] { display: none; }
+
+  /* opciones (APRECIAR, reevaluación) */
+  .opciones { display: grid; gap: 10px; margin-top: 10px; }
+  .opciones.fila { grid-template-columns: repeat(3, 1fr); }
+  .opcion { min-height: 52px; padding: 12px 16px; border: 2px solid rgba(42, 33, 20, 0.15); border-radius: 14px; background: #fff; font-weight: 700; cursor: pointer; text-align: left; transition: border-color 160ms ease, transform 140ms ease; }
+  .opcion:hover { border-color: var(--ambar); transform: translateY(-1px); }
+  .opcion.grande { text-align: center; font-size: clamp(18px, 2vw, 24px); letter-spacing: 0.08em; }
+
+  /* caja de herramientas */
+  .herramientas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .herramienta { display: grid; gap: 4px; justify-items: center; padding: 18px 12px; border-radius: 16px; background: #fff; border: 2px solid rgba(42, 33, 20, 0.12); text-align: center; opacity: 0.45; }
+  .herramienta.obtenida { opacity: 1; border-color: var(--oro); }
+  .herramienta.nueva { animation: latido 1.2s ease 2; box-shadow: 0 0 0 6px rgba(245, 182, 66, 0.25); }
+  .herramienta .icono { font-size: 44px; line-height: 1; }
+  .herramienta strong { font-size: clamp(16px, 1.5vw, 19px); }
+  .herramienta span { font-size: 14px; color: var(--tinta-suave); }
+  .herramienta .estado { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 800; color: var(--ambar); }
+
+  /* barra demo de energía en ACTIVAR */
+  .demo-energia { height: 18px; border-radius: 999px; background: rgba(42, 33, 20, 0.12); overflow: hidden; margin: 10px 0 14px; }
+  .demo-energia i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #fff2b0, #ffd166, #f5b642); animation: latido 2.4s ease-in-out infinite; }
+
+  pre.registro { max-height: 32vh; overflow: auto; padding: 12px; border-radius: 12px; background: #2a2114; color: #ffe9b8; font-size: 14px; line-height: 1.4; }
+  .resumen { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 10px; }
+  .resumen span { padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid rgba(42, 33, 20, 0.15); font-weight: 700; font-size: 15px; }
+
+  @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes latido { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+  @media (max-width: 760px) {
+    .tarjetas.tres { grid-template-columns: 1fr; }
+    .opciones.fila { grid-template-columns: 1fr; }
+    .herramientas { grid-template-columns: 1fr; }
+    #medidor .tubo { height: 34vh; }
+    #fases { font-size: 13px; padding: 6px 10px; }
+  }
+  @media (max-height: 460px) {
+    #paneles { padding: 54px 10px 8px; }
+    .panel { padding: 12px 16px; border-radius: 16px; }
+    .panel h2 { font-size: 20px; margin-bottom: 6px; }
+    .panel p { margin-bottom: 6px; }
+    .tarjeta { padding: 10px 12px; }
+    .herramienta { padding: 10px; }
+    .herramienta .icono { font-size: 30px; }
+    #energia { top: 58px; padding: 6px 12px 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel, #mensaje { animation: none; }
+    .herramienta.nueva { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div id="marco">
+  <div id="escena">
+    <canvas id="lienzo" width="1280" height="720" aria-label="El Valle de la Luz"></canvas>
+    <div id="capa">
+      <header id="hud">
+        <div id="fases" aria-live="polite"></div>
+        <div id="opciones">
+          <label class="chip" title="Menos partículas y destellos"><input type="checkbox" id="chkBaja" /> Baja estimulación</label>
+          <button class="chip" id="btnSonido" type="button" aria-pressed="true">🔊 Sonido</button>
+        </div>
+      </header>
+      <div id="medidor" hidden aria-live="polite">
+        <span class="titulo">Activación</span>
+        <div class="tubo"><span class="zona" aria-hidden="true"></span></div>
+        <span class="valor" data-valor>100</span>
+        <span class="etiqueta" data-etiqueta>alta</span>
+      </div>
+      <div id="energia" hidden aria-live="polite">
+        <div class="fila"><span>⚡ Energía</span><span data-valor>100 %</span></div>
+        <div class="pista"><div class="relleno" data-relleno></div></div>
+      </div>
+      <div id="tactil" hidden></div>
+      <div id="mensaje" hidden aria-live="polite"></div>
+      <div id="paneles"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================================
+   CONFIG · constantes de balance. Un diseñador puede ajustarlas sin tocar la
+   lógica. `pruebaRapida` (URL ?rapido=1) acorta umbrales para recorrer todo
+   en pocos minutos.
+   ========================================================================== */
+const RAPIDO = new URLSearchParams(location.search).has('rapido');
+const CONFIG = {
+  ancho: 1280,
+  alto: 720,
+  intensidadInicial: 'ALTA',
+  estrategiaSugerida: 'pausa',          // 'pausa' | 'energia'
+  velocidadEscena: 320,                 // px/s del desplazamiento del valle a activación 100
+  particulasMaximo: 220,
+  bajaEstimulacionFactor: 0.3,          // fracción de partículas / brillo con el modo activado
+  m1: {
+    activacionInicial: 100,
+    bajadaSostenida: 9,                 // puntos/s mientras se mantiene pulsado con calma
+    subidaReposo: 1.6,                  // puntos/s cuando no se pulsa (invita a sostener)
+    subidaErratica: 7,                  // puntos por pulsación rápida de más
+    ventanaErratica: 1.2,               // s: tres o más pulsaciones en esta ventana = errático
+    pulsacionCorta: 0.25,               // s: una pulsación más corta que esto es "machacar"
+    zonaVerde: 35,
+    zonaMediaMax: 65,
+    segundosEnVerde: RAPIDO ? 1 : 3,
+    observarPermanencia: RAPIDO ? 0.6 : 1.5,   // s de foco quieto sobre un elemento
+    observarRadio: 78,
+    observarMinimo: 3,
+    activacionFinal: 50                 // zona media al CONTINUAR
+  },
+  m2: {
+    energiaInicial: 100,
+    energiaMaxima: 100,
+    destello: 15,                       // energía que repone cada destello
+    costoSalto: 14,
+    costoIluminar: 3,
+    costoCompuerta: 12,
+    costoPieza: 22,
+    umbralRecuperado: 20,               // energía con la que termina el modo "toma un momento"
+    velocidad: 270,                     // px/s
+    velocidadSinEnergia: 110,
+    gravedad: 1500,
+    impulsoSalto: 600,
+    impulsoSaltoCorto: 380,
+    pasoLaberinto: 0.14,                // s por casilla
+    pasoLaberintoLento: 0.34
+  },
+  audio: { bpmMin: 66, bpmMax: 150, filtroMin: 420, filtroMax: 4200, volumen: 0.22 }
+};
+
+/* ----------------------------------------------------------------------------
+   TEXTOS · contenido clínico validado. Se usan literales, no se reescriben.
+   -------------------------------------------------------------------------- */
+const TEXTOS = {
+  intensidadAlta: 'La alegría es muy intensa y necesito organizar mi activación antes de continuar.',
+  intro: 'La emoción es muy intensa. Haz una pausa y selecciona una estrategia para organizar tu activación y continuar de manera adecuada.',
+  otraEstrategia: 'Esta estrategia también puede utilizarse. La estrategia sugerida responde a la intensidad que identificaste, pero puedes explorar otra forma de regular y canalizar tu alegría.',
+  preguntaApreciar: '¿Qué hace significativo este momento para ti?',
+  m1Cierre: 'Puedes experimentar una emoción positiva intensa sin necesidad de actuar inmediatamente.',
+  m2SinEnergia: 'Toma un momento. Recupera energía y continúa cuando quieras.',
+  m2Cierre: 'La activación asociada a una emoción positiva puede dirigirse hacia una actividad constructiva y orientada a objetivos.',
+  caja: 'MI CAJA DE HERRAMIENTAS DE LA ALEGRÍA',
+  reevaluacion: '¿CÓMO ESTÁ AHORA TU ALEGRÍA?',
+  disminuyo: 'La intensidad de tu alegría disminuyó. Has logrado modular la emoción y recuperar un nivel que te permite continuar.',
+  mantiene: 'La intensidad de tu alegría se mantiene. Puedes continuar disfrutando la experiencia mientras sea adecuada para la situación.',
+  aumento: 'La intensidad de tu alegría aumentó. Observa cómo está afectando tu comportamiento y decide si necesitas hacer una pausa, canalizar tu activación o continuar disfrutando la experiencia.',
+  btnContinuar: 'CONTINUAR CON ESTA ESTRATEGIA',
+  btnOtras: 'VER OTRAS ESTRATEGIAS',
+  btnPracticar: 'PRACTICAR OTRA ESTRATEGIA'
+};
+
+const HERRAMIENTAS = {
+  estrella: { id: 'estrella', icono: '⭐', nombre: 'Estrella del disfrute', estrategia: 'Pausa y apreciación consciente' },
+  rayo: { id: 'rayo', icono: '⚡', nombre: 'Rayo de energía', estrategia: 'Canalización de la activación hacia la acción' }
+};
+
+const ESTRATEGIAS = {
+  pausa: {
+    id: 'pausa',
+    camino: 'Disfruta sin perder el control',
+    nombre: 'Pausa y apreciación consciente',
+    descripcion: 'Baja el ritmo en una zona tranquila del Valle, observa lo que antes no veías y aprecia lo que te ofrece.',
+    fases: ['DETENERSE', 'OBSERVAR', 'APRECIAR', 'CONTINUAR'],
+    herramienta: 'estrella',
+    estado: 'MINIJUEGO_1'
+  },
+  energia: {
+    id: 'energia',
+    camino: 'Utiliza tu energía',
+    nombre: 'Canalización de la activación hacia la acción',
+    descripcion: 'Usa tu energía alta para moverte, explorar o construir hasta llegar al mecanismo de luz.',
+    fases: ['ACTIVAR', 'DIRIGIR', 'ACTUAR', 'COMPLETAR'],
+    herramienta: 'rayo',
+    estado: 'MINIJUEGO_2'
+  }
+};
+
+const ORDEN_INTENSIDAD = { BAJA: 0, MEDIA: 1, ALTA: 2 };
+
+/* ============================================================================
+   ESTADO CENTRAL Y TELEMETRÍA
+   ========================================================================== */
+const GameState = {
+  estado: null,
+  intensidadInicial: CONFIG.intensidadInicial,
+  estrategiaSugerida: CONFIG.estrategiaSugerida,
+  estrategiaElegida: null,
+  herramientas: new Set(),     // ids de herramientas obtenidas en la sesión
+  ultimaHerramienta: null,
+  intensidadFinal: null,
+  bajaEstimulacion: false,
+  sonido: true,
+  ambiente: 1                  // 0..1 · intensidad audiovisual actual del Valle
+};
+
+function nuevoSessionLog() {
+  return {
+    intensidadInicial: GameState.intensidadInicial,
+    estrategiaSugerida: GameState.estrategiaSugerida,
+    estrategiaElegida: null,
+    minijuego: null,
+    tiempoPorFase: {},
+    intentos: 0,
+    elementosObservados: [],
+    rutaElegida: null,
+    energiaMinima: null,
+    recompensaObtenida: null,
+    intensidadFinal: null,
+    direccionDelCambio: null,
+    apreciaciones: [],
+    inicio: new Date().toISOString(),
+    fin: null
+  };
+}
+window.sessionLog = nuevoSessionLog();
+window.sessionLogs = [];
+window.exportarSessionLog = () => JSON.stringify({ actual: window.sessionLog, todas: window.sessionLogs }, null, 2);
+
+/* Cronómetro por fase: cada fase suma su tiempo en sessionLog.tiempoPorFase */
+const Fases = {
+  actual: null,
+  inicio: 0,
+  iniciar(nombre) {
+    this.cerrar();
+    this.actual = nombre;
+    this.inicio = performance.now();
+  },
+  cerrar() {
+    if (!this.actual) return;
+    const seg = (performance.now() - this.inicio) / 1000;
+    const log = window.sessionLog;
+    log.tiempoPorFase[this.actual] = +((log.tiempoPorFase[this.actual] ?? 0) + seg).toFixed(1);
+    this.actual = null;
+  }
+};
+
+/* ============================================================================
+   UTILIDADES
+   ========================================================================== */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const suave = (t) => t * t * (3 - 2 * t);
+const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+
+/* Mezcla dos colores hex según k (0 = a, 1 = b). Cacheada: se llama cada frame. */
+const _cacheColor = new Map();
+function hexRgb(h) {
+  if (_cacheColor.has(h)) return _cacheColor.get(h);
+  const n = parseInt(h.slice(1), 16);
+  const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  _cacheColor.set(h, rgb);
+  return rgb;
+}
+function mezcla(a, b, k, alfa = 1) {
+  const A = hexRgb(a);
+  const B = hexRgb(b);
+  const t = clamp(k, 0, 1);
+  return `rgba(${Math.round(lerp(A[0], B[0], t))},${Math.round(lerp(A[1], B[1], t))},${Math.round(lerp(A[2], B[2], t))},${alfa})`;
+}
+/* Ruido determinista (sin Math.random) para posiciones estables del paisaje */
+function ruido(i) {
+  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/* ============================================================================
+   AUDIO · Web Audio API. Un arpegio pentatónico suave cuyo tempo, filtro y
+   densidad siguen la intensidad (activación o energía). Nada de archivos.
+   ========================================================================== */
+const Audio = {
+  ctx: null, master: null, filtro: null, listo: false,
+  bpm: 120, siguiente: 0, paso: 0, intensidad: 1,
+  escala: [0, 2, 4, 7, 9, 12, 14, 16],        // pentatónica mayor (semitonos sobre la tónica)
+  tonica: 261.63,                              // Do4
+
+  init() {
+    if (this.listo) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = GameState.sonido ? CONFIG.audio.volumen : 0;
+      this.filtro = this.ctx.createBiquadFilter();
+      this.filtro.type = 'lowpass';
+      this.filtro.frequency.value = CONFIG.audio.filtroMax;
+      this.filtro.connect(this.master).connect(this.ctx.destination);
+      this.siguiente = this.ctx.currentTime + 0.1;
+      this.listo = true;
+      this.drone();
+    } catch (e) { this.listo = false; }
+  },
+  reanudar() { if (this.listo && this.ctx.state === 'suspended') this.ctx.resume(); },
+  setSonido(on) {
+    GameState.sonido = on;
+    if (this.listo) this.master.gain.setTargetAtTime(on ? CONFIG.audio.volumen : 0, this.ctx.currentTime, 0.05);
+  },
+  /* La intensidad (0..1) manda: más rápido, más brillante y más denso arriba */
+  setIntensidad(k) {
+    this.intensidad = clamp(k, 0, 1);
+    this.bpm = lerp(CONFIG.audio.bpmMin, CONFIG.audio.bpmMax, this.intensidad);
+    if (this.listo) {
+      const f = lerp(CONFIG.audio.filtroMin, CONFIG.audio.filtroMax, this.intensidad);
+      this.filtro.frequency.setTargetAtTime(f, this.ctx.currentTime, 0.25);
+    }
+  },
+  drone() {
+    const o = this.ctx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.value = this.tonica / 2;
+    const g = this.ctx.createGain();
+    g.gain.value = 0.08;
+    o.connect(g).connect(this.filtro);
+    o.start();
+  },
+  nota(freq, t, dur = 0.35, vol = 0.18, tipo = 'sine') {
+    if (!this.listo) return;
+    const o = this.ctx.createOscillator();
+    o.type = tipo;
+    o.frequency.value = freq;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(this.filtro);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  },
+  /* Planifica el arpegio con adelanto sobre el reloj del contexto */
+  update() {
+    if (!this.listo || this.ctx.state !== 'running') return;
+    const ahora = this.ctx.currentTime;
+    const paso = 60 / this.bpm / 2;   // corcheas
+    while (this.siguiente < ahora + 0.15) {
+      const i = this.paso % 8;
+      // a poca intensidad suenan menos notas: la textura se aclara
+      const densa = this.intensidad > 0.66 || (this.intensidad > 0.33 ? i % 2 === 0 : i % 4 === 0);
+      if (densa) {
+        const grado = this.escala[[0, 2, 4, 5, 3, 6, 4, 1][i]];
+        const freq = this.tonica * Math.pow(2, grado / 12);
+        this.nota(freq, this.siguiente, paso * 1.6, 0.14 + 0.08 * this.intensidad);
+      }
+      this.siguiente += paso;
+      this.paso += 1;
+    }
+  },
+  /* Sonidos puntuales, todos suaves */
+  pling(alto = 0) {
+    if (!this.listo) return;
+    const t = this.ctx.currentTime;
+    this.nota(this.tonica * Math.pow(2, (7 + alto) / 12), t, 0.4, 0.2);
+    this.nota(this.tonica * Math.pow(2, (12 + alto) / 12), t + 0.08, 0.5, 0.16);
+  },
+  exito() {
+    if (!this.listo) return;
+    const t = this.ctx.currentTime;
+    [0, 4, 7, 12].forEach((s, i) => this.nota(this.tonica * Math.pow(2, s / 12), t + i * 0.12, 0.7, 0.18));
+  },
+  suave() {
+    if (!this.listo) return;
+    this.nota(this.tonica * 0.75, this.ctx.currentTime, 0.35, 0.12, 'triangle');
+  },
+  gasto() {
+    if (!this.listo) return;
+    this.nota(this.tonica * 2, this.ctx.currentTime, 0.12, 0.1, 'triangle');
+  }
+};
+
+/* ============================================================================
+   ENTRADA · teclado + puntero (ratón/táctil), en coordenadas del lienzo
+   ========================================================================== */
+const lienzo = document.getElementById('lienzo');
+const ctx2d = lienzo.getContext('2d');
+const escena = document.getElementById('escena');
+
+const Entrada = {
+  teclas: new Set(),
+  puntero: { x: 640, y: 360, abajo: false, dentro: false },
+  escala: 1,
+  aLienzo(e) {
+    const r = lienzo.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (CONFIG.ancho / r.width), y: (e.clientY - r.top) * (CONFIG.alto / r.height) };
+  },
+  tecla(...nombres) { return nombres.some((n) => this.teclas.has(n)); },
+  izquierda() { return this.tecla('ArrowLeft', 'a', 'A') || Tactil.pulsado.izq; },
+  derecha() { return this.tecla('ArrowRight', 'd', 'D') || Tactil.pulsado.der; },
+  arriba() { return this.tecla('ArrowUp', 'w', 'W') || Tactil.pulsado.arr; },
+  abajo() { return this.tecla('ArrowDown', 's', 'S') || Tactil.pulsado.aba; }
+};
+
+window.addEventListener('keydown', (e) => {
+  Audio.init(); Audio.reanudar();
+  if (e.repeat) { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault(); return; }
+  Entrada.teclas.add(e.key);
+  if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+  Maquina.actual?.teclaAbajo?.(e.key, e);
+});
+window.addEventListener('keyup', (e) => {
+  Entrada.teclas.delete(e.key);
+  Maquina.actual?.teclaArriba?.(e.key, e);
+});
+window.addEventListener('blur', () => {
+  Entrada.teclas.clear();
+  Entrada.puntero.abajo = false;
+  Tactil.soltarTodo();
+  Maquina.actual?.perderFoco?.();
+});
+escena.addEventListener('pointerdown', (e) => {
+  Audio.init(); Audio.reanudar();
+  if (e.target !== lienzo) return;      // los botones y paneles gestionan lo suyo
+  const p = Entrada.aLienzo(e);
+  Entrada.puntero.x = p.x; Entrada.puntero.y = p.y; Entrada.puntero.abajo = true;
+  try { lienzo.setPointerCapture(e.pointerId); } catch { /* opcional */ }
+  Maquina.actual?.punteroAbajo?.(p, e);
+});
+escena.addEventListener('pointermove', (e) => {
+  const p = Entrada.aLienzo(e);
+  Entrada.puntero.x = p.x; Entrada.puntero.y = p.y; Entrada.puntero.dentro = true;
+  Maquina.actual?.punteroMueve?.(p, e);
+});
+const soltarPuntero = (e) => {
+  if (!Entrada.puntero.abajo) return;
+  Entrada.puntero.abajo = false;
+  Maquina.actual?.punteroArriba?.(Entrada.aLienzo(e), e);
+};
+window.addEventListener('pointerup', soltarPuntero);
+window.addEventListener('pointercancel', soltarPuntero);
+
+/* Botones táctiles: se muestran según lo que pida cada mini-juego */
+const Tactil = {
+  el: document.getElementById('tactil'),
+  pulsado: { izq: false, der: false, arr: false, aba: false, a: false, b: false, sostener: false },
+  modo: null,
+  mostrar(modo) {
+    this.modo = modo;
+    this.el.innerHTML = '';
+    this.soltarTodo();
+    if (!modo) { this.el.hidden = true; return; }
+    const defs = {
+      lateral: [['izq', '◀'], ['der', '▶'], ['a', '⤒']],
+      construir: [['izq', '◀'], ['der', '▶'], ['b', '✦'], ['a', '⤒']],
+      laberinto: [['izq', '◀'], ['der', '▶'], ['arr', '▲'], ['aba', '▼'], ['a', '✦']],
+      sostener: [['sostener', 'MANTÉN PULSADO']]
+    };
+    defs[modo].forEach(([id, texto]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = id + (id === 'a' || id === 'sostener' ? ' grande' : '');
+      b.textContent = texto;
+      b.setAttribute('aria-label', id);
+      let pid = null;
+      const bajar = (e) => { if (pid !== null) return; pid = e.pointerId; e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* */ } this.pulsado[id] = true; b.classList.add('pulsado'); Maquina.actual?.botonTactil?.(id, true); };
+      const subir = (e) => { if (pid === null) return; if (e && e.pointerId !== undefined && e.pointerId !== pid) return; pid = null; this.pulsado[id] = false; b.classList.remove('pulsado'); Maquina.actual?.botonTactil?.(id, false); };
+      b.addEventListener('pointerdown', bajar);
+      b.addEventListener('pointerup', subir);
+      b.addEventListener('pointercancel', subir);
+      b.addEventListener('lostpointercapture', subir);
+      this.el.appendChild(b);
+    });
+    this.el.hidden = false;
+  },
+  soltarTodo() { Object.keys(this.pulsado).forEach((k) => { this.pulsado[k] = false; }); this.el.querySelectorAll('.pulsado').forEach((b) => b.classList.remove('pulsado')); }
+};
+
+/* ============================================================================
+   HUD Y PANELES (DOM sobre el lienzo: texto legible a cualquier escala)
+   ========================================================================== */
+const Hud = {
+  fases: document.getElementById('fases'),
+  medidor: document.getElementById('medidor'),
+  energia: document.getElementById('energia'),
+  mensaje: document.getElementById('mensaje'),
+  paneles: document.getElementById('paneles'),
+  _timerMensaje: null,
+
+  setFases(lista, actual) {
+    if (!lista) { this.fases.innerHTML = ''; return; }
+    const idx = lista.indexOf(actual);
+    this.fases.innerHTML = lista.map((f, i) =>
+      `<span class="${i < idx ? 'hecha' : i === idx ? 'actual' : ''}">${i < idx ? '✓ ' : ''}${f}</span>${i < lista.length - 1 ? '<i>→</i>' : ''}`
+    ).join('');
+  },
+  setMedidor(valor) {
+    if (valor === null) { this.medidor.hidden = true; return; }
+    this.medidor.hidden = false;
+    const v = Math.round(clamp(valor, 0, 100));
+    this.medidor.style.setProperty('--vacio', `${100 - v}%`);
+    this.medidor.querySelector('[data-valor]').textContent = String(v);
+    this.medidor.querySelector('[data-etiqueta]').textContent = v <= CONFIG.m1.zonaVerde ? 'zona de calma' : v <= CONFIG.m1.zonaMediaMax ? 'media' : 'alta';
+  },
+  setEnergia(valor) {
+    if (valor === null) { this.energia.hidden = true; return; }
+    this.energia.hidden = false;
+    const v = Math.round(clamp(valor, 0, 100));
+    this.energia.querySelector('[data-relleno]').style.width = `${v}%`;
+    this.energia.querySelector('[data-valor]').textContent = `${v} %`;
+  },
+  /* Mensaje breve en la parte baja. `ms` 0 = fijo hasta que se cambie */
+  decir(texto, { ms = 3200, suave = false } = {}) {
+    clearTimeout(this._timerMensaje);
+    if (!texto) { this.mensaje.hidden = true; return; }
+    this.mensaje.textContent = texto;
+    this.mensaje.className = suave ? 'suave' : '';
+    this.mensaje.hidden = false;
+    if (ms) this._timerMensaje = setTimeout(() => { this.mensaje.hidden = true; }, ms);
+  },
+  /* Panel modal con título, html y botones. Devuelve el nodo. */
+  panel({ eyebrow = '', titulo = '', html = '', botones = [], clase = '' } = {}) {
+    this.paneles.innerHTML = '';
+    const p = document.createElement('section');
+    p.className = `panel ${clase}`;
+    p.setAttribute('role', 'dialog');
+    p.setAttribute('aria-label', titulo || eyebrow);
+    p.innerHTML = `
+      ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
+      ${titulo ? `<h2>${titulo}</h2>` : ''}
+      ${html}
+      ${botones.length ? `<div class="acciones">${botones.map((b, i) => `<button class="boton ${b.primario ? 'primario' : 'secundario'}" type="button" data-b="${i}" ${b.deshabilitado ? 'disabled' : ''}>${b.texto}</button>`).join('')}</div>` : ''}
+    `;
+    botones.forEach((b, i) => p.querySelector(`[data-b="${i}"]`).addEventListener('click', () => b.accion?.(p)));
+    this.paneles.appendChild(p);
+    (p.querySelector('.boton.primario') || p.querySelector('button'))?.focus({ preventScroll: true });
+    return p;
+  },
+  cerrarPanel() { this.paneles.innerHTML = ''; }
+};
+
+document.getElementById('chkBaja').addEventListener('change', (e) => { GameState.bajaEstimulacion = e.target.checked; });
+document.getElementById('btnSonido').addEventListener('click', (e) => {
+  Audio.init();
+  Audio.setSonido(!GameState.sonido);
+  e.currentTarget.textContent = GameState.sonido ? '🔊 Sonido' : '🔇 Sonido';
+  e.currentTarget.setAttribute('aria-pressed', String(GameState.sonido));
+});
+
+/* Escalado responsivo: el lienzo mantiene 16:9 y la capa DOM lo acompaña */
+function ajustarEscala() {
+  const s = Math.min(window.innerWidth / CONFIG.ancho, window.innerHeight / CONFIG.alto);
+  escena.style.width = `${Math.floor(CONFIG.ancho * s)}px`;
+  escena.style.height = `${Math.floor(CONFIG.alto * s)}px`;
+  Entrada.escala = s;
+}
+window.addEventListener('resize', ajustarEscala);
+ajustarEscala();
+
+/* ============================================================================
+   PARTÍCULAS · motas de luz del Valle. Cantidad y velocidad = f(intensidad)
+   ========================================================================== */
+const Particulas = {
+  lista: [],
+  crear(x, y) {
+    return { x, y, vx: (Math.random() - 0.5) * 30, vy: -10 - Math.random() * 30, r: 2 + Math.random() * 4, fase: Math.random() * Math.PI * 2, vida: 0, max: 4 + Math.random() * 5 };
+  },
+  update(dt, k, desplazamiento = 0) {
+    const factor = GameState.bajaEstimulacion ? CONFIG.bajaEstimulacionFactor : 1;
+    const objetivo = Math.round((30 + CONFIG.particulasMaximo * k) * factor);
+    while (this.lista.length < objetivo) this.lista.push(this.crear(Math.random() * CONFIG.ancho, Math.random() * CONFIG.alto));
+    if (this.lista.length > objetivo) this.lista.length = objetivo;
+    const vel = 0.4 + k * 1.8;
+    for (const p of this.lista) {
+      p.vida += dt;
+      p.x += (p.vx * vel - desplazamiento * 0.35) * dt;
+      p.y += p.vy * vel * dt;
+      if (p.vida > p.max || p.y < -10 || p.x < -10) { Object.assign(p, this.crear(Math.random() * CONFIG.ancho, CONFIG.alto + 10)); if (p.x < -10) p.x = CONFIG.ancho + 10; }
+    }
+  },
+  dibujar(ctx, k) {
+    const factor = GameState.bajaEstimulacion ? 0.6 : 1;
+    ctx.save();
+    for (const p of this.lista) {
+      // parpadeo lento (nunca rápido): entre 0,5 y 1
+      const a = (0.5 + 0.5 * Math.sin(p.vida * 1.6 + p.fase)) * (0.35 + 0.45 * k) * factor;
+      ctx.globalAlpha = a * Math.min(1, p.vida * 2);
+      ctx.fillStyle = '#fff3c4';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * (0.8 + k * 0.5), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+};
+
+/* ============================================================================
+   ESCENARIO · el Valle de la Luz dibujado por código. La intensidad `k` (0..1)
+   es el lenguaje visual de la emoción: brillo, saturación y velocidad.
+   ========================================================================== */
+function resplandor(ctx, x, y, r, color, alfa = 1) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, color);
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.save();
+  ctx.globalAlpha = alfa;
+  ctx.fillStyle = g;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  ctx.restore();
+}
+
+const Valle = {
+  /* colinas: capas con parallax; cada capa es una suma de senos determinista */
+  capas: [
+    { y: 420, amp: 46, f1: 0.0021, f2: 0.0063, par: 0.12, calma: '#c9d9b0', intensa: '#f3dc8c' },
+    { y: 478, amp: 40, f1: 0.0029, f2: 0.0091, par: 0.28, calma: '#a3c187', intensa: '#dcc86a' },
+    { y: 536, amp: 30, f1: 0.0041, f2: 0.012, par: 0.5, calma: '#7ea768', intensa: '#b7b25c' }
+  ],
+  altura(capa, x, desp) {
+    const u = x + desp * capa.par;
+    return capa.y + Math.sin(u * capa.f1) * capa.amp + Math.sin(u * capa.f2 + 1.3) * capa.amp * 0.35;
+  },
+  dibujar(ctx, { t, k, desp = 0, agua = true, sueloY = 600, arboles = true }) {
+    const W = CONFIG.ancho; const H = CONFIG.alto;
+    // cielo: de calma pastel a dorado intenso
+    const cielo = ctx.createLinearGradient(0, 0, 0, H);
+    cielo.addColorStop(0, mezcla('#cfe6f4', '#fff0b3', k));
+    cielo.addColorStop(0.55, mezcla('#f3e8cf', '#ffd98a', k));
+    cielo.addColorStop(1, mezcla('#e7d9ad', '#f7b955', k));
+    ctx.fillStyle = cielo;
+    ctx.fillRect(0, 0, W, H);
+    // sol
+    resplandor(ctx, 1000, 150, 240 + 180 * k, `rgba(255,238,180,${0.55 + 0.4 * k})`);
+    ctx.fillStyle = mezcla('#fff6dc', '#fff2b0', k);
+    ctx.beginPath(); ctx.arc(1000, 150, 46 + 10 * k, 0, Math.PI * 2); ctx.fill();
+    // colinas
+    this.capas.forEach((c) => {
+      ctx.fillStyle = mezcla(c.calma, c.intensa, k);
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      for (let x = 0; x <= W; x += 16) ctx.lineTo(x, this.altura(c, x, desp));
+      ctx.lineTo(W, H);
+      ctx.closePath();
+      ctx.fill();
+    });
+    // árboles sobre la capa media (geométricos, deterministas)
+    if (arboles) {
+      const capa = this.capas[1];
+      for (let i = 0; i < 18; i += 1) {
+        const base = i * 173 + ruido(i) * 90;
+        const x = ((base - desp * capa.par) % (W + 200) + W + 200) % (W + 200) - 100;
+        const y = this.altura(capa, x, desp) + 6;
+        const h = 60 + ruido(i + 40) * 50;
+        ctx.fillStyle = mezcla('#5f7a4a', '#8a8d3e', k);
+        ctx.fillRect(x - 4, y - h * 0.4, 8, h * 0.4);
+        ctx.fillStyle = mezcla('#79a35e', '#c2b955', k);
+        ctx.beginPath(); ctx.moveTo(x, y - h); ctx.lineTo(x + h * 0.36, y - h * 0.35); ctx.lineTo(x - h * 0.36, y - h * 0.35); ctx.closePath(); ctx.fill();
+      }
+    }
+    // suelo cercano
+    ctx.fillStyle = mezcla('#8fb072', '#c9b95a', k);
+    ctx.fillRect(0, sueloY, W, H - sueloY);
+    // agua con reflejo
+    if (agua) {
+      const wy = sueloY + 40;
+      const g = ctx.createLinearGradient(0, wy, 0, H);
+      g.addColorStop(0, mezcla('#9fd0e0', '#ffe3a1', k));
+      g.addColorStop(1, mezcla('#5f9fb8', '#e8b86a', k));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, wy, W, H - wy);
+      ctx.save();
+      ctx.globalAlpha = 0.35 + 0.3 * k;
+      ctx.strokeStyle = '#fff8e0';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 9; i += 1) {
+        const yy = wy + 14 + i * 12;
+        const xx = ((i * 260 + t * (20 + 60 * k)) % (W + 200)) - 100;
+        ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx + 60 + i * 8, yy); ctx.stroke();
+      }
+      ctx.restore();
+    }
+  },
+  /* velo de luminosidad: cuanta más intensidad, más brillo (suave, sin parpadeo) */
+  velo(ctx, k) {
+    const factor = GameState.bajaEstimulacion ? 0.5 : 1;
+    ctx.save();
+    ctx.globalAlpha = k * 0.32 * factor;
+    ctx.fillStyle = '#fff4cc';
+    ctx.fillRect(0, 0, CONFIG.ancho, CONFIG.alto);
+    ctx.restore();
+  }
+};
+
+/* Personaje geométrico. vel 0..1 anima las piernas; aire = saltando */
+function dibujarPersonaje(ctx, x, y, { vel = 0, t = 0, dir = 1, aire = false, brillo = 1, sonrisa = false, color = '#f5b642' } = {}) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(dir, 1);
+  resplandor(ctx, 0, -50, 70, `rgba(255,236,170,${0.5 * brillo})`);
+  // sombra
+  ctx.fillStyle = 'rgba(60,40,10,0.18)';
+  ctx.beginPath(); ctx.ellipse(0, 2, 22, 6, 0, 0, Math.PI * 2); ctx.fill();
+  // piernas
+  const paso = aire ? 0.9 : Math.sin(t * (4 + vel * 12)) * (0.2 + vel * 0.9);
+  ctx.strokeStyle = '#7a4a12';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-6, -34); ctx.lineTo(-6 - paso * 14, -4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(6, -34); ctx.lineTo(6 + paso * 14, -4); ctx.stroke();
+  // cuerpo
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.roundRect(-16, -74, 32, 46, 12); ctx.fill();
+  // brazos
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 6;
+  const brazo = aire ? -0.8 : -paso * 0.8;
+  ctx.beginPath(); ctx.moveTo(-14, -66); ctx.lineTo(-24, -50 + brazo * 12); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(14, -66); ctx.lineTo(24, -50 - brazo * 12); ctx.stroke();
+  // cabeza
+  ctx.fillStyle = '#ffe1b3';
+  ctx.beginPath(); ctx.arc(0, -90, 15, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5a3a14';
+  ctx.beginPath(); ctx.arc(5, -92, 2, 0, Math.PI * 2); ctx.fill();
+  if (sonrisa) { ctx.strokeStyle = '#5a3a14'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(4, -86, 6, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); }
+  ctx.restore();
+}
+
+/* Destello recolectable (energía) */
+function dibujarDestello(ctx, x, y, t, r = 12) {
+  const p = 0.85 + 0.15 * Math.sin(t * 2 + x * 0.01);
+  resplandor(ctx, x, y, r * 3, 'rgba(255,240,180,0.9)', 0.6 * p);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(t * 0.6);
+  ctx.fillStyle = '#fff6d0';
+  ctx.beginPath();
+  for (let i = 0; i < 8; i += 1) {
+    const a = (i / 8) * Math.PI * 2;
+    const rr = i % 2 ? r * 0.45 : r * p;
+    ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ============================================================================
+   MÁQUINA DE ESTADOS
+   MENU_ESTRATEGIA → MINIJUEGO_1 | MINIJUEGO_2 → CAJA_HERRAMIENTAS → REEVALUACION → FEEDBACK
+   ========================================================================== */
+const Maquina = {
+  actual: null,
+  estados: {},
+  cambiar(nombre, datos = {}) {
+    this.actual?.salir?.();
+    Hud.cerrarPanel();
+    Hud.decir(null);
+    Tactil.mostrar(null);
+    this.actual = this.estados[nombre];
+    GameState.estado = nombre;
+    this.actual.entrar(datos);
+  }
+};
+
+/* ---------------------------------------------------------- MENU_ESTRATEGIA */
+Maquina.estados.MENU_ESTRATEGIA = {
+  t: 0, desp: 0, seleccion: null,
+  entrar() {
+    this.seleccion = GameState.estrategiaSugerida;
+    GameState.ambiente = 1;
+    Hud.setFases(null);
+    Hud.setMedidor(null);
+    Hud.setEnergia(null);
+    Fases.iniciar('MENU_ESTRATEGIA');
+    this.pintarPanel();
+  },
+  pintarPanel() {
+    const tarjeta = (e) => `
+      <button class="tarjeta ${this.seleccion === e.id ? 'seleccionada' : ''}" type="button" data-estrategia="${e.id}">
+        ${e.id === GameState.estrategiaSugerida ? '<span class="etiqueta">Estrategia sugerida</span>' : ''}
+        <strong>${e.camino}</strong>
+        <em>${e.nombre}</em>
+        <span>${e.descripcion}</span>
+        <small>${e.fases.join(' → ')}</small>
+      </button>`;
+    const p = Hud.panel({
+      eyebrow: 'El Valle de la Luz · Alegría de intensidad alta',
+      titulo: 'Haz una pausa y elige una estrategia',
+      clase: 'ancho',
+      html: `
+        <p class="cita">“${TEXTOS.intensidadAlta}”</p>
+        <p>${TEXTOS.intro}</p>
+        <div class="tarjetas">${tarjeta(ESTRATEGIAS.pausa)}${tarjeta(ESTRATEGIAS.energia)}</div>
+        <p class="aviso" data-aviso ${this.seleccion === GameState.estrategiaSugerida ? 'hidden' : ''}>${TEXTOS.otraEstrategia}</p>
+      `,
+      botones: [
+        { texto: TEXTOS.btnContinuar, primario: true, accion: () => this.continuar() },
+        { texto: TEXTOS.btnOtras, accion: () => this.verOtras() }
+      ]
+    });
+    p.querySelectorAll('[data-estrategia]').forEach((b) => b.addEventListener('click', () => this.seleccionar(b.dataset.estrategia)));
+  },
+  seleccionar(id) {
+    this.seleccion = id;
+    const p = Hud.paneles.querySelector('.panel');
+    p.querySelectorAll('[data-estrategia]').forEach((b) => b.classList.toggle('seleccionada', b.dataset.estrategia === id));
+    // elegir una estrategia distinta a la sugerida no resta nada: solo se informa
+    p.querySelector('[data-aviso]').hidden = id === GameState.estrategiaSugerida;
+    Audio.gasto();
+  },
+  verOtras() {
+    const otra = this.seleccion === 'pausa' ? 'energia' : 'pausa';
+    this.seleccionar(otra);
+    Hud.paneles.querySelector(`[data-estrategia="${otra}"]`)?.focus({ preventScroll: true });
+  },
+  continuar() {
+    const e = ESTRATEGIAS[this.seleccion];
+    GameState.estrategiaElegida = e.id;
+    window.sessionLog.estrategiaElegida = e.id;
+    window.sessionLog.minijuego = e.camino;
+    Audio.pling(4);
+    Maquina.cambiar(e.estado);
+  },
+  update(dt) {
+    this.t += dt;
+    this.desp += CONFIG.velocidadEscena * dt;   // el Valle corre: estímulos altos
+    Particulas.update(dt, 1, CONFIG.velocidadEscena);
+    Audio.setIntensidad(1);
+  },
+  render(ctx) {
+    Valle.dibujar(ctx, { t: this.t, k: 1, desp: this.desp });
+    Particulas.dibujar(ctx, 1);
+    // el personaje camina despacio mientras todo alrededor va deprisa: fase de modulación
+    dibujarPersonaje(ctx, 300, 600, { vel: 0.25, t: this.t, brillo: 1 });
+    Valle.velo(ctx, 1);
+  }
+};
+
+/* ------------------------------------------------------------- MINIJUEGO_1
+   "Disfruta sin perder el control" · DETENERSE → OBSERVAR → APRECIAR → CONTINUAR
+   -------------------------------------------------------------------------- */
+const ELEMENTOS_M1 = [
+  { id: 'flor', nombre: 'Una flor luminosa', icono: '🌼', x: 300, y: 585,
+    opciones: ['Me recuerda a alguien', 'Me transmite calma', 'Me da ganas de seguir'] },
+  { id: 'ave', nombre: 'Un ave', icono: '🕊️', x: 880, y: 190,
+    opciones: ['Me hace sentir libre', 'Me transmite calma', 'Me recuerda un lugar'] },
+  { id: 'reflejo', nombre: 'Un reflejo en el agua', icono: '💧', x: 640, y: 668,
+    opciones: ['Me invita a quedarme un momento', 'Me recuerda a alguien', 'Me da curiosidad'] },
+  { id: 'rayo', nombre: 'Un rayo de sol entre los árboles', icono: '🌤️', x: 1070, y: 380,
+    opciones: ['Me da energía', 'Me transmite calma', 'Me hace sentir acompañado'] },
+  { id: 'personaje', nombre: 'Otro personaje sonriendo', icono: '🙂', x: 1150, y: 600,
+    opciones: ['Me dan ganas de compartirlo', 'Me recuerda a alguien', 'Me hace sonreír también'] }
+];
+
+Maquina.estados.MINIJUEGO_1 = {
+  fase: null, t: 0, desp: 0,
+  activacion: 100, sosteniendo: false, inicioPulsacion: 0, pulsaciones: [], verde: 0, estuvoEnVerde: false, avisoErratico: 0,
+  elementos: [], cursor: { x: 640, y: 360 }, usaTeclado: false, respuestas: [], indice: 0,
+  transicion: null,
+
+  entrar() {
+    const cfg = CONFIG.m1;
+    this.t = 0; this.desp = 0;
+    this.activacion = cfg.activacionInicial;
+    this.sosteniendo = false; this.pulsaciones = []; this.verde = 0; this.estuvoEnVerde = false; this.avisoErratico = 0;
+    this.elementos = ELEMENTOS_M1.map((e) => ({ ...e, progreso: 0, visto: false }));
+    this.respuestas = []; this.indice = 0; this.transicion = null;
+    Hud.setEnergia(null);
+    this.irA('DETENERSE');
+  },
+  salir() { Fases.cerrar(); Hud.setMedidor(null); },
+
+  irA(fase) {
+    this.fase = fase;
+    Fases.iniciar(fase);
+    Hud.setFases(ESTRATEGIAS.pausa.fases, fase);
+    Hud.cerrarPanel();
+    if (fase === 'DETENERSE') this.entrarDetenerse();
+    if (fase === 'OBSERVAR') this.entrarObservar();
+    if (fase === 'APRECIAR') this.entrarApreciar();
+    if (fase === 'CONTINUAR') this.entrarContinuar();
+  },
+
+  /* ---- DETENERSE ---- */
+  entrarDetenerse() {
+    Hud.setMedidor(this.activacion);
+    Tactil.mostrar('sostener');
+    Hud.panel({
+      eyebrow: 'Fase 1 · Detenerse',
+      titulo: 'Baja el ritmo',
+      html: `<p>Entras corriendo y el Valle está saturado de luz y movimiento. <strong>Mantén pulsada la barra espaciadora</strong> (o el dedo en la pantalla) con calma para frenar: el medidor de activación bajará mientras sostienes.</p>
+             <p class="nota">Pulsar deprisa o de forma errática lo sube. No hay tiempo límite ni forma de fallar: si sube, vuelve a bajar. Meta: llegar a la zona de calma (≤ ${CONFIG.m1.zonaVerde}) y quedarte ahí ${CONFIG.m1.segundosEnVerde} segundos.</p>`,
+      botones: [{ texto: 'Empezar', primario: true, accion: () => { Hud.cerrarPanel(); Hud.decir('Mantén pulsado con calma para frenar', { ms: 4000 }); } }]
+    });
+  },
+  empezarPulsacion() {
+    if (this.fase !== 'DETENERSE' || this.sosteniendo) return;
+    this.sosteniendo = true;
+    this.inicioPulsacion = performance.now();
+    this.registrarPulsacion();
+  },
+  terminarPulsacion() {
+    if (!this.sosteniendo) return;
+    this.sosteniendo = false;
+    // una pulsación muy corta es "machacar": sube la activación
+    if ((performance.now() - this.inicioPulsacion) / 1000 < CONFIG.m1.pulsacionCorta) this.erratico();
+  },
+  registrarPulsacion() {
+    const ahora = performance.now() / 1000;
+    this.pulsaciones = this.pulsaciones.filter((p) => ahora - p < CONFIG.m1.ventanaErratica);
+    this.pulsaciones.push(ahora);
+    if (this.pulsaciones.length >= 3) this.erratico();
+  },
+  erratico() {
+    this.activacion = clamp(this.activacion + CONFIG.m1.subidaErratica, 0, 100);
+    if (this.t - this.avisoErratico > 2.5) {
+      this.avisoErratico = this.t;
+      Hud.decir('Más despacio: mantén pulsado, sin soltar y volver a pulsar', { ms: 2600 });
+      Audio.suave();
+    }
+  },
+  updateDetenerse(dt) {
+    const cfg = CONFIG.m1;
+    const sostenido = this.sosteniendo && (performance.now() - this.inicioPulsacion) / 1000 > 0.15;
+    if (sostenido) this.activacion -= cfg.bajadaSostenida * dt;
+    else this.activacion += cfg.subidaReposo * dt;
+    this.activacion = clamp(this.activacion, 0, 100);
+    Hud.setMedidor(this.activacion);
+
+    if (this.activacion <= cfg.zonaVerde) {
+      if (!this.estuvoEnVerde) { this.estuvoEnVerde = true; Hud.decir('Zona de calma: quédate aquí un momento', { ms: 2500, suave: true }); }
+      this.verde += dt;
+      if (this.verde >= cfg.segundosEnVerde && !this.transicion) {
+        this.transicion = 1.2;
+        Audio.exito();
+        Hud.decir('Activación regulada. El Valle se aclara…', { ms: 2600, suave: true });
+      }
+    } else {
+      if (this.estuvoEnVerde && this.verde > 0) { window.sessionLog.intentos += 1; }   // salió de la zona: cuenta como reintento
+      this.verde = 0;
+      this.estuvoEnVerde = false;
+    }
+    if (this.transicion !== null) {
+      this.transicion -= dt;
+      if (this.transicion <= 0) { this.transicion = null; this.irA('OBSERVAR'); }
+    }
+    // el mundo entero responde al medidor: velocidad, partículas, brillo y tempo
+    const k = this.activacion / 100;
+    this.desp += CONFIG.velocidadEscena * k * dt;
+    GameState.ambiente = k;
+  },
+
+  /* ---- OBSERVAR ---- */
+  entrarObservar() {
+    Tactil.mostrar(null);
+    Hud.setMedidor(this.activacion);
+    Hud.decir(null);
+    Hud.panel({
+      eyebrow: 'Fase 2 · Observar',
+      titulo: 'Mira lo que antes no veías',
+      html: `<p>Con el Valle en calma aparecen cosas que el exceso de estímulos tapaba. <strong>Mueve el foco de atención</strong> (ratón, dedo o flechas) y <strong>déjalo quieto ${CONFIG.m1.observarPermanencia} s</strong> sobre cada elemento hasta completar su aro.</p>
+             <p class="nota">Los clics rápidos no cuentan: solo la permanencia. Encuentra al menos ${CONFIG.m1.observarMinimo} de ${this.elementos.length}; los ${this.elementos.length} dan un extra.</p>`,
+      botones: [{ texto: 'Observar', primario: true, accion: () => { Hud.cerrarPanel(); this.pintarProgresoObservar(); } }]
+    });
+  },
+  vistos() { return this.elementos.filter((e) => e.visto); },
+  pintarProgresoObservar() {
+    const n = this.vistos().length;
+    const total = this.elementos.length;
+    if (n >= total) { Hud.decir(`${n} de ${total}. ¡Extra: los has encontrado todos!`, { ms: 0, suave: true }); return; }
+    Hud.decir(n >= CONFIG.m1.observarMinimo ? `${n} de ${total} observados · puedes continuar o seguir mirando` : `${n} de ${total} observados`, { ms: 0, suave: true });
+  },
+  updateObservar(dt) {
+    const cfg = CONFIG.m1;
+    if (Hud.paneles.children.length) return;   // instrucciones en pantalla
+    // foco: puntero, o flechas si se usa teclado
+    if (Entrada.izquierda() || Entrada.derecha() || Entrada.arriba() || Entrada.abajo()) {
+      this.usaTeclado = true;
+      const v = 520 * dt;
+      if (Entrada.izquierda()) this.cursor.x -= v;
+      if (Entrada.derecha()) this.cursor.x += v;
+      if (Entrada.arriba()) this.cursor.y -= v;
+      if (Entrada.abajo()) this.cursor.y += v;
+    } else if (!this.usaTeclado || Entrada.puntero.dentro) {
+      this.cursor.x = Entrada.puntero.x; this.cursor.y = Entrada.puntero.y;
+    }
+    this.cursor.x = clamp(this.cursor.x, 0, CONFIG.ancho);
+    this.cursor.y = clamp(this.cursor.y, 0, CONFIG.alto);
+
+    let listos = 0;
+    for (const e of this.elementos) {
+      if (e.visto) { listos += 1; continue; }
+      const cerca = dist(this.cursor.x, this.cursor.y, e.x, e.y) < cfg.observarRadio;
+      e.progreso = cerca ? e.progreso + dt / cfg.observarPermanencia : Math.max(0, e.progreso - dt * 0.7);
+      if (e.progreso >= 1) {
+        e.visto = true;
+        e.progreso = 1;
+        window.sessionLog.elementosObservados.push(e.nombre);
+        Audio.pling(listos * 2);
+        listos += 1;
+        this.pintarProgresoObservar();
+        if (listos >= this.elementos.length) { this.transicion = 1.6; }
+        else if (listos === cfg.observarMinimo) this.botonContinuarObservar();
+      }
+    }
+    if (this.transicion !== null) {
+      this.transicion -= dt;
+      if (this.transicion <= 0) { this.transicion = null; this.irA('APRECIAR'); }
+    }
+    GameState.ambiente = 0.3;
+  },
+  botonContinuarObservar() {
+    const b = document.createElement('button');
+    b.className = 'boton primario';
+    b.type = 'button';
+    b.textContent = 'Continuar';
+    b.style.cssText = 'position:absolute;right:20px;bottom:24px;';
+    b.addEventListener('click', () => { if (this.fase === 'OBSERVAR' && this.transicion === null) this.irA('APRECIAR'); });
+    Hud.paneles.parentElement.appendChild(b);
+    this.botonContinuar = b;
+  },
+
+  /* ---- APRECIAR ---- */
+  entrarApreciar() {
+    this.botonContinuar?.remove();
+    this.botonContinuar = null;
+    Hud.decir(null);
+    this.indice = 0;
+    this.preguntar();
+  },
+  preguntar() {
+    const vistos = this.vistos();
+    const e = vistos[this.indice];
+    if (!e) { this.irA('CONTINUAR'); return; }
+    const p = Hud.panel({
+      eyebrow: `Fase 3 · Apreciar · ${this.indice + 1} de ${vistos.length}`,
+      titulo: TEXTOS.preguntaApreciar,
+      html: `<p class="cita">${e.icono} ${e.nombre}</p>
+             <div class="opciones">${e.opciones.map((o, i) => `<button class="opcion" type="button" data-o="${i}">${o}</button>`).join('')}</div>
+             <p class="nota">No hay respuesta incorrecta: solo se registra lo que eliges.</p>`
+    });
+    p.querySelectorAll('[data-o]').forEach((b) => b.addEventListener('click', () => {
+      const respuesta = e.opciones[Number(b.dataset.o)];
+      this.respuestas.push({ elemento: e.nombre, respuesta });
+      window.sessionLog.apreciaciones.push({ elemento: e.nombre, respuesta });
+      Audio.pling(2);
+      this.indice += 1;
+      this.preguntar();
+    }));
+  },
+
+  /* ---- CONTINUAR ---- */
+  entrarContinuar() {
+    this.objetivoActivacion = CONFIG.m1.activacionFinal;
+    Audio.exito();
+    Hud.panel({
+      eyebrow: 'Fase 4 · Continuar',
+      titulo: 'Activación estabilizada en zona media',
+      html: `<p class="clinico">${TEXTOS.m1Cierre}</p>
+             <p class="nota">Observaste ${this.vistos().length} de ${this.elementos.length} elementos y apreciaste cada uno. La alegría sigue ahí, a un nivel desde el que puedes elegir qué hacer.</p>`,
+      botones: [{ texto: `Guardar ${HERRAMIENTAS.estrella.icono} ${HERRAMIENTAS.estrella.nombre}`, primario: true, accion: () => this.terminar() }]
+    });
+  },
+  updateContinuar(dt) {
+    // el medidor sube suavemente hasta la zona media: regular no es apagar
+    this.activacion += (this.objetivoActivacion - this.activacion) * Math.min(1, dt * 1.2);
+    Hud.setMedidor(this.activacion);
+    GameState.ambiente = this.activacion / 100;
+  },
+  terminar() {
+    otorgarHerramienta('estrella');
+    Maquina.cambiar('CAJA_HERRAMIENTAS');
+  },
+
+  /* ---- entrada ---- */
+  teclaAbajo(k) { if (k === ' ' || k === 'Enter') this.empezarPulsacion(); },
+  teclaArriba(k) { if (k === ' ' || k === 'Enter') this.terminarPulsacion(); },
+  punteroAbajo() { this.empezarPulsacion(); },
+  punteroArriba() { this.terminarPulsacion(); },
+  botonTactil(id, abajo) { if (id === 'sostener') { if (abajo) this.empezarPulsacion(); else this.terminarPulsacion(); } },
+  perderFoco() { this.terminarPulsacion(); },
+
+  /* ---- bucle ---- */
+  update(dt) {
+    this.t += dt;
+    if (this.fase === 'DETENERSE') this.updateDetenerse(dt);
+    else if (this.fase === 'OBSERVAR') this.updateObservar(dt);
+    else if (this.fase === 'CONTINUAR') this.updateContinuar(dt);
+    else GameState.ambiente = 0.3;
+    Particulas.update(dt, GameState.ambiente, this.fase === 'DETENERSE' ? CONFIG.velocidadEscena * GameState.ambiente : 0);
+    Audio.setIntensidad(GameState.ambiente);
+  },
+  render(ctx) {
+    const k = GameState.ambiente;
+    Valle.dibujar(ctx, { t: this.t, k, desp: this.desp });
+    // los elementos positivos se revelan conforme baja la activación
+    const revelado = this.fase === 'DETENERSE' ? clamp((CONFIG.m1.zonaMediaMax - this.activacion) / 30, 0, 1) : 1;
+    if (revelado > 0) this.dibujarElementos(ctx, revelado);
+    Particulas.dibujar(ctx, k);
+    const corriendo = this.fase === 'DETENERSE';
+    dibujarPersonaje(ctx, 360, 600, { vel: corriendo ? k : 0.05, t: this.t, brillo: 0.6 + k * 0.6 });
+    if (this.fase === 'OBSERVAR') this.dibujarFoco(ctx);
+    Valle.velo(ctx, k);
+  },
+  dibujarElementos(ctx, alfa) {
+    ctx.save();
+    ctx.globalAlpha = alfa;
+    const t = this.t;
+    for (const e of this.elementos) {
+      const brillo = e.visto ? 1 : 0.55;
+      if (e.id === 'flor') {
+        ctx.strokeStyle = '#5f8a3a'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(e.x, e.y + 14); ctx.quadraticCurveTo(e.x + 6, e.y - 10, e.x, e.y - 30); ctx.stroke();
+        resplandor(ctx, e.x, e.y - 30, 44, 'rgba(255,240,170,0.9)', brillo);
+        for (let i = 0; i < 6; i += 1) { const a = i / 6 * Math.PI * 2 + t * 0.2; ctx.fillStyle = '#ffe8a3'; ctx.beginPath(); ctx.ellipse(e.x + Math.cos(a) * 12, e.y - 30 + Math.sin(a) * 12, 9, 5, a, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = '#f5b642'; ctx.beginPath(); ctx.arc(e.x, e.y - 30, 6, 0, Math.PI * 2); ctx.fill();
+      } else if (e.id === 'ave') {
+        const x = e.x + Math.sin(t * 0.5) * 40; const y = e.y + Math.sin(t * 1.1) * 10;
+        const ala = Math.sin(t * 6) * 10;
+        ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x - 22, y - ala); ctx.quadraticCurveTo(x - 6, y + 4, x, y); ctx.quadraticCurveTo(x + 6, y + 4, x + 22, y - ala); ctx.stroke();
+        e.px = x; e.py = y;
+      } else if (e.id === 'reflejo') {
+        resplandor(ctx, e.x, e.y, 60 + Math.sin(t * 1.3) * 6, 'rgba(255,250,220,0.95)', 0.85 * brillo);
+        ctx.strokeStyle = 'rgba(255,255,240,0.8)'; ctx.lineWidth = 2;
+        for (let i = -1; i <= 1; i += 1) { ctx.beginPath(); ctx.moveTo(e.x - 30, e.y + i * 9); ctx.lineTo(e.x + 30 + Math.sin(t + i) * 8, e.y + i * 9); ctx.stroke(); }
+      } else if (e.id === 'rayo') {
+        ctx.save();
+        ctx.globalAlpha = alfa * (0.35 + 0.15 * Math.sin(t * 0.8)) * brillo;
+        const g = ctx.createLinearGradient(e.x - 40, e.y - 120, e.x + 30, e.y + 90);
+        g.addColorStop(0, 'rgba(255,250,210,1)'); g.addColorStop(1, 'rgba(255,250,210,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.moveTo(e.x - 70, e.y - 140); ctx.lineTo(e.x - 20, e.y - 140); ctx.lineTo(e.x + 60, e.y + 100); ctx.lineTo(e.x - 30, e.y + 100); ctx.closePath(); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = '#5f7a4a';
+        [e.x - 90, e.x + 70].forEach((tx) => { ctx.fillRect(tx - 5, e.y - 40, 10, 140); ctx.beginPath(); ctx.moveTo(tx, e.y - 150); ctx.lineTo(tx + 34, e.y - 40); ctx.lineTo(tx - 34, e.y - 40); ctx.closePath(); ctx.fill(); });
+      } else if (e.id === 'personaje') {
+        dibujarPersonaje(ctx, e.x, e.y, { vel: 0.02, t, dir: -1, sonrisa: true, brillo: brillo, color: '#e08a5e' });
+      }
+      // aro de progreso
+      if (!e.visto && e.progreso > 0) {
+        const cx = e.px ?? e.x; const cy = e.py ?? e.y - (e.id === 'flor' ? 30 : 0);
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(cx, cy, 52, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = '#fff3b0';
+        ctx.beginPath(); ctx.arc(cx, cy, 52, -Math.PI / 2, -Math.PI / 2 + e.progreso * Math.PI * 2); ctx.stroke();
+      }
+      if (e.visto) {
+        const cx = e.px ?? e.x; const cy = (e.py ?? e.y) - (e.id === 'flor' ? 30 : 0);
+        ctx.strokeStyle = '#fff3b0'; ctx.lineWidth = 3; ctx.globalAlpha = alfa * 0.8;
+        ctx.beginPath(); ctx.arc(cx, cy, 52, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = alfa;
+        ctx.font = '600 22px ' + getComputedStyle(document.body).fontFamily;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(42,33,20,0.85)';
+        ctx.fillText(e.nombre, cx, cy - 64);
+      }
+    }
+    ctx.restore();
+  },
+  dibujarFoco(ctx) {
+    const { x, y } = this.cursor;
+    resplandor(ctx, x, y, 90, 'rgba(255,255,240,0.7)', 0.5);
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, CONFIG.m1.observarRadio, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+  }
+};
+
+/* ------------------------------------------------------------- MINIJUEGO_2
+   "Utiliza tu energía" · ACTIVAR → DIRIGIR → ACTUAR → COMPLETAR
+   -------------------------------------------------------------------------- */
+const RUTAS = {
+  movimiento: { id: 'movimiento', nombre: 'Ruta del Movimiento', descripcion: 'Plataformas y saltos largos. Cada salto gasta energía; los destellos la reponen.', controles: 'Flechas / A D para moverte · ESPACIO para saltar' },
+  exploracion: { id: 'exploracion', nombre: 'Ruta de la Exploración', descripcion: 'Un laberinto luminoso con rutas alternativas ocultas. Iluminar zonas oscuras gasta energía.', controles: 'Flechas / WASD o toca una casilla vecina · las compuertas se abren con energía' },
+  creatividad: { id: 'creatividad', nombre: 'Ruta de la Creatividad', descripcion: 'Construye tu propio camino colocando puentes y bloques de luz. Cada pieza cuesta energía.', controles: 'Flechas / A D para moverte · E o ✦ para construir · ESPACIO salto corto' }
+};
+
+Maquina.estados.MINIJUEGO_2 = {
+  fase: null, t: 0, energia: 100, ruta: null, motor: null, recuperando: false, obstaculos: 0, totalObstaculos: 5, estabilizado: 0,
+
+  entrar() {
+    this.t = 0;
+    this.energia = CONFIG.m2.energiaInicial;
+    this.ruta = null; this.motor = null; this.recuperando = false; this.obstaculos = 0; this.estabilizado = 0;
+    window.sessionLog.energiaMinima = this.energia;
+    Hud.setMedidor(null);
+    this.irA('ACTIVAR');
+  },
+  salir() { Fases.cerrar(); Hud.setEnergia(null); },
+
+  irA(fase) {
+    this.fase = fase;
+    Fases.iniciar(fase);
+    Hud.setFases(ESTRATEGIAS.energia.fases, fase);
+    Hud.cerrarPanel();
+    if (fase === 'ACTIVAR') this.entrarActivar();
+    if (fase === 'DIRIGIR') this.entrarDirigir();
+    if (fase === 'ACTUAR') this.entrarActuar();
+    if (fase === 'COMPLETAR') this.entrarCompletar();
+  },
+
+  /* ---- ACTIVAR ---- */
+  entrarActivar() {
+    Hud.setEnergia(this.energia);
+    Hud.panel({
+      eyebrow: 'Fase 1 · Activar',
+      titulo: 'Tu energía está al máximo',
+      html: `<div class="demo-energia" aria-hidden="true"><i></i></div>
+             <p>La barra de energía equivale a tu alegría intensa: <strong>es un recurso, no un problema</strong>. Se gasta al actuar (saltar, iluminar, construir) y se recupera al recoger <strong>destellos de luz</strong>.</p>
+             <p class="nota">La energía nunca se convierte en algo negativo. Si llega a cero, solo caminas más despacio hasta recuperarla: no hay vidas, ni tiempo límite, ni game over.</p>`,
+      botones: [{ texto: 'Elegir mi ruta', primario: true, accion: () => this.irA('DIRIGIR') }]
+    });
+  },
+
+  /* ---- DIRIGIR ---- */
+  entrarDirigir() {
+    const p = Hud.panel({
+      eyebrow: 'Fase 2 · Dirigir',
+      titulo: '¿Hacia dónde diriges tu energía?',
+      clase: 'ancho',
+      html: `<p>Tres rutas llevan al mismo mecanismo de luz. Cada una usa la energía de forma distinta y las tres son igual de válidas. Podrás volver a jugar y probar otra.</p>
+             <div class="tarjetas tres">${Object.values(RUTAS).map((r) => `
+               <button class="tarjeta" type="button" data-ruta="${r.id}">
+                 <strong>${r.nombre}</strong>
+                 <span>${r.descripcion}</span>
+                 <small>${r.controles}</small>
+               </button>`).join('')}</div>`
+    });
+    p.querySelectorAll('[data-ruta]').forEach((b) => b.addEventListener('click', () => {
+      this.ruta = RUTAS[b.dataset.ruta];
+      window.sessionLog.rutaElegida = this.ruta.id;
+      Audio.pling(4);
+      this.irA('ACTUAR');
+    }));
+  },
+
+  /* ---- ACTUAR ---- */
+  entrarActuar() {
+    this.motor = this.ruta.id === 'exploracion' ? new RutaLaberinto(this) : new RutaLateral(this, this.ruta.id);
+    this.totalObstaculos = this.motor.totalObstaculos;
+    this.obstaculos = 0;
+    Tactil.mostrar(this.ruta.id === 'exploracion' ? 'laberinto' : this.ruta.id === 'creatividad' ? 'construir' : 'lateral');
+    Hud.decir(`${this.ruta.nombre} · ${this.ruta.controles}`, { ms: 5000 });
+  },
+  /* Energía: gastar nunca baja de cero; recuperar nunca pasa del máximo */
+  gastar(n) {
+    if (this.energia <= 0) return false;
+    this.energia = Math.max(0, this.energia - n);
+    window.sessionLog.energiaMinima = Math.min(window.sessionLog.energiaMinima ?? 100, Math.round(this.energia));
+    Hud.setEnergia(this.energia);
+    Audio.gasto();
+    if (this.energia <= 0 && !this.recuperando) this.entrarRecuperacion();
+    return true;
+  },
+  puedeGastar(n) { return this.energia >= n; },
+  recuperar(n) {
+    this.energia = Math.min(CONFIG.m2.energiaMaxima, this.energia + n);
+    Hud.setEnergia(this.energia);
+    Audio.pling(Math.round(this.energia / 25) * 2);
+    if (this.recuperando && this.energia >= CONFIG.m2.umbralRecuperado) {
+      this.recuperando = false;
+      Hud.decir('Energía recuperada. Sigue cuando quieras.', { ms: 2600, suave: true });
+    }
+  },
+  /* Sin energía no hay game over: se camina lento y aparecen destellos cerca */
+  entrarRecuperacion() {
+    this.recuperando = true;
+    window.sessionLog.intentos += 1;
+    Hud.decir(TEXTOS.m2SinEnergia, { ms: 0, suave: true });
+    this.motor.generarDestellosCerca?.(3);
+  },
+  superarObstaculo(nombre) {
+    this.obstaculos += 1;
+    Hud.decir(`${nombre} · ${this.obstaculos} de ${this.totalObstaculos}`, { ms: 1800 });
+  },
+  /* la velocidad depende del estado energético, nunca se detiene del todo */
+  factorVelocidad() { return this.recuperando ? CONFIG.m2.velocidadSinEnergia / CONFIG.m2.velocidad : 1; },
+
+  /* ---- COMPLETAR ---- */
+  entrarCompletar() {
+    Tactil.mostrar(null);
+    Hud.decir(null);
+    Audio.exito();
+    this.estabilizado = 1;
+    Hud.panel({
+      eyebrow: 'Fase 4 · Completar',
+      titulo: 'Mecanismo de luz activado',
+      html: `<p class="clinico">${TEXTOS.m2Cierre}</p>
+             <p class="nota">Ruta: ${this.ruta.nombre}. Superaste ${this.obstaculos} obstáculos usando tu energía y la recuperaste con los destellos. El escenario se ha estabilizado.</p>`,
+      botones: [{ texto: `Guardar ${HERRAMIENTAS.rayo.icono} ${HERRAMIENTAS.rayo.nombre}`, primario: true, accion: () => this.terminar() }]
+    });
+  },
+  terminar() {
+    otorgarHerramienta('rayo');
+    Maquina.cambiar('CAJA_HERRAMIENTAS');
+  },
+
+  /* ---- entrada ---- */
+  teclaAbajo(k) { if (this.fase === 'ACTUAR') this.motor?.tecla?.(k); },
+  punteroAbajo(p) { if (this.fase === 'ACTUAR') this.motor?.puntero?.(p); },
+  botonTactil(id, abajo) { if (this.fase === 'ACTUAR' && abajo) this.motor?.boton?.(id); },
+
+  /* ---- bucle ---- */
+  update(dt) {
+    this.t += dt;
+    if (this.fase === 'ACTUAR') this.motor.update(dt);
+    // el brillo del Valle acompaña la energía; al completar se estabiliza en media
+    const objetivo = this.fase === 'COMPLETAR' ? 0.5 : this.fase === 'ACTUAR' ? 0.35 + 0.65 * (this.energia / 100) : 1;
+    GameState.ambiente += (objetivo - GameState.ambiente) * Math.min(1, dt * 1.5);
+    Particulas.update(dt, GameState.ambiente);
+    Audio.setIntensidad(GameState.ambiente);
+  },
+  render(ctx) {
+    if (this.fase === 'ACTUAR' || this.fase === 'COMPLETAR') this.motor.render(ctx, this.t);
+    else {
+      Valle.dibujar(ctx, { t: this.t, k: GameState.ambiente, desp: this.t * 60 });
+      Particulas.dibujar(ctx, GameState.ambiente);
+      dibujarPersonaje(ctx, 360, 600, { vel: 0.2, t: this.t });
+      Valle.velo(ctx, GameState.ambiente);
+    }
+  }
+};
+
+/* Motor lateral: plataformas, huecos, destellos y (en creatividad) piezas de luz */
+class RutaLateral {
+  constructor(juego, modo) {
+    this.juego = juego;
+    this.modo = modo;                       // 'movimiento' | 'creatividad'
+    const creativo = modo === 'creatividad';
+    // plataformas: [x0, x1, y]. Huecos jumpables (movimiento) o anchos (creatividad)
+    this.plataformas = creativo
+      ? [[0, 620, 600], [900, 1400, 600], [1720, 2300, 600], [2640, 3200, 600], [3300, 3900, 510], [4240, 5000, 600]]
+      : [[0, 700, 600], [820, 1500, 600], [1640, 2300, 570], [2450, 3100, 600], [3260, 3900, 600], [4070, 5000, 600]];
+    this.finX = 4780;
+    this.piezas = [];
+    this.huecos = [];
+    for (let i = 0; i < this.plataformas.length - 1; i += 1) {
+      const a = this.plataformas[i]; const b = this.plataformas[i + 1];
+      this.huecos.push({ x0: a[1], x1: b[0], y: a[2], superado: false, i });
+    }
+    // en creatividad, la 5ª plataforma es una cornisa alta: pide un bloque
+    this.cornisa = creativo ? { x: 3300, y: 510, superada: false } : null;
+    this.totalObstaculos = this.huecos.length + (this.cornisa ? 1 : 0);
+    this.destellos = (creativo
+      ? [[300, 540], [1100, 540], [1250, 520], [1980, 540], [2900, 540], [3050, 520], [3600, 450], [4400, 540]]
+      : [[420, 540], [1150, 540], [1580, 470], [2000, 500], [2700, 480], [3000, 540], [3600, 500], [4300, 540]]
+    ).map(([x, y]) => ({ x, y, tomado: false }));
+    this.jugador = { x: 120, y: 600, vx: 0, vy: 0, enSuelo: true, dir: 1, ultimoX: 120, ultimoY: 600 };
+    this.camara = 0;
+    this.t = 0;
+    this.mensajeConstruir = 0;
+    this.activado = false;
+  }
+  /* altura del suelo bajo x (plataforma o pieza más alta), o null si es hueco */
+  sueloEn(x, yRef) {
+    let mejor = null;
+    const considerar = (x0, x1, y) => { if (x >= x0 && x <= x1 && y >= yRef - 26 && (mejor === null || y < mejor)) mejor = y; };
+    for (const [x0, x1, y] of this.plataformas) considerar(x0, x1, y);
+    for (const p of this.piezas) considerar(p.x0, p.x1, p.y);
+    return mejor;
+  }
+  tecla(k) {
+    if (k === ' ' || k === 'ArrowUp' || k === 'w' || k === 'W') this.saltar();
+    if ((k === 'e' || k === 'E') && this.modo === 'creatividad') this.construir();
+    if ((k === ' ' || k === 'Enter') && this.enMecanismo()) this.activar();
+  }
+  boton(id) {
+    if (id === 'a') { if (this.enMecanismo()) this.activar(); else this.saltar(); }
+    if (id === 'b') this.construir();
+  }
+  puntero(p) {
+    // tocar el lienzo: construir si hay algo delante (creatividad) o activar el mecanismo
+    if (this.enMecanismo()) { this.activar(); return; }
+    if (this.modo === 'creatividad') this.construir();
+  }
+  saltar() {
+    const j = this.jugador; const cfg = CONFIG.m2;
+    if (!j.enSuelo) return;
+    if (this.modo === 'creatividad') { j.vy = -cfg.impulsoSaltoCorto; j.enSuelo = false; return; }   // salto corto, gratis
+    if (this.juego.energia <= 0) { j.vy = -cfg.impulsoSaltoCorto * 0.8; j.enSuelo = false; return; }  // sin energía: saltito, sin coste
+    this.juego.gastar(Math.min(cfg.costoSalto, this.juego.energia));
+    j.vy = -cfg.impulsoSalto;
+    j.enSuelo = false;
+  }
+  /* Creatividad: la pieza va donde hace falta (puente sobre el hueco, bloque
+     ante la cornisa) o, si no hay nada delante, como escalón libre */
+  construir() {
+    const j = this.jugador; const cfg = CONFIG.m2;
+    if (!this.juego.puedeGastar(cfg.costoPieza)) {
+      if (this.t - this.mensajeConstruir > 2) { this.mensajeConstruir = this.t; Hud.decir('Sin energía suficiente para construir: recoge destellos', { ms: 2400, suave: true }); }
+      if (this.juego.energia <= 0 && !this.juego.recuperando) this.juego.entrarRecuperacion();
+      return;
+    }
+    const hueco = this.huecos.find((h) => j.x >= h.x0 - 110 && j.x <= h.x0 + 30 && !this.piezas.some((p) => p.hueco === h.i));
+    let pieza;
+    if (hueco) pieza = { x0: hueco.x0 - 10, x1: hueco.x1 + 10, y: hueco.y, tipo: 'puente', hueco: hueco.i };
+    else if (this.cornisa && j.x >= this.cornisa.x - 140 && j.x < this.cornisa.x - 20 && !this.piezas.some((p) => p.tipo === 'bloque' && p.x1 >= this.cornisa.x - 12))
+      pieza = { x0: this.cornisa.x - 70, x1: this.cornisa.x, y: 550, tipo: 'bloque' };
+    else pieza = { x0: j.x + 40 * j.dir, x1: j.x + 40 * j.dir + 70 * j.dir, y: (this.sueloEn(j.x, j.y) ?? j.y) - 50, tipo: 'bloque' };
+    if (pieza.x0 > pieza.x1) [pieza.x0, pieza.x1] = [pieza.x1, pieza.x0];
+    this.piezas.push(pieza);
+    this.juego.gastar(cfg.costoPieza);
+    Audio.pling(6);
+    Hud.decir(pieza.tipo === 'puente' ? 'Puente de luz colocado' : 'Bloque de luz colocado', { ms: 1400 });
+  }
+  enMecanismo() { return Math.abs(this.jugador.x - this.finX) < 70 && this.jugador.enSuelo; }
+  activar() {
+    if (this.activado || !this.enMecanismo()) return;
+    this.activado = true;
+    this.juego.irA('COMPLETAR');
+  }
+  /* Sin energía: destellos a mano, siempre sobre suelo firme (nunca sobre el hueco) */
+  generarDestellosCerca(n) {
+    const j = this.jugador;
+    const candidatos = [-70, -140, 70, -210, 140, -280, 210].map((d) => j.x + d);
+    let puestos = 0;
+    for (const x of candidatos) {
+      if (puestos >= n) break;
+      if (x < 40 || x > this.finX - 60) continue;
+      const suelo = this.sueloEn(x, 0);          // cualquier superficie bajo x, sin límite de altura
+      if (suelo === null) continue;
+      this.destellos.push({ x, y: suelo - 60, tomado: false, cercano: true });
+      puestos += 1;
+    }
+    // plataforma minúscula: al menos uno justo encima del jugador
+    if (!puestos) this.destellos.push({ x: j.x, y: (this.sueloEn(j.x, 0) ?? 600) - 70, tomado: false, cercano: true });
+  }
+  update(dt) {
+    const j = this.jugador; const cfg = CONFIG.m2;
+    this.t += dt;
+    if (this.activado) return;
+    const dir = (Entrada.derecha() ? 1 : 0) - (Entrada.izquierda() ? 1 : 0);
+    if (dir) j.dir = dir;
+    j.vx = dir * cfg.velocidad * this.juego.factorVelocidad();
+    // muros: la cornisa y los bloques altos no se atraviesan por el lado
+    const xSiguiente = clamp(j.x + j.vx * dt, 30, this.finX + 120);
+    const sueloDelante = this.sueloEn(xSiguiente, j.y);
+    if (sueloDelante !== null && sueloDelante < j.y - 26) j.vx = 0; else j.x = xSiguiente;
+    j.vy += cfg.gravedad * dt;
+    const yPrevio = j.y;
+    j.y += j.vy * dt;
+    const suelo = this.sueloEn(j.x, Math.max(yPrevio, j.y));
+    if (suelo !== null && j.vy >= 0 && j.y >= suelo && yPrevio <= suelo + 30) { j.y = suelo; j.vy = 0; j.enSuelo = true; }
+    else j.enSuelo = false;
+    if (j.enSuelo) { j.ultimoX = j.x; j.ultimoY = j.y; }
+    // caer al hueco no castiga: el Valle te devuelve al último apoyo
+    if (j.y > CONFIG.alto + 60) {
+      j.x = j.ultimoX - 30; j.y = j.ultimoY; j.vy = 0; j.enSuelo = true;
+      Hud.decir('El Valle te sostiene. Inténtalo de nuevo.', { ms: 2000, suave: true });
+      Audio.suave();
+    }
+    // obstáculos superados: cruzar un hueco / subir la cornisa
+    for (const h of this.huecos) if (!h.superado && j.enSuelo && j.x > h.x1 + 10) { h.superado = true; this.juego.superarObstaculo('Hueco superado'); }
+    if (this.cornisa && !this.cornisa.superada && j.enSuelo && j.x > this.cornisa.x + 10 && j.y <= this.cornisa.y + 1) { this.cornisa.superada = true; this.juego.superarObstaculo('Cornisa alcanzada'); }
+    // destellos
+    for (const d of this.destellos) {
+      if (d.tomado) continue;
+      if (dist(j.x, j.y - 40, d.x, d.y) < 46) { d.tomado = true; this.juego.recuperar(cfg.destello); }
+    }
+    if (this.enMecanismo()) Hud.decir('Mecanismo de luz: pulsa ESPACIO o toca la pantalla para activarlo', { ms: 0, suave: true });
+    this.camara += ((clamp(j.x - 420, 0, this.finX + 200 - CONFIG.ancho)) - this.camara) * Math.min(1, dt * 5);
+  }
+  render(ctx, t) {
+    const k = GameState.ambiente;
+    Valle.dibujar(ctx, { t, k, desp: this.camara, agua: false, sueloY: CONFIG.alto + 10 });
+    ctx.save();
+    ctx.translate(-this.camara, 0);
+    // valle profundo bajo los huecos
+    const fondo = ctx.createLinearGradient(0, 560, 0, 720);
+    fondo.addColorStop(0, mezcla('#6f8f5a', '#a0954a', k)); fondo.addColorStop(1, mezcla('#3f5a36', '#5c5a2c', k));
+    ctx.fillStyle = fondo; ctx.fillRect(this.camara, 620, CONFIG.ancho, 100);
+    // plataformas
+    for (const [x0, x1, y] of this.plataformas) {
+      ctx.fillStyle = mezcla('#9bb779', '#d1c05e', k);
+      ctx.beginPath(); ctx.roundRect(x0, y, x1 - x0, CONFIG.alto - y, 10); ctx.fill();
+      ctx.fillStyle = mezcla('#c4dc9a', '#f0df85', k);
+      ctx.fillRect(x0, y, x1 - x0, 12);
+    }
+    // piezas de luz
+    for (const p of this.piezas) {
+      resplandor(ctx, (p.x0 + p.x1) / 2, p.y + 6, 60, 'rgba(255,240,180,0.8)', 0.5);
+      ctx.fillStyle = 'rgba(255,246,200,0.92)';
+      ctx.beginPath(); ctx.roundRect(p.x0, p.y, p.x1 - p.x0, p.tipo === 'puente' ? 14 : 50, 7); ctx.fill();
+    }
+    // destellos
+    for (const d of this.destellos) if (!d.tomado) dibujarDestello(ctx, d.x, d.y, t);
+    // mecanismo de luz
+    const mx = this.finX;
+    resplandor(ctx, mx, 520, 120, 'rgba(255,245,200,0.9)', this.activado ? 1 : 0.45 + 0.15 * Math.sin(t * 1.5));
+    ctx.fillStyle = mezcla('#dcd2ff', '#fff1b0', k);
+    ctx.beginPath(); ctx.moveTo(mx, 460); ctx.lineTo(mx + 26, 520); ctx.lineTo(mx, 600); ctx.lineTo(mx - 26, 520); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(mx, 520, 48, 0, Math.PI * 2); ctx.stroke();
+    // jugador
+    const j = this.jugador;
+    dibujarPersonaje(ctx, j.x, j.y, { vel: Math.abs(j.vx) / CONFIG.m2.velocidad, t, dir: j.dir, aire: !j.enSuelo, brillo: 0.5 + 0.6 * (this.juego.energia / 100) });
+    ctx.restore();
+    Particulas.dibujar(ctx, k);
+    Valle.velo(ctx, k * 0.8);
+  }
+}
+
+/* Laberinto luminoso (exploración): iluminar cuesta energía; compuertas y ruta oculta */
+const MAPA_LABERINTO = [
+  '#############',
+  '#S..#...*...#',
+  '#.#.#.#G###.#',
+  '#.#...#...*.#',
+  '#.###H#.#.###',
+  '#.*.#...#..G#',
+  '#G###G#####.#',
+  '#...G...*..E#',
+  '#############'
+];
+class RutaLaberinto {
+  constructor(juego) {
+    this.juego = juego;
+    this.celda = 56;
+    this.filas = MAPA_LABERINTO.length;
+    this.cols = MAPA_LABERINTO[0].length;
+    this.ox = Math.round((CONFIG.ancho - this.cols * this.celda) / 2);
+    this.oy = Math.round((CONFIG.alto - this.filas * this.celda) / 2) + 20;
+    this.mapa = MAPA_LABERINTO.map((f) => f.split(''));
+    this.luz = this.mapa.map((f) => f.map(() => 0));
+    this.abiertas = new Set();          // compuertas abiertas "f,c"
+    this.reveladas = new Set();         // pasajes ocultos revelados
+    this.destellos = new Set();
+    this.mapa.forEach((f, r) => f.forEach((v, c) => { if (v === 'S') { this.jugador = { r, c, x: c, y: r }; } if (v === '*') this.destellos.add(`${r},${c}`); }));
+    this.totalObstaculos = this.mapa.flat().filter((v) => v === 'G').length + this.mapa.flat().filter((v) => v === 'H').length;
+    this.iluminar(this.jugador.r, this.jugador.c, true);
+    this.tween = null;
+    this.activado = false;
+    this.t = 0;
+  }
+  clave(r, c) { return `${r},${c}`; }
+  valor(r, c) { return this.mapa[r]?.[c] ?? '#'; }
+  esPared(r, c) {
+    const v = this.valor(r, c);
+    if (v === '#') return true;
+    if (v === 'H') return !this.reveladas.has(this.clave(r, c));
+    return false;
+  }
+  /* entrar en una casilla la ilumina (coste si estaba a oscuras) y revela lo de alrededor */
+  iluminar(r, c, gratis = false) {
+    if (this.luz[r][c] < 1) {
+      if (!gratis && this.juego.energia > 0) this.juego.gastar(CONFIG.m2.costoIluminar);
+      this.luz[r][c] = 1;
+    }
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => {
+      const rr = r + dr; const cc = c + dc;
+      if (this.luz[rr]?.[cc] !== undefined) this.luz[rr][cc] = Math.max(this.luz[rr][cc], 0.4);
+      // la luz revela los pasajes ocultos vecinos: una ruta alternativa
+      if (this.valor(rr, cc) === 'H' && !this.reveladas.has(this.clave(rr, cc))) {
+        this.reveladas.add(this.clave(rr, cc));
+        this.luz[rr][cc] = 1;
+        this.juego.superarObstaculo('Ruta oculta revelada');
+        Audio.pling(7);
+      }
+    });
+  }
+  mover(dr, dc) {
+    if (this.tween || this.activado) return;
+    const r = this.jugador.r + dr; const c = this.jugador.c + dc;
+    if (this.esPared(r, c)) { Audio.suave(); return; }
+    if (this.valor(r, c) === 'G' && !this.abiertas.has(this.clave(r, c))) {
+      if (!this.juego.puedeGastar(CONFIG.m2.costoCompuerta)) {
+        Hud.decir('Compuerta de sombra: hace falta energía para abrirla. Recoge destellos.', { ms: 2600, suave: true });
+        if (this.juego.energia <= 0 && !this.juego.recuperando) this.juego.entrarRecuperacion();
+        return;
+      }
+      this.juego.gastar(CONFIG.m2.costoCompuerta);
+      this.abiertas.add(this.clave(r, c));
+      this.juego.superarObstaculo('Compuerta abierta');
+    }
+    const lento = this.juego.recuperando;
+    this.tween = { r0: this.jugador.r, c0: this.jugador.c, r1: r, c1: c, t: 0, dur: lento ? CONFIG.m2.pasoLaberintoLento : CONFIG.m2.pasoLaberinto };
+    this.jugador.r = r; this.jugador.c = c;
+    this.iluminar(r, c);
+    const k = this.clave(r, c);
+    if (this.destellos.has(k)) { this.destellos.delete(k); this.juego.recuperar(CONFIG.m2.destello); }
+    if (this.valor(r, c) === 'E') Hud.decir('Mecanismo de luz: pulsa ESPACIO o ✦ para activarlo', { ms: 0, suave: true });
+  }
+  tecla(k) {
+    if (k === 'ArrowUp' || k === 'w' || k === 'W') this.mover(-1, 0);
+    if (k === 'ArrowDown' || k === 's' || k === 'S') this.mover(1, 0);
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') this.mover(0, -1);
+    if (k === 'ArrowRight' || k === 'd' || k === 'D') this.mover(0, 1);
+    if ((k === ' ' || k === 'Enter') && this.enMecanismo()) this.activar();
+  }
+  boton(id) {
+    if (id === 'arr') this.mover(-1, 0);
+    if (id === 'aba') this.mover(1, 0);
+    if (id === 'izq') this.mover(0, -1);
+    if (id === 'der') this.mover(0, 1);
+    if (id === 'a' && this.enMecanismo()) this.activar();
+  }
+  /* tocar una casilla vecina la recorre; tocar la propia sobre la salida, activa */
+  puntero(p) {
+    const c = Math.floor((p.x - this.ox) / this.celda); const r = Math.floor((p.y - this.oy) / this.celda);
+    const dr = r - this.jugador.r; const dc = c - this.jugador.c;
+    if (dr === 0 && dc === 0 && this.enMecanismo()) { this.activar(); return; }
+    if (Math.abs(dr) + Math.abs(dc) === 1) this.mover(dr, dc);
+  }
+  enMecanismo() { return this.valor(this.jugador.r, this.jugador.c) === 'E' && !this.tween; }
+  activar() { if (this.activado || !this.enMecanismo()) return; this.activado = true; this.juego.irA('COMPLETAR'); }
+  generarDestellosCerca(n) {
+    const libres = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1]].map(([dr, dc]) => [this.jugador.r + dr, this.jugador.c + dc]).filter(([r, c]) => !this.esPared(r, c) && this.valor(r, c) !== 'G');
+    libres.slice(0, n).forEach(([r, c]) => { this.destellos.add(this.clave(r, c)); this.luz[r][c] = Math.max(this.luz[r][c], 0.6); });
+  }
+  update(dt) {
+    this.t += dt;
+    if (this.tween) {
+      this.tween.t += dt;
+      const p = suave(Math.min(1, this.tween.t / this.tween.dur));
+      this.jugador.x = lerp(this.tween.c0, this.tween.c1, p);
+      this.jugador.y = lerp(this.tween.r0, this.tween.r1, p);
+      if (p >= 1) this.tween = null;
+    }
+    // mantener pulsada una dirección sigue avanzando
+    if (!this.tween && !this.activado) {
+      if (Entrada.arriba()) this.mover(-1, 0);
+      else if (Entrada.abajo()) this.mover(1, 0);
+      else if (Entrada.izquierda()) this.mover(0, -1);
+      else if (Entrada.derecha()) this.mover(0, 1);
+    }
+  }
+  render(ctx, t) {
+    const k = GameState.ambiente;
+    Valle.dibujar(ctx, { t, k, desp: 0, agua: false, arboles: false, sueloY: CONFIG.alto + 10 });
+    const cel = this.celda;
+    ctx.save();
+    ctx.translate(this.ox, this.oy);
+    // tablero
+    ctx.fillStyle = 'rgba(42,30,12,0.92)';
+    ctx.beginPath(); ctx.roundRect(-10, -10, this.cols * cel + 20, this.filas * cel + 20, 18); ctx.fill();
+    for (let r = 0; r < this.filas; r += 1) {
+      for (let c = 0; c < this.cols; c += 1) {
+        const v = this.valor(r, c); const luz = this.luz[r][c]; const x = c * cel; const y = r * cel;
+        if (this.esPared(r, c)) {
+          ctx.fillStyle = mezcla('#3a2a12', '#7a5a1c', luz * 0.7);
+          ctx.beginPath(); ctx.roundRect(x + 2, y + 2, cel - 4, cel - 4, 6); ctx.fill();
+          continue;
+        }
+        // suelo: oscuro si no está iluminado, dorado si sí
+        ctx.fillStyle = mezcla('#2a1e0c', '#ffe08a', luz);
+        ctx.beginPath(); ctx.roundRect(x + 2, y + 2, cel - 4, cel - 4, 6); ctx.fill();
+        if (v === 'H') { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = '700 18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ruta', x + cel / 2, y + cel / 2 + 6); }
+        if (v === 'G' && !this.abiertas.has(this.clave(r, c))) {
+          ctx.fillStyle = `rgba(120,80,30,${0.6 + 0.3 * luz})`;
+          for (let i = 0; i < 3; i += 1) ctx.fillRect(x + 10 + i * 14, y + 8, 6, cel - 16);
+        }
+        if (v === 'E') {
+          resplandor(ctx, x + cel / 2, y + cel / 2, cel, 'rgba(255,245,200,0.9)', this.activado ? 1 : 0.5 + 0.2 * Math.sin(t * 1.5));
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(x + cel / 2, y + cel / 2, cel * 0.32, 0, Math.PI * 2); ctx.stroke();
+        }
+        if (this.destellos.has(this.clave(r, c))) dibujarDestello(ctx, x + cel / 2, y + cel / 2, t, 9);
+      }
+    }
+    // jugador (vista cenital: un portador de luz)
+    const px = this.jugador.x * cel + cel / 2; const py = this.jugador.y * cel + cel / 2;
+    resplandor(ctx, px, py, cel * 1.6, 'rgba(255,240,180,0.9)', 0.5 + 0.4 * (this.juego.energia / 100));
+    ctx.fillStyle = '#f5b642'; ctx.beginPath(); ctx.arc(px, py, cel * 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffe1b3'; ctx.beginPath(); ctx.arc(px, py - 4, cel * 0.14, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    Particulas.dibujar(ctx, k * 0.6);
+    Valle.velo(ctx, k * 0.5);
+  }
+}
+
+/* ------------------------------------------------------ CAJA_HERRAMIENTAS */
+function otorgarHerramienta(id) {
+  GameState.herramientas.add(id);
+  GameState.ultimaHerramienta = id;
+  window.sessionLog.recompensaObtenida = HERRAMIENTAS[id].nombre;
+  Audio.exito();
+}
+
+Maquina.estados.CAJA_HERRAMIENTAS = {
+  t: 0,
+  entrar() {
+    GameState.ambiente = 0.5;
+    Hud.setFases(null); Hud.setMedidor(null); Hud.setEnergia(null);
+    Fases.iniciar('CAJA_HERRAMIENTAS');
+    const nueva = GameState.ultimaHerramienta;
+    Hud.panel({
+      eyebrow: 'Recompensa guardada',
+      titulo: TEXTOS.caja,
+      html: `<div class="herramientas">${Object.values(HERRAMIENTAS).map((h) => `
+          <div class="herramienta ${GameState.herramientas.has(h.id) ? 'obtenida' : ''} ${h.id === nueva ? 'nueva' : ''}">
+            <span class="icono" aria-hidden="true">${h.icono}</span>
+            <strong>${h.nombre}</strong>
+            <span>${h.estrategia}</span>
+            <span class="estado">${h.id === nueva ? '¡Nueva!' : GameState.herramientas.has(h.id) ? 'Obtenida' : 'Pendiente'}</span>
+          </div>`).join('')}</div>
+        <p class="nota">Cada herramienta es una forma de regular y canalizar tu alegría que ya has practicado. Puedes volver por la otra cuando quieras.</p>`,
+      botones: [{ texto: 'Continuar', primario: true, accion: () => Maquina.cambiar('REEVALUACION') }]
+    });
+  },
+  salir() { Fases.cerrar(); },
+  update(dt) { this.t += dt; Particulas.update(dt, 0.5); Audio.setIntensidad(0.5); },
+  render(ctx) { Valle.dibujar(ctx, { t: this.t, k: 0.5, desp: this.t * 40 }); Particulas.dibujar(ctx, 0.5); dibujarPersonaje(ctx, 360, 600, { vel: 0.12, t: this.t }); Valle.velo(ctx, 0.5); }
+};
+
+/* ---------------------------------------------------------- REEVALUACION */
+Maquina.estados.REEVALUACION = {
+  t: 0,
+  entrar() {
+    GameState.ambiente = 0.5;
+    Fases.iniciar('REEVALUACION');
+    const p = Hud.panel({
+      eyebrow: 'Reevaluación de intensidad',
+      titulo: TEXTOS.reevaluacion,
+      html: `<p>Al empezar la valoraste como <strong>${GameState.intensidadInicial}</strong>. No hay respuesta correcta: elige lo que sientas ahora.</p>
+             <div class="opciones fila">${['BAJA', 'MEDIA', 'ALTA'].map((n) => `<button class="opcion grande" type="button" data-n="${n}">${n}</button>`).join('')}</div>`
+    });
+    p.querySelectorAll('[data-n]').forEach((b) => b.addEventListener('click', () => {
+      GameState.intensidadFinal = b.dataset.n;
+      Audio.pling(2);
+      Maquina.cambiar('FEEDBACK');
+    }));
+  },
+  salir() { Fases.cerrar(); },
+  update(dt) { this.t += dt; Particulas.update(dt, 0.5); Audio.setIntensidad(0.5); },
+  render(ctx) { Valle.dibujar(ctx, { t: this.t, k: 0.5, desp: this.t * 40 }); Particulas.dibujar(ctx, 0.5); dibujarPersonaje(ctx, 360, 600, { vel: 0.12, t: this.t }); Valle.velo(ctx, 0.5); }
+};
+
+/* -------------------------------------------------------------- FEEDBACK */
+Maquina.estados.FEEDBACK = {
+  t: 0,
+  entrar() {
+    Fases.iniciar('FEEDBACK');
+    const ini = GameState.intensidadInicial; const fin = GameState.intensidadFinal;
+    const d = ORDEN_INTENSIDAD[fin] - ORDEN_INTENSIDAD[ini];
+    const direccion = d < 0 ? 'disminuyó' : d > 0 ? 'aumentó' : 'se mantiene';
+    const texto = d < 0 ? TEXTOS.disminuyo : d > 0 ? TEXTOS.aumento : TEXTOS.mantiene;
+    // cierre de la telemetría de esta partida
+    const log = window.sessionLog;
+    log.intensidadFinal = fin;
+    log.direccionDelCambio = direccion;
+    Fases.cerrar();
+    log.fin = new Date().toISOString();
+    window.sessionLogs.push(log);
+    console.log('[Valle de la Luz] sessionLog', JSON.parse(JSON.stringify(log)));
+    console.table?.(log.tiempoPorFase);
+
+    const otra = GameState.estrategiaElegida === 'pausa' ? ESTRATEGIAS.energia : ESTRATEGIAS.pausa;
+    const p = Hud.panel({
+      eyebrow: 'Retroalimentación',
+      titulo: `Tu alegría ${direccion}`,
+      html: `<div class="resumen"><span>Inicial: ${ini}</span><span>Ahora: ${fin}</span><span>${log.recompensaObtenida ? HERRAMIENTAS[GameState.ultimaHerramienta].icono + ' ' + log.recompensaObtenida : ''}</span></div>
+             <p class="clinico">${texto}</p>
+             <p class="nota">Siguiente camino disponible: <strong>${otra.camino}</strong> (${otra.nombre}).</p>
+             <pre class="registro" data-registro hidden></pre>`,
+      botones: [
+        { texto: TEXTOS.btnPracticar, primario: true, accion: () => this.practicarOtra() },
+        { texto: 'Ver registro de sesión', accion: (panel) => { const pre = panel.querySelector('[data-registro]'); pre.hidden = !pre.hidden; pre.textContent = JSON.stringify(log, null, 2); } }
+      ]
+    });
+    void p;
+  },
+  practicarOtra() {
+    // nueva partida: la intensidad con la que se llega ahora es la que acaba de reportar
+    GameState.intensidadInicial = GameState.intensidadFinal;
+    GameState.intensidadFinal = null;
+    window.sessionLog = nuevoSessionLog();
+    Maquina.cambiar('MENU_ESTRATEGIA');
+  },
+  update(dt) { this.t += dt; Particulas.update(dt, 0.5); Audio.setIntensidad(0.5); },
+  render(ctx) { Valle.dibujar(ctx, { t: this.t, k: 0.5, desp: this.t * 40 }); Particulas.dibujar(ctx, 0.5); dibujarPersonaje(ctx, 360, 600, { vel: 0.12, t: this.t }); Valle.velo(ctx, 0.5); }
+};
+
+/* ============================================================================
+   BUCLE PRINCIPAL · requestAnimationFrame con deltaTime acotado
+   ========================================================================== */
+let ultimo = performance.now();
+function bucle(ahora) {
+  const dt = Math.min(0.05, (ahora - ultimo) / 1000);
+  ultimo = ahora;
+  Maquina.actual?.update(dt);
+  ctx2d.setTransform(1, 0, 0, 1, 0, 0);
+  Maquina.actual?.render(ctx2d);
+  Audio.update();
+  requestAnimationFrame(bucle);
+}
+Maquina.cambiar('MENU_ESTRATEGIA');
+requestAnimationFrame(bucle);
+
+// acceso para pruebas y depuración
+window.ValleDeLaLuz = { Maquina, GameState, CONFIG, TEXTOS, Hud, Audio };
+</script>
+</body>
+</html>

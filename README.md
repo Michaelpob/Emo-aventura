@@ -70,6 +70,19 @@ src/
 `docs/PLAN-GAMEPLAY.md` documenta la auditoría, lo implementado en cada fase, el
 checklist de verificación y las medidas de rendimiento por isla.
 
+## Valle de la Luz · alegría de intensidad alta (juego aparte, un solo archivo)
+
+`public/valle-luz/index.html` es un serious game autocontenido (HTML + CSS + JS,
+canvas 2D y Web Audio, sin dependencias) con los dos mini-juegos de la etapa de
+alegría intensa: **Disfruta sin perder el control** (DETENERSE → OBSERVAR →
+APRECIAR → CONTINUAR) y **Utiliza tu energía** (ACTIVAR → DIRIGIR → ACTUAR →
+COMPLETAR, con tres rutas), más la selección de estrategia, la caja de
+herramientas, la reevaluación de intensidad y la retroalimentación. Se abre con
+doble clic o, publicado, en `valle-luz/` junto al juego principal
+(`?rapido=1` acorta los umbrales para probarlo). La cabecera del archivo trae
+el mapa mecánica → fase → constructo y las instrucciones de prueba; la
+telemetría queda en `sessionLog` / `sessionLogs` (consola).
+
 ## Progreso y recompensas
 
 `src/data/gameState.js` guarda en `localStorage` puntos, herramientas,
