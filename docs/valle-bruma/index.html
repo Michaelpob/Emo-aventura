@@ -1,0 +1,1673 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>El Valle de la Bruma · Isla de la Tristeza</title>
+<!--
+  ============================================================================
+  EL VALLE DE LA BRUMA · ISLA DE LA TRISTEZA
+  Dos mini-juegos psicoeducativos en un solo archivo (HTML + CSS + JS, canvas 2D
+  para el paisaje y la bruma, DOM para fichas, cartas y paneles, Web Audio API
+  para un ambiente mínimo). Sin librerías ni recursos externos.
+
+  La tristeza se representa por AUSENCIA (de color, de sonido, de velocidad),
+  nunca como enemigo ni como oscuridad amenazante. No hay reloj, ni reflejos,
+  ni vidas, ni puntaje negativo: el ritmo lo marca quien juega.
+
+  MAPA MECÁNICA → FASE PSICOEDUCATIVA → CONSTRUCTO TEÓRICO
+  ----------------------------------------------------------------------------
+  | Mecánica                                    | Fase            | Constructo                                                |
+  |---------------------------------------------|-----------------|-----------------------------------------------------------|
+  | Masa gris amorfa sin nombre; solo EMPEZAR   | SENTIR (M1)     | Sensación difusa previa al lenguaje; la tristeza como      |
+  |                                             |                 | señal adaptativa de pérdida (Nesse, 2000)                 |
+  | Arrastrar hasta 3 fichas de matiz al cuenco;| NOMBRAR (M1)    | Etiquetado afectivo (affect labeling, Lieberman et al.,   |
+  | cada ficha da forma y un tenue color a la   |                 | 2007): poner palabras a la emoción reduce su activación   |
+  | bruma                                       |                 | y la hace más precisa, no más grande                      |
+  | Plantilla con huecos + banco de fragmentos  | NARRAR (M1)     | Escritura expresiva (Pennebaker & Beall, 1986): narrar la |
+  | + comodín de texto libre; sin frase correcta|                 | causa y lo que cuesta organiza la experiencia             |
+  | Barco de papel: DEJARLA IR / GUARDARLA /    | SOLTAR (M1)     | Rumia vs. reflexión (Nolen-Hoeksema, 1991; 2008): releer  |
+  | LEERLA OTRA VEZ; tres relecturas seguidas   |                 | en bucle estanca el río (rumia); preguntarse qué necesito |
+  | estancan el río y abren la rama de rumia    |                 | reorienta al siguiente paso (reflexión). Rama explícita   |
+  | Energía baja (20/100) que NO se gasta al    | DETECTAR (M2)   | Activación conductual (Lewinsohn, 1974): la acción        |
+  | actuar sino que se recupera                 |                 | precede a la motivación; conservación de energía (Nesse)  |
+  | Mano de 4 cartas en tres categorías con     | ELEGIR (M2)     | Programación de actividades de dominio y agrado (Martell, |
+  | esfuerzo 1-3 + DESCANSAR siempre disponible |                 | Dimidjian & Herman-Dunn, 2010); descansar es una decisión |
+  | Racha de pasos pequeños con bonus creciente;| ACTUAR (M2)     | Pasos pequeños y sostenidos rinden más que grandes y      |
+  | carta grande con poca energía "a medias"    |                 | aislados; cada acción despeja bruma y devuelve un color   |
+  | Resumen: cartas, energía por turno,         | REGISTRAR (M2)  | Monitoreo de actividad y estado de ánimo: la energía      |
+  | secuencia más eficiente                     |                 | aparece después de la acción y crece con la constancia    |
+  | Selección de estrategia con sugerencia no   | Flujo compartido| Autonomía: la sugerida orienta según la intensidad, no    |
+  | obligatoria                                 |                 | obliga; elegir otra no resta nada                         |
+  | Reevaluación BAJA/MEDIA/ALTA sin respuesta  | Flujo compartido| Metacognición emocional: comparar intensidad inicial y    |
+  | correcta + retroalimentación                |                 | final sin optimismo forzado                               |
+  ----------------------------------------------------------------------------
+
+  EN QUÉ DIFIERE, A PROPÓSITO, DE LA ISLA DE LA ALEGRÍA (Valle de la Luz)
+  · Composición de lenguaje (fichas y fragmentos que se arrastran) en lugar de
+    control de un medidor en tiempo real.
+  · Planificación por turnos con cartas y tablero fijo en lugar de plataformas,
+    saltos y desplazamiento continuo.
+  · La energía se RECUPERA al actuar (lógica invertida): allí se gastaba con
+    cada salto; aquí cada paso pequeño devuelve más que el anterior.
+  · Sin reloj, sin presión de input, sin cuenta regresiva: "no hacer nada"
+    (DESCANSAR, SEGUIR MIRÁNDOLA) es una jugada válida y nunca se penaliza.
+  · Estímulo visual por ausencia: bruma, desaturación y silencio; el color entra
+    de a poco y nunca llega al brillo de la Alegría.
+
+  CÓMO PROBARLO (menos de 6 minutos)
+  1. Abre este archivo con doble clic en un navegador moderno. No hace falta
+     servidor. Parámetros opcionales en la URL: `?intensidad=BAJA|MEDIA|ALTA`
+     (con la que "llegas" a la fase) y `?rapido=1` (sendero de 4 casillas y
+     animaciones más cortas).
+  2. Pantalla de estrategia: cambia la intensidad con la que llegas y observa
+     cómo cambia la sugerida. Pulsa "VER OTRA ESTRATEGIA": aparece el aviso de
+     estrategia no sugerida sin restar nada. "CONTINUAR CON ESTA ESTRATEGIA".
+  3. Mini-juego 1 (El río de las palabras), ~2 min:
+     · SENTIR: lee y pulsa EMPEZAR.
+     · NOMBRAR: arrastra (o toca / Enter) hasta 3 fichas al cuenco. Tras la
+       primera aparece el micro-mensaje. Pulsa "Continuar".
+     · NARRAR: toca o arrastra fragmentos a los dos huecos; prueba el comodín
+       [escribir lo mío]. Rehaz la frase si quieres. "Continuar".
+     · SOLTAR: pulsa "LEERLA OTRA VEZ" tres veces seguidas para ver el río
+       estancarse y la rama de rumia (SEGUIR MIRÁNDOLA / PREGUNTARME QUÉ
+       NECESITO). Luego elige DEJARLA IR o GUARDARLA → 🕯️ Farol de las palabras.
+  4. Caja de herramientas → Reevaluación (BAJA/MEDIA/ALTA) → Retroalimentación.
+     Pulsa "PRACTICAR OTRA ESTRATEGIA".
+  5. Mini-juego 2 (El sendero de los pasos pequeños), ~2 min: DETECTAR (lee) →
+     ELEGIR/ACTUAR: juega dos o tres cartas de esfuerzo 1-2 seguidas y mira el
+     bonus de racha; luego una de esfuerzo 3 con energía < 30 para ver "Fue mucho
+     de una vez"; juega DESCANSAR (nunca penaliza). Desde el turno 3 aparece
+     TERMINAR AQUÍ. Al llegar a la salida → REGISTRAR → 🌱 Semilla del primer paso.
+  6. En la consola: `sessionLog` (partida actual), `sessionLogs` (todas) y
+     `exportarSessionLog()` devuelve el JSON. El texto libre nunca sale del
+     navegador: vive solo en memoria de sesión.
+  ============================================================================
+-->
+<style>
+  :root {
+    --bruma: #c7d1d6;
+    --bruma-densa: #aab7be;
+    --tinta: #1f2c34;
+    --tinta-suave: #4a5a63;
+    --azul: #5b7787;
+    --musgo: #6c7f69;
+    --ambar: #b9935f;
+    --terracota: #a8705a;
+    --blanco-frio: #edf2f4;
+    --panel: rgba(237, 242, 244, 0.95);
+    --oscuro: rgba(31, 44, 52, 0.8);
+    --sombra: 0 18px 50px rgba(10, 20, 26, 0.35);
+    --fuente: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    --texto: clamp(16px, 1.55vw, 20px);
+    --lento: 420ms;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #1c262c; color: var(--tinta); font-family: var(--fuente); overflow: hidden; }
+  button { font: inherit; }
+  :focus-visible { outline: 3px solid var(--ambar); outline-offset: 3px; }
+
+  /* ---------------------------------------------------------------- marco */
+  #marco { position: fixed; inset: 0; display: grid; place-items: center; }
+  #escena { position: relative; width: 1280px; height: 720px; }
+  #lienzo { display: block; width: 100%; height: 100%; border-radius: 14px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); touch-action: none; }
+  /* La capa DOM ocupa toda la ventana (no solo el lienzo 16:9): en un
+     celular vertical los paneles, fichas y cartas usan la pantalla completa
+     y el lienzo queda como paisaje de fondo en el centro. */
+  #capa { position: fixed; inset: 0; pointer-events: none; }
+  #capa > * { pointer-events: auto; }
+
+  /* ------------------------------------------------------------------ HUD */
+  #hud { position: absolute; top: 12px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; pointer-events: none; z-index: 5; }
+  #hud > * { pointer-events: auto; }
+  #fases { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 12px; border-radius: 999px; background: var(--oscuro); color: #fff; font-size: clamp(14px, 1.2vw, 17px); letter-spacing: 0.06em; font-weight: 700; backdrop-filter: blur(6px); }
+  #fases:empty { display: none; }
+  #fases span { opacity: 0.45; }
+  #fases span.hecha { opacity: 0.8; }
+  #fases span.actual { opacity: 1; color: #e9d3ac; }
+  #fases i { font-style: normal; opacity: 0.4; }
+  #opciones { display: flex; gap: 8px; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px; background: var(--oscuro); color: #fff; font-size: 16px; cursor: pointer; backdrop-filter: blur(6px); }
+  .chip input { accent-color: var(--ambar); width: 18px; height: 18px; }
+
+  /* barra de energía (M2): se recupera al actuar */
+  #energia { position: absolute; left: 50%; top: 66px; transform: translateX(-50%); width: min(560px, 74%); padding: 8px 14px 10px; border-radius: 14px; background: var(--oscuro); color: #fff; backdrop-filter: blur(6px); z-index: 4; }
+  #energia[hidden] { display: none; }
+  #energia .fila { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+  #energia .pista { height: 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+  #energia .relleno { height: 100%; width: 20%; border-radius: 999px; background: linear-gradient(90deg, #8ea9b5, #b9935f); transition: width var(--lento) ease; }
+  #energia .racha { color: #e9d3ac; }
+
+  /* mensaje breve */
+  #mensaje { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); max-width: min(760px, 90%); padding: 12px 20px; border-radius: 14px; background: var(--oscuro); color: #fff; font-size: var(--texto); line-height: 1.4; text-align: center; backdrop-filter: blur(6px); animation: aparecer var(--lento) ease; z-index: 6; }
+  #mensaje[hidden] { display: none; }
+  #mensaje.arriba { bottom: auto; top: 70px; }
+  #mensaje.suave { background: var(--panel); color: var(--tinta); }
+
+  /* -------------------------------------------------------------- paneles */
+  #paneles { position: absolute; inset: 0; display: grid; place-items: center; padding: 64px 16px 16px; pointer-events: none; z-index: 7; }
+  #paneles:empty { display: none; }
+  .panel { pointer-events: auto; width: min(640px, 100%); max-height: 100%; overflow-y: auto; padding: clamp(18px, 2.6vw, 30px) clamp(18px, 3vw, 34px); border-radius: 22px; background: var(--panel); border: 1px solid rgba(91, 119, 135, 0.35); box-shadow: var(--sombra); animation: aparecer var(--lento) cubic-bezier(0.22, 1, 0.36, 1); font-size: var(--texto); line-height: 1.5; }
+  .panel.ancho { width: min(900px, 100%); }
+  .panel.abajo { align-self: end; }
+  .panel.arriba { align-self: start; }
+  .panel.translucido { background: rgba(237, 242, 244, 0.86); }
+  .panel .eyebrow { margin: 0 0 6px; font-size: clamp(13px, 1.1vw, 15px); letter-spacing: 0.2em; text-transform: uppercase; color: var(--azul); font-weight: 800; }
+  .panel h2 { margin: 0 0 10px; font-size: clamp(22px, 2.4vw, 30px); line-height: 1.15; color: var(--tinta); }
+  .panel h3 { margin: 12px 0 8px; font-size: clamp(18px, 1.8vw, 22px); }
+  .panel p { margin: 0 0 10px; color: var(--tinta-suave); }
+  .panel p.cita { padding: 10px 14px; border-left: 4px solid var(--azul); background: #e1e9ec; color: var(--tinta); font-style: italic; }
+  .panel p.clinico { padding: 14px 16px; border-radius: 12px; background: #e1e9ec; color: var(--tinta); font-weight: 600; font-size: clamp(17px, 1.7vw, 22px); line-height: 1.45; }
+  .panel p.nota { font-size: clamp(15px, 1.3vw, 17px); }
+  .acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .boton { min-height: 46px; padding: 10px 18px; border: 1px solid rgba(31, 44, 52, 0.25); border-radius: 12px; background: #fff; color: var(--tinta); font-weight: 800; letter-spacing: 0.04em; cursor: pointer; transition: transform var(--lento) ease, background var(--lento) ease; }
+  .boton:hover { transform: translateY(-1px); background: #f4f7f8; }
+  .boton.primario { background: linear-gradient(180deg, #d9c39d, #b9935f); border-color: transparent; color: #1f1a12; }
+  .boton.secundario { background: rgba(255, 255, 255, 0.7); }
+  .boton[disabled] { opacity: 0.5; cursor: default; transform: none; }
+
+  /* selector de intensidad y tarjetas de estrategia */
+  .intensidad { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 4px 0 12px; }
+  .intensidad span { font-size: 15px; color: var(--tinta-suave); margin-right: 4px; }
+  .intensidad button { min-height: 38px; padding: 6px 14px; border: 2px solid rgba(31, 44, 52, 0.2); border-radius: 999px; background: #fff; font-weight: 800; letter-spacing: 0.06em; cursor: pointer; }
+  .intensidad button[aria-pressed="true"] { border-color: var(--azul); background: #e1e9ec; }
+  .tarjetas { display: grid; gap: 12px; margin: 12px 0 4px; grid-template-columns: 1fr 1fr; }
+  .tarjeta { position: relative; display: grid; gap: 4px; padding: 18px 16px 14px; border: 2px solid rgba(31, 44, 52, 0.15); border-radius: 16px; background: #fff; text-align: left; cursor: pointer; transition: border-color var(--lento) ease, transform var(--lento) ease, box-shadow var(--lento) ease; }
+  .tarjeta:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(10, 20, 26, 0.12); }
+  .tarjeta.seleccionada { border-color: var(--azul); box-shadow: 0 0 0 4px rgba(91, 119, 135, 0.22); }
+  .tarjeta .etiqueta { position: absolute; top: -12px; right: 14px; padding: 4px 10px; border-radius: 999px; background: var(--musgo); color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  .tarjeta strong { font-size: clamp(18px, 1.8vw, 22px); color: var(--tinta); }
+  .tarjeta em { font-style: normal; color: var(--azul); font-weight: 700; font-size: clamp(15px, 1.3vw, 17px); }
+  .tarjeta span { color: var(--tinta-suave); font-size: clamp(15px, 1.3vw, 17px); }
+  .tarjeta small { margin-top: 4px; color: var(--tinta-suave); font-size: 14px; letter-spacing: 0.06em; }
+  .aviso { padding: 12px 14px; border-radius: 12px; background: #e6ece2; color: var(--tinta); font-size: clamp(15px, 1.35vw, 18px); }
+  .aviso[hidden] { display: none; }
+
+  /* opciones (reevaluación) */
+  .opciones { display: grid; gap: 10px; margin-top: 10px; }
+  .opciones.fila { grid-template-columns: repeat(3, 1fr); }
+  .opcion { min-height: 52px; padding: 12px 16px; border: 2px solid rgba(31, 44, 52, 0.15); border-radius: 14px; background: #fff; font-weight: 700; cursor: pointer; text-align: left; transition: border-color var(--lento) ease, transform var(--lento) ease; }
+  .opcion:hover { border-color: var(--azul); transform: translateY(-1px); }
+  .opcion.grande { text-align: center; font-size: clamp(18px, 2vw, 24px); letter-spacing: 0.08em; }
+
+  /* caja de herramientas */
+  .herramientas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .herramienta { display: grid; gap: 4px; justify-items: center; padding: 18px 12px; border-radius: 16px; background: #fff; border: 2px solid rgba(31, 44, 52, 0.12); text-align: center; opacity: 0.45; }
+  .herramienta.obtenida { opacity: 1; border-color: var(--ambar); }
+  .herramienta.nueva { animation: latido 1.4s ease 2; box-shadow: 0 0 0 6px rgba(185, 147, 95, 0.22); }
+  .herramienta .icono { font-size: 44px; line-height: 1; }
+  .herramienta strong { font-size: clamp(16px, 1.5vw, 19px); }
+  .herramienta span { font-size: 14px; color: var(--tinta-suave); }
+  .herramienta .estado { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 800; color: var(--ambar); }
+  .registros { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .registros li { padding: 10px 12px; border-radius: 10px; background: #fff; border: 1px solid rgba(31, 44, 52, 0.12); font-style: italic; color: var(--tinta); font-size: clamp(15px, 1.3vw, 17px); }
+
+  pre.registro { max-height: 32vh; overflow: auto; padding: 12px; border-radius: 12px; background: #1f2c34; color: #d8e3e8; font-size: 14px; line-height: 1.4; }
+  .resumen { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 10px; }
+  .resumen span { padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid rgba(31, 44, 52, 0.15); font-weight: 700; font-size: 15px; }
+
+  /* ---------------------------------------------------- capa de juego DOM */
+  #juego { position: absolute; inset: 0; pointer-events: none; }
+  #juego:empty { display: none; }
+  #juego > * { pointer-events: auto; }
+
+  /* M1 · fichas de palabra */
+  #fichas { position: absolute; inset: 0; pointer-events: none; }
+  .ficha { position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%); pointer-events: auto; min-height: 42px; padding: 8px 16px; border: 1px solid rgba(31, 44, 52, 0.25); border-radius: 999px; background: rgba(237, 242, 244, 0.92); color: var(--tinta); font-size: 17px; font-weight: 700; letter-spacing: 0.02em; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; box-shadow: 0 6px 18px rgba(10, 20, 26, 0.18); transition: box-shadow var(--lento) ease, background var(--lento) ease; }
+  .ficha:hover { background: #fff; }
+  .ficha.arrastrando { cursor: grabbing; z-index: 9; box-shadow: 0 14px 30px rgba(10, 20, 26, 0.3); transition: none; }
+  .ficha.colocada { position: static; transform: none; cursor: pointer; background: #e6ece2; border-color: var(--musgo); }
+  #cuenco { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); width: min(520px, 92%); min-height: 118px; padding: 12px 16px; border: 2px dashed rgba(237, 242, 244, 0.7); border-radius: 22px; background: rgba(31, 44, 52, 0.62); color: #fff; backdrop-filter: blur(6px); display: grid; gap: 8px; align-content: start; transition: border-color var(--lento) ease, background var(--lento) ease; }
+  #cuenco.sobre { border-color: #e9d3ac; background: rgba(31, 44, 52, 0.78); }
+  #cuenco .titulo { font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; opacity: 0.85; }
+  #cuenco .slots { display: flex; flex-wrap: wrap; gap: 8px; min-height: 44px; align-items: center; }
+  #cuenco .vacio { font-size: 15px; opacity: 0.7; }
+  #cuenco .acciones { margin-top: 4px; }
+  #cuenco .boton { min-height: 40px; }
+
+  /* M1 · plantilla y fragmentos */
+  .plantilla { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 14px; padding: 14px 16px; border-radius: 14px; background: #fff; border: 1px solid rgba(31, 44, 52, 0.12); font-size: clamp(17px, 1.7vw, 22px); line-height: 1.6; }
+  .hueco { min-width: 150px; min-height: 40px; padding: 4px 12px; border: 2px dashed rgba(91, 119, 135, 0.6); border-radius: 10px; background: #e1e9ec; color: var(--tinta); font-weight: 700; cursor: pointer; text-align: left; transition: border-color var(--lento) ease, background var(--lento) ease; }
+  .hueco.lleno { border-style: solid; background: #e6ece2; border-color: var(--musgo); }
+  .hueco.fijo { border-style: solid; background: #efe7d8; border-color: var(--ambar); cursor: default; }
+  .hueco.activo, .hueco.sobre { border-color: var(--ambar); background: #f3ecdf; }
+  .banco { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fragmento { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(31, 44, 52, 0.25); border-radius: 999px; background: #fff; color: var(--tinta); font-size: 16px; font-weight: 600; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; transition: background var(--lento) ease, opacity var(--lento) ease; }
+  .fragmento:hover { background: #f4f7f8; }
+  .fragmento.usado { opacity: 0.35; }
+  .fragmento.comodin { border-style: dashed; border-color: var(--ambar); background: #f7f1e6; }
+  .fragmento.arrastrando { position: fixed; z-index: 30; cursor: grabbing; box-shadow: 0 14px 30px rgba(10, 20, 26, 0.3); pointer-events: none; }
+  .plantilla .unidad { display: inline-flex; align-items: center; white-space: nowrap; }
+  .libre { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .libre[hidden] { display: none; }
+  .libre input { flex: 1; min-width: 200px; min-height: 42px; padding: 8px 12px; border: 2px solid rgba(91, 119, 135, 0.5); border-radius: 10px; font: inherit; font-size: 16px; color: var(--tinta); }
+  .libre small { width: 100%; color: var(--tinta-suave); font-size: 14px; }
+  .frase-final { font-size: clamp(18px, 1.9vw, 24px); font-style: italic; color: var(--tinta); padding: 12px 16px; border-left: 4px solid var(--ambar); background: #f7f1e6; border-radius: 6px; }
+
+  /* M2 · mano de cartas */
+  #mesa { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 16px 14px; display: grid; gap: 8px; pointer-events: none; }
+  #mesa > * { pointer-events: auto; }
+  #mesa .fila { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  #mesa .turno { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 999px; background: var(--oscuro); color: #fff; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; backdrop-filter: blur(6px); }
+  #mano { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .carta { display: grid; gap: 6px; align-content: start; min-height: 150px; padding: 12px 12px 10px; border: 2px solid rgba(31, 44, 52, 0.15); border-radius: 16px; background: var(--panel); text-align: left; cursor: pointer; transition: transform var(--lento) ease, box-shadow var(--lento) ease, border-color var(--lento) ease; animation: aparecer var(--lento) ease; }
+  .carta:hover { transform: translateY(-4px); box-shadow: 0 12px 26px rgba(10, 20, 26, 0.22); }
+  .carta[disabled] { opacity: 0.55; cursor: default; transform: none; }
+  .carta .categoria { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800; }
+  .carta strong { font-size: clamp(16px, 1.5vw, 19px); line-height: 1.2; color: var(--tinta); }
+  .carta .esfuerzo { font-size: 15px; color: var(--tinta-suave); }
+  .carta .efecto { margin-top: auto; font-size: 15px; font-weight: 700; color: var(--tinta); }
+  .carta.cuidado { border-left: 6px solid var(--azul); } .carta.cuidado .categoria { color: var(--azul); }
+  .carta.movimiento { border-left: 6px solid var(--musgo); } .carta.movimiento .categoria { color: var(--musgo); }
+  .carta.conexion { border-left: 6px solid var(--terracota); } .carta.conexion .categoria { color: var(--terracota); }
+  .carta.descanso { border: 2px dashed rgba(31, 44, 52, 0.35); background: rgba(237, 242, 244, 0.8); } .carta.descanso .categoria { color: var(--tinta-suave); }
+  #terminar { justify-self: end; }
+  #terminar[hidden] { display: none; }
+  .grafica { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 10px; border-radius: 12px; background: #fff; border: 1px solid rgba(31, 44, 52, 0.12); margin: 8px 0 12px; }
+  .grafica i { flex: 1; display: block; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #b9935f, #8ea9b5); min-height: 4px; position: relative; }
+  .grafica i::after { content: attr(data-v); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 12px; font-style: normal; color: var(--tinta-suave); }
+  .lista-cartas { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+  .lista-cartas span { padding: 4px 10px; border-radius: 999px; background: #fff; border: 1px solid rgba(31, 44, 52, 0.15); font-size: 14px; }
+  .lista-cartas span.cuidado { border-color: var(--azul); } .lista-cartas span.movimiento { border-color: var(--musgo); } .lista-cartas span.conexion { border-color: var(--terracota); } .lista-cartas span.descanso { border-style: dashed; }
+
+  @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes latido { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+  @media (max-width: 860px) {
+    .tarjetas { grid-template-columns: 1fr; }
+    .opciones.fila { grid-template-columns: 1fr; }
+    .herramientas { grid-template-columns: 1fr; }
+    #fases { font-size: 13px; padding: 6px 10px; }
+    #mano { grid-template-columns: repeat(2, 1fr); }
+    .carta { min-height: 110px; padding: 10px; }
+    #cuenco { bottom: 12px; min-height: 96px; }
+    /* en pantallas estrechas las fichas no flotan: se ordenan en filas para que quepan */
+    #fichas { position: absolute; left: 12px; right: 12px; top: 64px; bottom: 150px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; justify-content: center; overflow: auto; }
+    .ficha { position: static; transform: none; min-height: 38px; padding: 6px 12px; font-size: 16px; }
+  }
+  @media (max-width: 700px) {
+    .chip { min-height: 34px; padding: 4px 10px; font-size: 14px; }
+    #fases { font-size: 12px; gap: 4px; }
+    #paneles { padding-top: 96px; }
+    #fichas { top: 104px; bottom: 170px; }
+    #energia { top: 96px; }
+    .plantilla { font-size: 17px; }
+    .hueco { min-width: 110px; }
+  }
+  @media (max-height: 460px) {
+    #paneles { padding: 54px 10px 8px; }
+    .panel { padding: 12px 16px; border-radius: 16px; }
+    .panel h2 { font-size: 20px; margin-bottom: 6px; }
+    .panel p { margin-bottom: 6px; }
+    .carta { min-height: 90px; }
+    #energia { top: 58px; padding: 6px 12px 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel, #mensaje, .carta { animation: none; }
+    .herramienta.nueva { animation: none; }
+    .ficha, .boton, .tarjeta, .opcion, .hueco, .carta { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="marco">
+  <div id="escena">
+    <canvas id="lienzo" width="1280" height="720" aria-label="El Valle de la Bruma"></canvas>
+  </div>
+</div>
+<div id="capa">
+      <header id="hud">
+        <div id="fases" aria-live="polite"></div>
+        <div id="opciones">
+          <label class="chip" title="Menos partículas y movimiento"><input type="checkbox" id="chkBaja" /> Baja estimulación</label>
+          <button class="chip" id="btnSonido" type="button" aria-pressed="true">🔊 Sonido</button>
+        </div>
+      </header>
+      <div id="energia" hidden aria-live="polite">
+        <div class="fila"><span>Energía disponible</span><span class="racha" data-racha></span><span data-valor>20 / 100</span></div>
+        <div class="pista"><div class="relleno" data-relleno></div></div>
+      </div>
+      <div id="juego"></div>
+      <div id="mensaje" hidden aria-live="polite"></div>
+      <div id="paneles"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================================
+   CONFIG · constantes de balance. Un diseñador puede ajustarlas sin tocar la
+   lógica. `?rapido=1` acorta el sendero y las animaciones; `?intensidad=`
+   fija la intensidad con la que se llega a la fase.
+   ========================================================================== */
+const PARAMS = new URLSearchParams(location.search);
+const RAPIDO = PARAMS.has('rapido');
+const REDUCIR_MOVIMIENTO = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CONFIG = {
+  ancho: 1280,
+  alto: 720,
+  intensidadInicial: ['BAJA', 'MEDIA', 'ALTA'].includes((PARAMS.get('intensidad') || '').toUpperCase())
+    ? PARAMS.get('intensidad').toUpperCase() : 'MEDIA',
+  // Sugerencia por intensidad (solo orientación). Con tristeza baja, un paso
+  // pequeño ya activa; con media o alta, primero ponerle palabras.
+  sugeridaPorIntensidad: { BAJA: 'sendero', MEDIA: 'rio', ALTA: 'rio' },
+  particulasMaximo: 90,
+  bajaEstimulacionFactor: 0.35,
+  transicion: RAPIDO ? 0.5 : 1.0,        // multiplicador de duraciones (nunca < 400 ms visibles)
+  rio: {
+    maximoPalabras: 3,
+    fichasEnPantalla: 22,
+    umbralRumia: 3,                       // relecturas seguidas que estancan el río
+    claridadPorPalabra: 0.12,             // cuánto se ordena la bruma por cada ficha
+    claridadDejarIr: 0.38,
+    claridadGuardar: 0.2,
+    duracionDejarIr: RAPIDO ? 1.4 : 3.6,  // s que tarda el barco en irse río abajo
+    duracionVolver: RAPIDO ? 0.6 : 1.2,
+    textoLibreMax: 80
+  },
+  sendero: {
+    casillas: RAPIDO ? 4 : 7,
+    energiaInicial: 20,
+    energiaMaxima: 100,
+    manoTamano: 4,
+    efectoBase: { 1: 8, 2: 12, 3: 18 },  // energía que devuelve cada esfuerzo con energía suficiente
+    bonusRacha: 4,                        // energía extra por cada paso pequeño encadenado
+    rachaMaxima: 4,
+    umbralEnergiaBaja: 30,                // por debajo, una carta de esfuerzo 3 sale "a medias"
+    efectoAMedias: 4,
+    descanso: 6,                          // energía que repone DESCANSAR (nunca penaliza)
+    turnoTerminar: 3,                     // desde qué turno aparece TERMINAR AQUÍ
+    claridadPorCasilla: 0.13
+  },
+  audio: { filtroMin: 260, filtroMax: 1900, volumen: 0.16, segundosEntreNotas: [5, 9] }
+};
+
+/* ----------------------------------------------------------------------------
+   TEXTOS · contenido psicoeducativo. Se usan literales; nada de optimismo
+   forzado ("anímate", "todo estará bien") ni lenguaje clínico-diagnóstico.
+   -------------------------------------------------------------------------- */
+const TEXTOS = {
+  entrada: 'La tristeza puede aparecer ante pérdidas, cambios, distancias o situaciones que no salieron como esperabas. No necesitas hacerla desaparecer para continuar. Elige una forma de acompañarla.',
+  otraEstrategia: 'Esta estrategia también puede utilizarse. La sugerida responde a la intensidad que identificaste, pero puedes explorar otra forma de acompañar tu tristeza.',
+  sentir: 'Algo pesa, pero todavía no tiene nombre.',
+  primeraFicha: 'Poner un nombre a lo que sientes no lo hace más grande. Lo hace más preciso.',
+  rumia: 'Volver una y otra vez sobre lo mismo puede espesar la bruma en lugar de despejarla. Puedes seguir mirándola, o preguntarte qué necesitas ahora.',
+  rioCierre: 'Nombrar lo que sientes y contarlo, aunque sea solo para ti, es una forma de regular la tristeza. No la borra: la hace más comprensible.',
+  senderoEntrada: 'Cuando hay tristeza, es común esperar a tener ganas para empezar. Aquí probaremos lo contrario: empezar, aunque sea poco, y ver qué pasa con las ganas.',
+  descansar: 'Descansar también es una decisión. La tristeza baja el nivel de energía disponible; respetarlo no es rendirse.',
+  aMedias: 'Fue mucho de una vez. No salió como esperabas, y está bien. Los pasos pequeños sostienen mejor.',
+  senderoCierre: 'La energía no siempre aparece antes de la acción. Muchas veces aparece después, y crece con acciones pequeñas y sostenidas.',
+  caja: 'MI CAJA DE HERRAMIENTAS DE LA TRISTEZA',
+  reevaluacion: '¿CÓMO ESTÁ AHORA TU TRISTEZA?',
+  disminuyo: 'La intensidad de tu tristeza disminuyó. Acompañarla con una estrategia te permitió recuperar un nivel que te deja continuar.',
+  mantiene: 'La intensidad de tu tristeza se mantiene. La tristeza suele necesitar tiempo, y sostenerla mientras continúas también es una forma de regularla.',
+  aumento: 'La intensidad de tu tristeza aumentó. Puede ocurrir al acercarse a lo que duele. Observa qué necesitas ahora: descansar, expresarlo o buscar compañía.',
+  btnContinuar: 'CONTINUAR CON ESTA ESTRATEGIA',
+  btnOtra: 'VER OTRA ESTRATEGIA',
+  btnPracticar: 'PRACTICAR OTRA ESTRATEGIA'
+};
+
+const HERRAMIENTAS = {
+  farol: { id: 'farol', icono: '🕯️', nombre: 'Farol de las palabras', estrategia: 'Nombrar y narrar la tristeza' },
+  semilla: { id: 'semilla', icono: '🌱', nombre: 'Semilla del primer paso', estrategia: 'Activación conductual gradual' }
+};
+
+const ESTRATEGIAS = {
+  rio: {
+    id: 'rio',
+    camino: 'El río de las palabras',
+    nombre: 'Nombrar y narrar la tristeza',
+    descripcion: 'En la orilla del río de bruma, transforma una sensación difusa en palabras precisas y decide qué hacer con ellas.',
+    fases: ['SENTIR', 'NOMBRAR', 'NARRAR', 'SOLTAR'],
+    herramienta: 'farol',
+    estado: 'MINIJUEGO_RIO'
+  },
+  sendero: {
+    id: 'sendero',
+    camino: 'El sendero de los pasos pequeños',
+    nombre: 'Activación conductual gradual',
+    descripcion: 'Un sendero cubierto de bruma sale del valle. Cada acción pequeña despeja un tramo y devuelve energía.',
+    fases: ['DETECTAR', 'ELEGIR', 'ACTUAR', 'REGISTRAR'],
+    herramienta: 'semilla',
+    estado: 'MINIJUEGO_SENDERO'
+  }
+};
+
+/* Matices de la tristeza (no sinónimos vagos) · fase NOMBRAR */
+const PALABRAS = ['nostalgia', 'desánimo', 'decepción', 'soledad', 'vacío', 'cansancio', 'añoranza', 'frustración',
+  'impotencia', 'culpa', 'resignación', 'vulnerabilidad', 'extrañar', 'pérdida', 'distancia', 'silencio', 'pesadez',
+  'desconcierto', 'melancolía', 'desamparo', 'abatimiento', 'ausencia'];
+
+/* Fragmentos para los huecos "porque ___" y "lo que más me cuesta es ___" */
+const FRAGMENTOS = ['algo terminó', 'alguien que quiero está lejos', 'esperaba otra cosa', 'no salió como lo planeé',
+  'no pude evitarlo', 'me siento solo en esto', 'no sé qué sigue', 'extraño cómo era antes', 'perdí algo que me importaba',
+  'las cosas cambiaron sin avisar', 'me cuesta pedir ayuda', 'no encuentro con quién hablarlo',
+  'ya no tengo ganas de lo que antes disfrutaba', 'se repite en mi cabeza', 'no sé cómo explicarlo'];
+
+/* Mazo de acciones · tres categorías con esfuerzo 1-3 */
+const MAZO = [
+  ...['tomar agua', 'abrir la ventana', 'lavarme la cara', 'estirarme un minuto', 'ordenar una sola cosa', 'comer algo sencillo']
+    .map((n) => ({ nombre: n, categoria: 'cuidado', titulo: 'Cuidado básico', esfuerzo: 1 })),
+  ...['caminar hasta la esquina', 'salir al patio', 'poner una canción', 'cambiar de habitación', 'regar una planta', 'dar una vuelta a la manzana']
+    .map((n) => ({ nombre: n, categoria: 'movimiento', titulo: 'Movimiento y entorno', esfuerzo: 2 })),
+  ...['escribirle a alguien', 'contestar un mensaje pendiente', 'pedir compañía', 'retomar algo que me gustaba', 'hacer algo por alguien más', 'sentarme un rato con alguien']
+    .map((n) => ({ nombre: n, categoria: 'conexion', titulo: 'Conexión y sentido', esfuerzo: 3 }))
+];
+const CARTA_DESCANSAR = { nombre: 'DESCANSAR', categoria: 'descanso', titulo: 'Siempre disponible', esfuerzo: 0 };
+
+const ORDEN_INTENSIDAD = { BAJA: 0, MEDIA: 1, ALTA: 2 };
+
+/* ============================================================================
+   ESTADO CENTRAL Y TELEMETRÍA
+   ========================================================================== */
+const GameState = {
+  estado: null,
+  intensidadInicial: CONFIG.intensidadInicial,
+  estrategiaSugerida: CONFIG.sugeridaPorIntensidad[CONFIG.intensidadInicial],
+  estrategiaElegida: null,
+  herramientas: new Set(),
+  ultimaHerramienta: null,
+  registros: [],               // frases guardadas en la caja (solo memoria de sesión)
+  intensidadFinal: null,
+  bajaEstimulacion: false,
+  sonido: true,
+  claridad: 0                  // 0 = bruma densa · 1 = valle sereno (nunca "brillante")
+};
+
+function nuevoSessionLog() {
+  return {
+    intensidadInicial: GameState.intensidadInicial,
+    estrategiaSugerida: GameState.estrategiaSugerida,
+    estrategiaElegida: null,
+    minijuego: null,
+    palabrasElegidas: [],
+    fraseConstruida: null,
+    usoDeTextoLibre: false,
+    accionFinalDelBarco: null,
+    vecesQueReleyo: 0,
+    entroEnRamaDeRumia: false,
+    cartasJugadas: [],
+    secuenciaDeEsfuerzo: [],
+    vecesQueDescanso: 0,
+    energiaPorTurno: [],
+    turnosTotales: 0,
+    terminoAnticipadamente: false,
+    recompensaObtenida: null,
+    intensidadFinal: null,
+    direccionDelCambio: null,
+    tiempoPorFase: {},
+    inicio: new Date().toISOString(),
+    fin: null
+  };
+}
+window.sessionLog = nuevoSessionLog();
+window.sessionLogs = [];
+window.exportarSessionLog = () => JSON.stringify({ actual: window.sessionLog, todas: window.sessionLogs }, null, 2);
+
+/* Cronómetro por fase (solo para telemetría: nunca se muestra un reloj) */
+const Fases = {
+  actual: null,
+  inicio: 0,
+  iniciar(nombre) {
+    this.cerrar();
+    this.actual = nombre;
+    this.inicio = performance.now();
+  },
+  cerrar() {
+    if (!this.actual) return;
+    const seg = (performance.now() - this.inicio) / 1000;
+    const log = window.sessionLog;
+    log.tiempoPorFase[this.actual] = +((log.tiempoPorFase[this.actual] ?? 0) + seg).toFixed(1);
+    this.actual = null;
+  }
+};
+
+/* ============================================================================
+   UTILIDADES
+   ========================================================================== */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const suave = (t) => t * t * (3 - 2 * t);
+const barajar = (lista) => { const a = [...lista]; for (let i = a.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const escapar = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const _cacheColor = new Map();
+function hexRgb(h) {
+  if (_cacheColor.has(h)) return _cacheColor.get(h);
+  const n = parseInt(h.slice(1), 16);
+  const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  _cacheColor.set(h, rgb);
+  return rgb;
+}
+/* Mezcla dos colores hex según k (0 = a, 1 = b) */
+function mezcla(a, b, k, alfa = 1) {
+  const A = hexRgb(a); const B = hexRgb(b); const t = clamp(k, 0, 1);
+  return `rgba(${Math.round(lerp(A[0], B[0], t))},${Math.round(lerp(A[1], B[1], t))},${Math.round(lerp(A[2], B[2], t))},${alfa})`;
+}
+/* Ruido determinista para un paisaje estable entre frames */
+function ruido(i) { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+
+/* La claridad se acerca a su objetivo despacio: la bruma nunca cambia de golpe */
+const Claridad = {
+  objetivo: 0,
+  fijar(v) { this.objetivo = clamp(v, 0, 1); },
+  sumar(v) { this.fijar(this.objetivo + v); },
+  update(dt) { GameState.claridad = lerp(GameState.claridad, this.objetivo, 1 - Math.exp(-dt * 0.9)); }
+};
+
+/* ============================================================================
+   AUDIO · ambiente mínimo: un dron grave y notas espaciadas de una escala
+   menor pentatónica. El filtro se abre conforme la bruma se despeja.
+   ========================================================================== */
+const Audio = {
+  ctx: null, master: null, filtro: null, listo: false, proximaNota: 0,
+  escala: [0, 3, 5, 7, 10],                   // pentatónica menor
+  tonica: 130.81,                             // Do3, registro grave
+  init() {
+    if (this.listo) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = GameState.sonido ? CONFIG.audio.volumen : 0;
+      this.filtro = this.ctx.createBiquadFilter();
+      this.filtro.type = 'lowpass';
+      this.filtro.frequency.value = CONFIG.audio.filtroMin;
+      this.filtro.connect(this.master).connect(this.ctx.destination);
+      this.listo = true;
+      this.dron();
+      this.proximaNota = this.ctx.currentTime + 2;
+    } catch (e) { this.listo = false; }
+  },
+  reanudar() { if (this.listo && this.ctx.state === 'suspended') this.ctx.resume(); },
+  setSonido(on) {
+    GameState.sonido = on;
+    if (this.listo) this.master.gain.setTargetAtTime(on ? CONFIG.audio.volumen : 0, this.ctx.currentTime, 0.05);
+  },
+  dron() {
+    [this.tonica / 2, this.tonica / 2 * 1.5].forEach((f, i) => {
+      const o = this.ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+      const g = this.ctx.createGain(); g.gain.value = i === 0 ? 0.09 : 0.04;
+      o.connect(g).connect(this.filtro); o.start();
+    });
+  },
+  nota(freq, t, dur = 1.6, vol = 0.12, tipo = 'sine') {
+    if (!this.listo) return;
+    const o = this.ctx.createOscillator(); o.type = tipo; o.frequency.value = freq;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.25);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(this.filtro); o.start(t); o.stop(t + dur + 0.1);
+  },
+  /* Notas graves y espaciadas; más claridad = filtro más abierto y algo más de aire */
+  update() {
+    if (!this.listo || this.ctx.state !== 'running') return;
+    const k = GameState.claridad;
+    this.filtro.frequency.setTargetAtTime(lerp(CONFIG.audio.filtroMin, CONFIG.audio.filtroMax, k), this.ctx.currentTime, 0.6);
+    const ahora = this.ctx.currentTime;
+    if (ahora >= this.proximaNota) {
+      const grado = this.escala[Math.floor(Math.random() * this.escala.length)] + (Math.random() < k * 0.6 ? 12 : 0);
+      this.nota(this.tonica * Math.pow(2, grado / 12), ahora, 2.4, 0.1 + 0.05 * k, 'triangle');
+      const [a, b] = CONFIG.audio.segundosEntreNotas;
+      this.proximaNota = ahora + lerp(b, a, k) + Math.random() * 2;
+    }
+  },
+  /* Sonidos puntuales: todos suaves, sin ataques bruscos */
+  gota() { if (!this.listo) return; const t = this.ctx.currentTime; this.nota(this.tonica * 4, t, 0.6, 0.12); this.nota(this.tonica * 6, t + 0.06, 0.5, 0.06); },
+  pling() { if (!this.listo) return; const t = this.ctx.currentTime; [7, 12].forEach((s, i) => this.nota(this.tonica * 2 * Math.pow(2, s / 12), t + i * 0.12, 0.9, 0.1)); },
+  exito() { if (!this.listo) return; const t = this.ctx.currentTime; [0, 3, 7, 12].forEach((s, i) => this.nota(this.tonica * 2 * Math.pow(2, s / 12), t + i * 0.16, 1.4, 0.11)); },
+  suavecito() { if (!this.listo) return; this.nota(this.tonica * 1.5, this.ctx.currentTime, 0.9, 0.08, 'triangle'); }
+};
+
+/* ============================================================================
+   DOM, ENTRADA Y HUD
+   ========================================================================== */
+const lienzo = document.getElementById('lienzo');
+const ctx2d = lienzo.getContext('2d');
+const escena = document.getElementById('escena');
+const capaJuego = document.getElementById('juego');
+
+const Entrada = {
+  escala: 1,
+  /* coordenadas de un evento en el espacio 1280×720 del lienzo */
+  aLienzo(e) {
+    const r = lienzo.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (CONFIG.ancho / r.width), y: (e.clientY - r.top) * (CONFIG.alto / r.height) };
+  }
+};
+window.addEventListener('pointerdown', () => { Audio.init(); Audio.reanudar(); }, { passive: true });
+window.addEventListener('keydown', () => { Audio.init(); Audio.reanudar(); }, { passive: true });
+
+const Hud = {
+  fases: document.getElementById('fases'),
+  energia: document.getElementById('energia'),
+  mensaje: document.getElementById('mensaje'),
+  paneles: document.getElementById('paneles'),
+  _timerMensaje: null,
+  setFases(lista, actual) {
+    if (!lista) { this.fases.innerHTML = ''; return; }
+    const idx = lista.indexOf(actual);
+    this.fases.innerHTML = lista.map((f, i) =>
+      `<span class="${i < idx ? 'hecha' : i === idx ? 'actual' : ''}">${i < idx ? '✓ ' : ''}${f}</span>${i < lista.length - 1 ? '<i>→</i>' : ''}`
+    ).join('');
+  },
+  setEnergia(valor, racha = 0) {
+    if (valor === null) { this.energia.hidden = true; return; }
+    this.energia.hidden = false;
+    const v = Math.round(clamp(valor, 0, CONFIG.sendero.energiaMaxima));
+    this.energia.querySelector('[data-relleno]').style.width = `${v}%`;
+    this.energia.querySelector('[data-valor]').textContent = `${v} / ${CONFIG.sendero.energiaMaxima}`;
+    this.energia.querySelector('[data-racha]').textContent = racha >= 2 ? `racha de pasos pequeños ×${racha}` : '';
+  },
+  /* Mensaje breve. `ms` 0 = fijo hasta que se cambie */
+  decir(texto, { ms = 4200, suave = false, arriba = false } = {}) {
+    clearTimeout(this._timerMensaje);
+    if (!texto) { this.mensaje.hidden = true; return; }
+    this.mensaje.textContent = texto;
+    this.mensaje.className = `${suave ? 'suave' : ''} ${arriba ? 'arriba' : ''}`.trim();
+    this.mensaje.hidden = false;
+    if (ms) this._timerMensaje = setTimeout(() => { this.mensaje.hidden = true; }, ms);
+  },
+  /* Panel modal con título, html y botones. Devuelve el nodo. */
+  panel({ eyebrow = '', titulo = '', html = '', botones = [], clase = '' } = {}) {
+    this.paneles.innerHTML = '';
+    const p = document.createElement('section');
+    p.className = `panel ${clase}`;
+    p.setAttribute('role', 'dialog');
+    p.setAttribute('aria-label', titulo || eyebrow);
+    p.innerHTML = `
+      ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
+      ${titulo ? `<h2>${titulo}</h2>` : ''}
+      ${html}
+      ${botones.length ? `<div class="acciones">${botones.map((b, i) => `<button class="boton ${b.primario ? 'primario' : 'secundario'}" type="button" data-b="${i}" ${b.deshabilitado ? 'disabled' : ''}>${b.texto}</button>`).join('')}</div>` : ''}
+    `;
+    botones.forEach((b, i) => p.querySelector(`[data-b="${i}"]`).addEventListener('click', () => b.accion?.(p)));
+    this.paneles.appendChild(p);
+    (p.querySelector('.boton.primario') || p.querySelector('button'))?.focus({ preventScroll: true });
+    return p;
+  },
+  cerrarPanel() { this.paneles.innerHTML = ''; }
+};
+
+document.getElementById('chkBaja').addEventListener('change', (e) => { GameState.bajaEstimulacion = e.target.checked; });
+document.getElementById('btnSonido').addEventListener('click', (e) => {
+  Audio.init();
+  Audio.setSonido(!GameState.sonido);
+  e.currentTarget.textContent = GameState.sonido ? '🔊 Sonido' : '🔇 Sonido';
+  e.currentTarget.setAttribute('aria-pressed', String(GameState.sonido));
+});
+
+/* Escalado responsivo: el lienzo mantiene 16:9 y la capa DOM lo acompaña */
+function ajustarEscala() {
+  const s = Math.min(window.innerWidth / CONFIG.ancho, window.innerHeight / CONFIG.alto);
+  escena.style.width = `${Math.floor(CONFIG.ancho * s)}px`;
+  escena.style.height = `${Math.floor(CONFIG.alto * s)}px`;
+  Entrada.escala = s;
+}
+window.addEventListener('resize', ajustarEscala);
+ajustarEscala();
+
+/* ============================================================================
+   ESCENARIO · el Valle de la Bruma dibujado por código. La claridad k (0..1)
+   es el lenguaje visual de la emoción: menos bruma, algo más de color y de
+   movimiento. Nunca llega a ser brillante: llega a ser sereno.
+   ========================================================================== */
+const Motas = {
+  lista: [],
+  crear() { return { x: Math.random() * CONFIG.ancho, y: Math.random() * CONFIG.alto, vx: (Math.random() - 0.5) * 8, vy: -2 - Math.random() * 5, r: 2 + Math.random() * 3, fase: Math.random() * Math.PI * 2, vida: 0, max: 8 + Math.random() * 8 }; },
+  update(dt, k) {
+    const factor = GameState.bajaEstimulacion ? CONFIG.bajaEstimulacionFactor : 1;
+    const objetivo = Math.round((20 + CONFIG.particulasMaximo * (1 - k)) * factor);
+    while (this.lista.length < objetivo) this.lista.push(this.crear());
+    if (this.lista.length > objetivo) this.lista.length = objetivo;
+    const vel = REDUCIR_MOVIMIENTO ? 0.3 : 0.5 + k * 0.6;
+    for (const p of this.lista) {
+      p.vida += dt; p.x += p.vx * vel * dt; p.y += p.vy * vel * dt;
+      if (p.vida > p.max || p.y < -10) Object.assign(p, this.crear(), { y: CONFIG.alto + 10 });
+    }
+  },
+  dibujar(ctx, k) {
+    ctx.save();
+    for (const p of this.lista) {
+      const a = (0.35 + 0.35 * Math.sin(p.vida * 0.9 + p.fase)) * (0.5 - 0.2 * k) * Math.min(1, p.vida);
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillStyle = '#dfe7ea';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+};
+
+const Valle = {
+  /* Cielo, colinas y bruma. `modo` añade el río o el sendero. */
+  dibujar(ctx, { t, k, modo = 'valle', flujo = 1, casillas = null }) {
+    const W = CONFIG.ancho; const H = CONFIG.alto;
+    const cielo = ctx.createLinearGradient(0, 0, 0, H);
+    cielo.addColorStop(0, mezcla('#3a4950', '#8da2ac', k));
+    cielo.addColorStop(0.6, mezcla('#4a5960', '#b5c3c8', k));
+    cielo.addColorStop(1, mezcla('#3e4c52', '#9fb3b4', k));
+    ctx.fillStyle = cielo; ctx.fillRect(0, 0, W, H);
+    // un tenue ámbar en el horizonte cuando la bruma cede (nunca un sol brillante)
+    if (k > 0.35) {
+      const g = ctx.createRadialGradient(W * 0.68, H * 0.42, 10, W * 0.68, H * 0.42, 420);
+      g.addColorStop(0, `rgba(201,160,106,${(k - 0.35) * 0.32})`); g.addColorStop(1, 'rgba(201,160,106,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+    // colinas en tres capas, más lejanas = más desvaídas
+    const capas = [
+      { base: H * 0.5, amp: 70, freq: 0.0021, color: mezcla('#55656c', '#8f9fa3', k), alfa: 0.6 },
+      { base: H * 0.58, amp: 90, freq: 0.0034, color: mezcla('#4a5b60', '#7d918f', k), alfa: 0.8 },
+      { base: H * 0.68, amp: 60, freq: 0.0052, color: mezcla('#41525a', '#6c7f69', k), alfa: 1 }
+    ];
+    capas.forEach((c, i) => {
+      ctx.save(); ctx.globalAlpha = c.alfa;
+      ctx.fillStyle = c.color; ctx.beginPath(); ctx.moveTo(0, H);
+      for (let x = 0; x <= W; x += 16) {
+        const y = c.base - Math.abs(Math.sin(x * c.freq + i * 1.7)) * c.amp - Math.sin(x * c.freq * 3.1 + i) * 12;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W, H); ctx.closePath(); ctx.fill(); ctx.restore();
+    });
+    // suelo del valle
+    ctx.fillStyle = mezcla('#3b4a4d', '#6f8270', k);
+    ctx.fillRect(0, H * 0.72, W, H * 0.28);
+    if (modo === 'rio') this.rio(ctx, t, k, flujo);
+    if (modo === 'sendero') this.sendero(ctx, t, k, casillas);
+    // árboles desnudos, esbozados, que se tiñen de musgo con la claridad
+    for (let i = 0; i < 9; i += 1) {
+      const x = 60 + ruido(i) * (W - 120); const y = H * 0.66 + ruido(i + 40) * 40; const h = 50 + ruido(i + 80) * 70;
+      ctx.strokeStyle = mezcla('#2f3c42', '#5a6b58', k); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - h); ctx.moveTo(x, y - h * 0.55); ctx.lineTo(x - 18, y - h * 0.8);
+      ctx.moveTo(x, y - h * 0.4); ctx.lineTo(x + 16, y - h * 0.7); ctx.stroke();
+      if (k > 0.5) { ctx.fillStyle = `rgba(108,127,105,${(k - 0.5) * 0.9})`; ctx.beginPath(); ctx.arc(x, y - h * 0.8, 14 + ruido(i + 3) * 10, 0, Math.PI * 2); ctx.fill(); }
+    }
+  },
+  rio(ctx, t, k, flujo) {
+    const W = CONFIG.ancho; const y0 = CONFIG.alto * 0.62; const y1 = CONFIG.alto * 0.82;
+    ctx.fillStyle = mezcla('#4d5f68', '#6e8a99', k);
+    ctx.beginPath(); ctx.moveTo(0, y0 + 20); ctx.quadraticCurveTo(W * 0.5, y0 - 30, W, y0 + 10); ctx.lineTo(W, y1); ctx.quadraticCurveTo(W * 0.5, y1 + 30, 0, y1 - 20); ctx.closePath(); ctx.fill();
+    // brillos que avanzan río abajo; con el río estancado (flujo 0) se quedan quietos y se apagan
+    ctx.save(); ctx.globalAlpha = 0.28 + 0.25 * k;
+    ctx.strokeStyle = mezcla('#8fa2ab', '#d8e3e6', k); ctx.lineWidth = 2;
+    for (let i = 0; i < 14; i += 1) {
+      const vel = (REDUCIR_MOVIMIENTO ? 12 : 26) * flujo;
+      const x = ((ruido(i) * W + t * vel * (0.6 + ruido(i + 9))) % (W + 80)) - 40;
+      const y = lerp(y0 + 30, y1 - 30, ruido(i + 20)) + Math.sin(t * 0.7 + i) * 3;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 24, y - 3, x + 48, y); ctx.stroke();
+    }
+    ctx.restore();
+    if (flujo < 0.5) { // el estancamiento se nota: una lámina opaca sobre el agua
+      ctx.fillStyle = `rgba(120,132,138,${(0.5 - flujo) * 0.5})`; ctx.fillRect(0, y0 - 10, W, y1 - y0 + 30);
+    }
+  },
+  /* Sendero de casillas hacia la salida del valle. Cada casilla despejada
+     devuelve un elemento de color de baja saturación. */
+  sendero(ctx, t, k, casillas) {
+    if (!casillas) return;
+    const { total, actual } = casillas;
+    for (let i = 0; i <= total; i += 1) {
+      const p = this.posCasilla(i, total);
+      const despejada = i <= actual;
+      ctx.fillStyle = despejada ? mezcla('#7c8b8f', '#c9c2b0', 0.4 + 0.6 * k) : 'rgba(110,122,127,0.5)';
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, 34, 16, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(31,44,52,0.35)'; ctx.lineWidth = 2; ctx.stroke();
+      if (i > 0 && despejada) this.adornoCasilla(ctx, i, p, t);
+      if (i === total) { // salida del valle: una abertura suave en la bruma
+        const g = ctx.createRadialGradient(p.x, p.y - 40, 6, p.x, p.y - 40, 120);
+        g.addColorStop(0, `rgba(226,214,190,${0.25 + 0.4 * k})`); g.addColorStop(1, 'rgba(226,214,190,0)');
+        ctx.fillStyle = g; ctx.fillRect(p.x - 120, p.y - 160, 240, 240);
+      }
+    }
+  },
+  posCasilla(i, total) {
+    const u = i / total;
+    return { x: lerp(150, CONFIG.ancho - 170, u), y: lerp(CONFIG.alto * 0.57, CONFIG.alto * 0.36, u) + Math.sin(u * Math.PI * 2) * 30 };
+  },
+  /* Un elemento de color por tramo: musgo, terracota, ámbar, azul... siempre apagados */
+  adornoCasilla(ctx, i, p, t) {
+    const tipo = i % 4;
+    if (tipo === 1) { ctx.fillStyle = '#6c7f69'; ctx.beginPath(); ctx.ellipse(p.x + 40, p.y + 6, 18, 8, 0, 0, Math.PI * 2); ctx.fill(); }
+    if (tipo === 2) { ctx.fillStyle = '#a8705a'; ctx.beginPath(); ctx.moveTo(p.x - 48, p.y + 8); ctx.lineTo(p.x - 36, p.y - 14); ctx.lineTo(p.x - 22, p.y + 8); ctx.closePath(); ctx.fill(); }
+    if (tipo === 3) { ctx.fillStyle = '#b9935f'; ctx.beginPath(); ctx.arc(p.x + 30, p.y - 30, 6 + Math.sin(t * 0.8 + i) * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#7a6244'; ctx.beginPath(); ctx.moveTo(p.x + 30, p.y - 24); ctx.lineTo(p.x + 30, p.y + 6); ctx.stroke(); }
+    if (tipo === 0) { ctx.fillStyle = '#5b7787'; ctx.beginPath(); ctx.ellipse(p.x - 30, p.y + 10, 14, 5, 0, 0, Math.PI * 2); ctx.fill(); }
+  },
+  /* Bruma: bancos de niebla lentos + un velo general. Densidad = 1 - k */
+  bruma(ctx, t, k) {
+    const W = CONFIG.ancho; const H = CONFIG.alto; const densidad = 1 - k;
+    const factor = GameState.bajaEstimulacion ? 0.5 : 1;
+    ctx.save();
+    for (let i = 0; i < 10; i += 1) {
+      const vel = REDUCIR_MOVIMIENTO ? 3 : 7;
+      const x = ((ruido(i + 200) * (W + 500) + t * vel * (0.5 + ruido(i + 300))) % (W + 500)) - 250;
+      const y = H * (0.35 + ruido(i + 400) * 0.5);
+      const r = 180 + ruido(i + 500) * 160;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(199,209,214,${(0.16 + 0.34 * densidad) * factor})`); g.addColorStop(1, 'rgba(199,209,214,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    ctx.fillStyle = `rgba(199,209,214,${0.08 + 0.4 * densidad})`; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+};
+
+/* Personaje: una figura sencilla con bufanda. Se mueve despacio. */
+function dibujarPersonaje(ctx, x, y, { t = 0, k = 0, escala = 1 } = {}) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(escala, escala);
+  const balanceo = REDUCIR_MOVIMIENTO ? 0 : Math.sin(t * 0.9) * 1.5;
+  ctx.fillStyle = mezcla('#2c3940', '#3f505a', k);
+  ctx.beginPath(); ctx.roundRect(-16, -70 + balanceo, 32, 58, 10); ctx.fill();   // cuerpo
+  ctx.fillStyle = mezcla('#c9b8a2', '#dbc9b0', k);
+  ctx.beginPath(); ctx.arc(0, -86 + balanceo, 15, 0, Math.PI * 2); ctx.fill();    // cabeza
+  ctx.fillStyle = mezcla('#7d6a5a', '#a8705a', k);
+  ctx.beginPath(); ctx.roundRect(-18, -74 + balanceo, 36, 9, 4); ctx.fill();      // bufanda
+  ctx.fillStyle = 'rgba(31,44,52,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0, 22, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+/* Barco de papel con la frase: se mece, se aleja o vuelve */
+function dibujarBarco(ctx, x, y, t, escala = 1) {
+  ctx.save(); ctx.translate(x, y + Math.sin(t * 1.3) * 3); ctx.scale(escala, escala); ctx.rotate(Math.sin(t * 0.9) * 0.04);
+  ctx.fillStyle = '#edf2f4'; ctx.strokeStyle = 'rgba(31,44,52,0.45)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-46, 0); ctx.lineTo(46, 0); ctx.lineTo(30, 18); ctx.lineTo(-30, 18); ctx.closePath(); ctx.fill(); ctx.stroke(); // casco
+  ctx.beginPath(); ctx.moveTo(-22, 0); ctx.lineTo(0, -30); ctx.lineTo(22, 0); ctx.closePath(); ctx.fill(); ctx.stroke();               // vela
+  ctx.fillStyle = 'rgba(91,119,135,0.35)'; ctx.beginPath(); ctx.ellipse(0, 22, 50, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+/* ============================================================================
+   MÁQUINA DE ESTADOS · MENU_ESTRATEGIA → MINIJUEGO_RIO | MINIJUEGO_SENDERO →
+   CAJA_HERRAMIENTAS → REEVALUACION → FEEDBACK
+   ========================================================================== */
+const Maquina = {
+  estados: {},
+  actual: null,
+  nombre: null,
+  cambiar(nombre) {
+    this.actual?.salir?.();
+    Hud.cerrarPanel(); Hud.decir(null); capaJuego.innerHTML = '';
+    this.nombre = nombre; GameState.estado = nombre;
+    this.actual = this.estados[nombre];
+    this.actual.t = 0;
+    this.actual.entrar();
+  }
+};
+
+/* --------------------------------------------------------- MENU_ESTRATEGIA */
+Maquina.estados.MENU_ESTRATEGIA = {
+  t: 0, seleccion: null,
+  entrar() {
+    Claridad.fijar(0.08);
+    Hud.setFases(null); Hud.setEnergia(null);
+    Fases.iniciar('MENU_ESTRATEGIA');
+    this.seleccion = GameState.estrategiaSugerida;
+    this.pintarPanel();
+  },
+  pintarPanel() {
+    const tarjeta = (e) => `
+      <button class="tarjeta ${this.seleccion === e.id ? 'seleccionada' : ''}" type="button" data-estrategia="${e.id}" aria-pressed="${this.seleccion === e.id}">
+        ${e.id === GameState.estrategiaSugerida ? '<span class="etiqueta">Estrategia sugerida</span>' : ''}
+        <strong>${e.camino}</strong>
+        <em>${e.nombre}</em>
+        <span>${e.descripcion}</span>
+        <small>${e.fases.join(' → ')}</small>
+      </button>`;
+    const p = Hud.panel({
+      eyebrow: 'El Valle de la Bruma · Isla de la Tristeza',
+      titulo: 'Elige una forma de acompañarla',
+      clase: 'ancho',
+      html: `
+        <p class="cita">“${TEXTOS.entrada}”</p>
+        <div class="intensidad" role="group" aria-label="Intensidad de la tristeza con la que llegas">
+          <span>Intensidad que identificaste:</span>
+          ${['BAJA', 'MEDIA', 'ALTA'].map((n) => `<button type="button" data-intensidad="${n}" aria-pressed="${GameState.intensidadInicial === n}">${n}</button>`).join('')}
+        </div>
+        <div class="tarjetas">${tarjeta(ESTRATEGIAS.rio)}${tarjeta(ESTRATEGIAS.sendero)}</div>
+        <p class="aviso" data-aviso ${this.seleccion === GameState.estrategiaSugerida ? 'hidden' : ''}>${TEXTOS.otraEstrategia}</p>
+      `,
+      botones: [
+        { texto: TEXTOS.btnContinuar, primario: true, accion: () => this.continuar() },
+        { texto: TEXTOS.btnOtra, accion: () => this.verOtra() }
+      ]
+    });
+    p.querySelectorAll('[data-estrategia]').forEach((b) => b.addEventListener('click', () => this.seleccionar(b.dataset.estrategia)));
+    p.querySelectorAll('[data-intensidad]').forEach((b) => b.addEventListener('click', () => this.fijarIntensidad(b.dataset.intensidad)));
+  },
+  fijarIntensidad(n) {
+    GameState.intensidadInicial = n;
+    GameState.estrategiaSugerida = CONFIG.sugeridaPorIntensidad[n];
+    window.sessionLog.intensidadInicial = n;
+    window.sessionLog.estrategiaSugerida = GameState.estrategiaSugerida;
+    this.seleccion = GameState.estrategiaSugerida;
+    Audio.suavecito();
+    this.pintarPanel();
+  },
+  seleccionar(id) {
+    this.seleccion = id;
+    const p = Hud.paneles.querySelector('.panel');
+    p.querySelectorAll('[data-estrategia]').forEach((b) => { const on = b.dataset.estrategia === id; b.classList.toggle('seleccionada', on); b.setAttribute('aria-pressed', String(on)); });
+    // elegir una estrategia distinta a la sugerida no resta nada: solo se informa
+    p.querySelector('[data-aviso]').hidden = id === GameState.estrategiaSugerida;
+    Audio.suavecito();
+  },
+  verOtra() {
+    const otra = this.seleccion === 'rio' ? 'sendero' : 'rio';
+    this.seleccionar(otra);
+    Hud.paneles.querySelector(`[data-estrategia="${otra}"]`)?.focus({ preventScroll: true });
+  },
+  continuar() {
+    const e = ESTRATEGIAS[this.seleccion];
+    GameState.estrategiaElegida = e.id;
+    window.sessionLog.estrategiaElegida = e.id;
+    window.sessionLog.minijuego = e.camino;
+    Audio.pling();
+    Maquina.cambiar(e.estado);
+  },
+  update(dt) { this.t += dt; Motas.update(dt, GameState.claridad); },
+  render(ctx) {
+    const k = GameState.claridad;
+    Valle.dibujar(ctx, { t: this.t, k, modo: 'valle' });
+    dibujarPersonaje(ctx, 250, 560, { t: this.t, k });
+    Motas.dibujar(ctx, k); Valle.bruma(ctx, this.t, k);
+  }
+};
+
+/* ============================================================================
+   MINIJUEGO_RIO · "El río de las palabras" · SENTIR → NOMBRAR → NARRAR → SOLTAR
+   Etiquetado afectivo (Lieberman et al., 2007), escritura expresiva
+   (Pennebaker & Beall, 1986) y rumia vs. reflexión (Nolen-Hoeksema, 1991; 2008)
+   ========================================================================== */
+
+/* El nudo de bruma: partículas lentas y amorfas que, con cada palabra,
+   se ordenan en un anillo y toman un tenue color. */
+const Nudo = {
+  centro: { x: 640, y: 320 }, lista: [], forma: 0, tinte: 0,
+  colores: ['#5b7787', '#6c7f69', '#b9935f'],
+  crear() {
+    this.lista = Array.from({ length: 70 }, (_, i) => ({
+      a: Math.random() * Math.PI * 2, r: 30 + Math.random() * 120, r0: 0, vel: (0.05 + Math.random() * 0.12) * (Math.random() < 0.5 ? 1 : -1),
+      tam: 10 + Math.random() * 26, fase: i * 0.37, orden: Math.random()
+    }));
+    this.forma = 0; this.tinte = 0;
+  },
+  update(dt) {
+    const lento = REDUCIR_MOVIMIENTO ? 0.4 : 1;
+    for (const p of this.lista) {
+      p.a += p.vel * dt * lento * (1 - this.forma * 0.5);
+      // las partículas cuya "orden" queda por debajo de forma se estabilizan en un anillo
+      const objetivo = p.orden < this.forma ? 95 : p.r0 || (p.r0 = p.r);
+      p.r = lerp(p.r, objetivo, 1 - Math.exp(-dt * 0.8));
+    }
+  },
+  dibujar(ctx, t) {
+    ctx.save();
+    for (const p of this.lista) {
+      const ordenada = p.orden < this.forma;
+      const x = this.centro.x + Math.cos(p.a) * p.r * 1.3 + Math.sin(t * 0.5 + p.fase) * 6;
+      const y = this.centro.y + Math.sin(p.a) * p.r * 0.75 + Math.cos(t * 0.4 + p.fase) * 5;
+      const idx = Math.min(this.colores.length - 1, Math.floor(p.orden * this.colores.length));
+      const color = ordenada ? mezcla('#aab7be', this.colores[idx], 0.55) : 'rgba(170,183,190,1)';
+      const g = ctx.createRadialGradient(x, y, 0, x, y, p.tam);
+      g.addColorStop(0, color.replace(/,1\)$/, `,${ordenada ? 0.55 : 0.4})`)); g.addColorStop(1, 'rgba(170,183,190,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - p.tam, y - p.tam, p.tam * 2, p.tam * 2);
+    }
+    ctx.restore();
+  }
+};
+
+/* Regla explícita de rumia vs. reflexión (Nolen-Hoeksema): releer la frase en
+   bucle es rumia; elegir qué hacer con ella es reflexión. */
+const Rumia = {
+  seguidas: 0,
+  releer() {
+    this.seguidas += 1;
+    window.sessionLog.vecesQueReleyo += 1;
+    return this.seguidas >= CONFIG.rio.umbralRumia && this.seguidas % CONFIG.rio.umbralRumia === 0;
+  },
+  reflexionar() { this.seguidas = 0; }
+};
+
+Maquina.estados.MINIJUEGO_RIO = {
+  t: 0, fase: 'SENTIR', flujo: 1, flujoObjetivo: 1,
+  palabras: [], frase: null, barco: null,
+  entrar() {
+    Claridad.fijar(0.05);
+    Hud.setEnergia(null);
+    this.palabras = []; this.frase = null; this.barco = null;
+    this.flujo = 1; this.flujoObjetivo = 1; Rumia.seguidas = 0;
+    Nudo.crear();
+    this.irA('SENTIR');
+  },
+  salir() { Fases.cerrar(); },
+  irA(fase) {
+    this.fase = fase;
+    Hud.setFases(ESTRATEGIAS.rio.fases, fase);
+    Fases.iniciar(`RIO_${fase}`);
+    Hud.cerrarPanel(); capaJuego.innerHTML = ''; Hud.decir(null);
+    this[`fase${fase}`]();
+  },
+
+  /* ---- SENTIR: la masa gris sin nombre. Solo un botón. ---- */
+  faseSENTIR() {
+    Hud.panel({
+      eyebrow: 'La orilla del río de bruma · SENTIR',
+      titulo: 'El nudo de bruma',
+      clase: 'abajo translucido',
+      html: `<p class="clinico">${TEXTOS.sentir}</p><p class="nota">Cuando quieras, y solo entonces, empieza. Aquí no hay reloj.</p>`,
+      botones: [{ texto: 'EMPEZAR', primario: true, accion: () => this.irA('NOMBRAR') }]
+    });
+  },
+
+  /* ---- NOMBRAR: fichas de matiz que se arrastran al cuenco ---- */
+  faseNOMBRAR() {
+    capaJuego.innerHTML = `
+      <div id="fichas" aria-label="Fichas de palabra"></div>
+      <div id="cuenco" aria-live="polite">
+        <span class="titulo">Cuenco de palabras · hasta ${CONFIG.rio.maximoPalabras}</span>
+        <div class="slots" data-slots><span class="vacio">Arrastra o toca una ficha para dejarla aquí.</span></div>
+        <div class="acciones"><button class="boton primario" type="button" data-continuar disabled>Continuar</button></div>
+      </div>`;
+    const contFichas = capaJuego.querySelector('#fichas');
+    const cuenco = capaJuego.querySelector('#cuenco');
+    const slots = cuenco.querySelector('[data-slots]');
+    const btnContinuar = cuenco.querySelector('[data-continuar]');
+    this.fichas = [];
+    const compacto = () => window.innerWidth <= 860;     // mismo umbral que el CSS: fichas en filas
+
+    const palabras = barajar(PALABRAS).slice(0, CONFIG.rio.fichasEnPantalla);
+    palabras.forEach((palabra, i) => {
+      const f = document.createElement('button');
+      f.type = 'button'; f.className = 'ficha'; f.textContent = palabra;
+      f.setAttribute('aria-label', `${palabra}. Enter para dejarla en el cuenco`);
+      // se desprenden del nudo y flotan despacio dentro de una zona alrededor de él
+      const ang = (i / palabras.length) * Math.PI * 2;
+      const dato = { el: f, x: 640 + Math.cos(ang) * 60, y: 320 + Math.sin(ang) * 40, ox: 640 + Math.cos(ang) * (250 + ruido(i) * 220), oy: 300 + Math.sin(ang) * (150 + ruido(i + 5) * 70), fase: i * 0.7, colocada: false, arrastrando: false, ignorarClick: false };
+      this.fichas.push(dato);
+      // el click que sigue a un arrastre soltado fuera del cuenco no debe colocarla
+      f.addEventListener('click', () => { if (dato.ignorarClick) return; if (!dato.arrastrando && !dato.colocada) this.colocarFicha(dato); });
+      f.addEventListener('pointerdown', (e) => this.iniciarArrastre(dato, e));
+      contFichas.appendChild(f);
+    });
+
+    this.colocarFicha = (dato) => {
+      if (this.palabras.length >= CONFIG.rio.maximoPalabras) { Hud.decir(`Puedes elegir hasta ${CONFIG.rio.maximoPalabras} palabras. Toca una del cuenco para devolverla.`, { arriba: true }); return; }
+      dato.colocada = true; dato.el.classList.remove('arrastrando'); dato.el.classList.add('colocada');
+      dato.el.setAttribute('aria-label', `${dato.el.textContent}. Enter para devolverla`);
+      dato.el.style.removeProperty('--x'); dato.el.style.removeProperty('--y');
+      slots.querySelector('.vacio')?.remove(); slots.appendChild(dato.el);
+      this.palabras.push(dato.el.textContent);
+      window.sessionLog.palabrasElegidas = [...this.palabras];
+      Nudo.forma = Math.min(1, this.palabras.length * (1 / CONFIG.rio.maximoPalabras));
+      Claridad.sumar(CONFIG.rio.claridadPorPalabra);
+      Audio.gota();
+      if (this.palabras.length === 1) Hud.decir(TEXTOS.primeraFicha, { ms: 6000, suave: true, arriba: true });
+      btnContinuar.disabled = false;
+    };
+    this.devolverFicha = (dato) => {
+      dato.colocada = false; dato.el.classList.remove('colocada');
+      dato.el.setAttribute('aria-label', `${dato.el.textContent}. Enter para dejarla en el cuenco`);
+      contFichas.appendChild(dato.el);
+      this.palabras = this.palabras.filter((p) => p !== dato.el.textContent);
+      window.sessionLog.palabrasElegidas = [...this.palabras];
+      Nudo.forma = this.palabras.length / CONFIG.rio.maximoPalabras;
+      Claridad.sumar(-CONFIG.rio.claridadPorPalabra);
+      if (!slots.querySelector('.ficha')) slots.innerHTML = '<span class="vacio">Arrastra o toca una ficha para dejarla aquí.</span>';
+      btnContinuar.disabled = this.palabras.length === 0;
+      Audio.suavecito();
+    };
+    // clic en una ficha ya colocada la devuelve
+    slots.addEventListener('click', (e) => { const f = e.target.closest('.ficha'); if (!f) return; const dato = this.fichas.find((d) => d.el === f); if (dato) this.devolverFicha(dato); });
+
+    this.iniciarArrastre = (dato, e) => {
+      if (dato.colocada || compacto()) return;      // en modo compacto basta con tocar
+      e.preventDefault();
+      dato.arrastrando = true; dato.el.classList.add('arrastrando');
+      try { dato.el.setPointerCapture(e.pointerId); } catch { /* opcional */ }
+      const origen = { x: e.clientX, y: e.clientY }; let movio = false;
+      const mover = (ev) => {
+        if (Math.hypot(ev.clientX - origen.x, ev.clientY - origen.y) > 6) movio = true;
+        const p = Entrada.aLienzo(ev); dato.x = p.x; dato.y = p.y; cuenco.classList.toggle('sobre', this.sobreCuenco(ev));
+      };
+      const soltar = (ev) => {
+        dato.el.removeEventListener('pointermove', mover); dato.el.removeEventListener('pointerup', soltar); dato.el.removeEventListener('pointercancel', soltar);
+        const dentro = this.sobreCuenco(ev); cuenco.classList.remove('sobre');
+        dato.arrastrando = false; dato.el.classList.remove('arrastrando');
+        if (movio) { dato.ignorarClick = true; setTimeout(() => { dato.ignorarClick = false; }, 0); }
+        if (dentro) this.colocarFicha(dato); else { dato.ox = dato.x; dato.oy = dato.y; }
+      };
+      dato.el.addEventListener('pointermove', mover); dato.el.addEventListener('pointerup', soltar); dato.el.addEventListener('pointercancel', soltar);
+    };
+    this.sobreCuenco = (ev) => { const r = cuenco.getBoundingClientRect(); return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom; };
+    btnContinuar.addEventListener('click', () => this.irA('NARRAR'));
+    // flechas: mover el foco entre fichas
+    contFichas.addEventListener('keydown', (e) => {
+      if (!['ArrowRight', 'ArrowLeft'].includes(e.key)) return;
+      const lista = [...contFichas.querySelectorAll('.ficha')]; const i = lista.indexOf(document.activeElement); if (i < 0) return;
+      e.preventDefault(); lista[(i + (e.key === 'ArrowRight' ? 1 : lista.length - 1)) % lista.length].focus();
+    });
+    contFichas.querySelector('.ficha')?.focus({ preventScroll: true });
+  },
+  actualizarFichas(dt) {
+    if (!this.fichas || this.fase !== 'NOMBRAR') return;
+    const lento = REDUCIR_MOVIMIENTO ? 0.15 : 1;
+    const r = lienzo.getBoundingClientRect();     // las fichas viven en la ventana, pero se colocan sobre el lienzo
+    for (const d of this.fichas) {
+      if (d.colocada) continue;
+      if (!d.arrastrando) {
+        // se acercan a su lugar de flotación y ondulan despacio
+        const dx = d.ox + Math.sin(this.t * 0.35 + d.fase) * 14 * lento - d.x; const dy = d.oy + Math.cos(this.t * 0.3 + d.fase) * 9 * lento - d.y;
+        d.x += dx * (1 - Math.exp(-dt * 0.9)); d.y += dy * (1 - Math.exp(-dt * 0.9));
+      }
+      d.el.style.setProperty('--x', `${r.left + (d.x / CONFIG.ancho) * r.width}px`); d.el.style.setProperty('--y', `${r.top + (d.y / CONFIG.alto) * r.height}px`);
+    }
+  },
+
+  /* ---- NARRAR: plantilla con huecos y banco de fragmentos ---- */
+  faseNARRAR() {
+    const hueco1 = this.palabras.length > 1 ? `${this.palabras.slice(0, -1).join(', ')} y ${this.palabras.at(-1)}` : this.palabras[0];
+    this.huecos = { 2: null, 3: null };
+    this.usoLibre = false;
+    const p = Hud.panel({
+      eyebrow: 'La orilla del río de bruma · NARRAR',
+      titulo: 'Construye la frase',
+      clase: 'ancho translucido',
+      html: `
+        <p>Toca o arrastra un fragmento a cada hueco. Puedes rehacerla las veces que quieras: no hay frase correcta.</p>
+        <div class="plantilla" aria-label="Plantilla de la frase">
+          <span>Me siento</span><span class="hueco fijo" aria-label="Palabras elegidas">${escapar(hueco1)}</span>
+          <span>porque</span><span class="unidad"><button class="hueco" type="button" data-hueco="2" aria-label="Hueco: porque">______</button>.</span>
+          <span>Y lo que más me cuesta de esto es</span><span class="unidad"><button class="hueco" type="button" data-hueco="3" aria-label="Hueco: lo que más me cuesta">______</button>.</span>
+        </div>
+        <div class="banco" data-banco aria-label="Banco de fragmentos">
+          ${FRAGMENTOS.map((f, i) => `<button class="fragmento" type="button" data-frag="${i}">${f}</button>`).join('')}
+          <button class="fragmento comodin" type="button" data-comodin>[escribir lo mío]</button>
+        </div>
+        <div class="libre" data-libre hidden>
+          <input type="text" maxlength="${CONFIG.rio.textoLibreMax}" placeholder="Escribe con tus palabras…" aria-label="Texto libre" />
+          <button class="boton" type="button" data-usar-libre>Usar</button>
+          <small>Máximo ${CONFIG.rio.textoLibreMax} caracteres. Esto no se envía a ningún lado: se queda solo en tu sesión.</small>
+        </div>`,
+      botones: [
+        { texto: 'Continuar', primario: true, deshabilitado: true, accion: () => this.irA('SOLTAR') },
+        { texto: 'Volver a las palabras', accion: () => this.irA('NOMBRAR') }
+      ]
+    });
+    const btnContinuar = p.querySelector('.boton.primario');
+    const huecos = [...p.querySelectorAll('[data-hueco]')];
+    const banco = p.querySelector('[data-banco]');
+    const libre = p.querySelector('[data-libre]');
+    let huecoActivo = null;
+
+    const rellenar = (n, texto) => {
+      this.huecos[n] = texto;
+      const h = huecos.find((x) => x.dataset.hueco === String(n));
+      h.textContent = texto; h.classList.add('lleno'); h.setAttribute('aria-label', `Hueco ${n}: ${texto}. Enter para vaciarlo`);
+      huecos.forEach((x) => x.classList.remove('activo')); huecoActivo = null;
+      banco.querySelectorAll('[data-frag]').forEach((b) => b.classList.toggle('usado', Object.values(this.huecos).includes(b.textContent)));
+      btnContinuar.disabled = !(this.huecos[2] && this.huecos[3]);
+      Audio.gota();
+      this.frase = `Me siento ${hueco1} porque ${this.huecos[2] ?? '…'}. Y lo que más me cuesta de esto es ${this.huecos[3] ?? '…'}.`;
+      window.sessionLog.fraseConstruida = this.frase;
+    };
+    const vaciar = (n) => {
+      this.huecos[n] = null;
+      const h = huecos.find((x) => x.dataset.hueco === String(n));
+      h.textContent = '______'; h.classList.remove('lleno'); h.setAttribute('aria-label', `Hueco ${n}`);
+      banco.querySelectorAll('[data-frag]').forEach((b) => b.classList.toggle('usado', Object.values(this.huecos).includes(b.textContent)));
+      btnContinuar.disabled = true; Audio.suavecito();
+    };
+    const siguienteHueco = () => huecoActivo ?? (this.huecos[2] ? (this.huecos[3] ? 2 : 3) : 2);
+
+    huecos.forEach((h) => h.addEventListener('click', () => {
+      const n = Number(h.dataset.hueco);
+      if (this.huecos[n]) { vaciar(n); return; }
+      huecoActivo = n; huecos.forEach((x) => x.classList.toggle('activo', x === h));
+    }));
+    banco.querySelectorAll('[data-frag]').forEach((b) => {
+      b.addEventListener('click', () => rellenar(siguienteHueco(), b.textContent));
+      b.addEventListener('pointerdown', (e) => this.arrastrarFragmento(b, e, huecos, (n) => rellenar(n, b.textContent)));
+    });
+    p.querySelector('[data-comodin]').addEventListener('click', () => { libre.hidden = !libre.hidden; if (!libre.hidden) libre.querySelector('input').focus(); });
+    const usarLibre = () => {
+      const texto = libre.querySelector('input').value.trim().slice(0, CONFIG.rio.textoLibreMax);
+      if (!texto) return;
+      this.usoLibre = true; window.sessionLog.usoDeTextoLibre = true;
+      rellenar(siguienteHueco(), texto); libre.querySelector('input').value = '';
+    };
+    p.querySelector('[data-usar-libre]').addEventListener('click', usarLibre);
+    libre.querySelector('input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); usarLibre(); } });
+    // flechas dentro del banco
+    banco.addEventListener('keydown', (e) => {
+      if (!['ArrowRight', 'ArrowLeft'].includes(e.key)) return;
+      const lista = [...banco.querySelectorAll('button')]; const i = lista.indexOf(document.activeElement); if (i < 0) return;
+      e.preventDefault(); lista[(i + (e.key === 'ArrowRight' ? 1 : lista.length - 1)) % lista.length].focus();
+    });
+    banco.querySelector('button')?.focus({ preventScroll: true });
+  },
+  /* Arrastre de un fragmento hasta un hueco (puntero). El clic sigue funcionando. */
+  arrastrarFragmento(b, e, huecos, onSoltar) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const inicio = { x: e.clientX, y: e.clientY }; let fantasma = null;
+    const mover = (ev) => {
+      if (!fantasma) {
+        if (Math.hypot(ev.clientX - inicio.x, ev.clientY - inicio.y) < 8) return;
+        fantasma = b.cloneNode(true); fantasma.classList.add('arrastrando'); document.body.appendChild(fantasma);
+      }
+      fantasma.style.left = `${ev.clientX - fantasma.offsetWidth / 2}px`; fantasma.style.top = `${ev.clientY - fantasma.offsetHeight / 2}px`;
+      huecos.forEach((h) => { const r = h.getBoundingClientRect(); h.classList.toggle('sobre', ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom); });
+    };
+    const soltar = () => {
+      window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', soltar); window.removeEventListener('pointercancel', soltar);
+      if (!fantasma) return;                                  // fue un clic: lo gestiona el listener de click
+      fantasma.remove();
+      const destino = huecos.find((h) => h.classList.contains('sobre'));
+      huecos.forEach((h) => h.classList.remove('sobre'));
+      if (destino) { onSoltar(Number(destino.dataset.hueco)); b.dataset.arrastrado = '1'; setTimeout(() => delete b.dataset.arrastrado, 0); }
+    };
+    window.addEventListener('pointermove', mover); window.addEventListener('pointerup', soltar); window.addEventListener('pointercancel', soltar);
+    // si se arrastró, el click posterior no debe volver a rellenar
+    b.addEventListener('click', (ev) => { if (b.dataset.arrastrado) ev.stopImmediatePropagation(); }, { capture: true, once: true });
+  },
+
+  /* ---- SOLTAR: el barco de papel y el mecanismo del río ---- */
+  faseSOLTAR() {
+    this.barco = { x: 640, y: 522, escala: 1, modo: 'quieto', t0: 0, alfa: 1 };
+    this.pintarOpcionesBarco();
+  },
+  pintarOpcionesBarco(prompt = '') {
+    Hud.panel({
+      eyebrow: 'La orilla del río de bruma · SOLTAR',
+      titulo: prompt || 'Tu frase es ahora un barco de papel',
+      clase: 'ancho translucido arriba',
+      html: `<p class="frase-final">“${escapar(this.frase)}”</p><p class="nota">Elige qué hacer con ella. Cada opción produce algo distinto en el río.</p>`,
+      botones: [
+        { texto: 'DEJARLA IR', primario: true, accion: () => this.dejarIr() },
+        { texto: 'GUARDARLA', accion: () => this.guardar() },
+        { texto: 'LEERLA OTRA VEZ', accion: () => this.releer() }
+      ]
+    });
+  },
+  dejarIr() {
+    // expresión + distanciamiento: el barco se aleja río abajo y la bruma se aclara parcialmente
+    Rumia.reflexionar(); this.flujoObjetivo = 1;
+    window.sessionLog.accionFinalDelBarco = 'dejar_ir';
+    this.barco.modo = 'irse'; this.barco.t0 = this.t;
+    Hud.cerrarPanel(); Audio.pling();
+    Claridad.sumar(CONFIG.rio.claridadDejarIr);
+    setTimeout(() => this.cierre(), CONFIG.rio.duracionDejarIr * 1000 + 300);
+  },
+  guardar() {
+    // registro y reconocimiento: la frase se pliega y entra en la caja; la bruma queda translúcida
+    Rumia.reflexionar(); this.flujoObjetivo = 1;
+    window.sessionLog.accionFinalDelBarco = 'guardar';
+    GameState.registros.push(this.frase);
+    this.barco.modo = 'plegar'; this.barco.t0 = this.t;
+    Hud.cerrarPanel(); Audio.gota();
+    Claridad.sumar(CONFIG.rio.claridadGuardar);
+    setTimeout(() => this.cierre(), 1400 * CONFIG.transicion + 300);
+  },
+  releer() {
+    this.barco.modo = 'volver'; this.barco.t0 = this.t; this.barco.x = 640 + 180;
+    Audio.suavecito();
+    const rumia = Rumia.releer();
+    if (rumia) {
+      // RAMA DE RUMIA: el río se estanca y la bruma se espesa. Sin castigo: el juego espera.
+      window.sessionLog.entroEnRamaDeRumia = true;
+      this.flujoObjetivo = 0; Claridad.sumar(-0.08);
+      Hud.panel({
+        eyebrow: 'El río se estanca',
+        titulo: 'Volver sobre lo mismo',
+        clase: 'ancho translucido arriba',
+        html: `<p class="clinico">${TEXTOS.rumia}</p>`,
+        botones: [
+          { texto: 'SEGUIR MIRÁNDOLA', accion: () => this.pintarOpcionesBarco('Sigue mirándola el tiempo que necesites') },
+          { texto: 'PREGUNTARME QUÉ NECESITO', primario: true, accion: () => { Rumia.reflexionar(); this.flujoObjetivo = 1; Claridad.sumar(0.06); Audio.gota(); this.pintarOpcionesBarco('¿Qué necesitas ahora?'); } }
+        ]
+      });
+      return;
+    }
+    this.pintarOpcionesBarco('Vuelves a leerla');
+  },
+  cierre() {
+    Hud.setFases(ESTRATEGIAS.rio.fases, 'SOLTAR');
+    otorgarHerramienta('farol');
+    Hud.panel({
+      eyebrow: 'Cierre',
+      titulo: 'El río de las palabras',
+      html: `<p class="clinico">${TEXTOS.rioCierre}</p>
+             <p class="nota">${HERRAMIENTAS.farol.icono} <strong>${HERRAMIENTAS.farol.nombre}</strong> se guarda en tu caja de herramientas.</p>`,
+      botones: [{ texto: 'Ir a la caja de herramientas', primario: true, accion: () => Maquina.cambiar('CAJA_HERRAMIENTAS') }]
+    });
+  },
+  update(dt) {
+    this.t += dt;
+    this.flujo = lerp(this.flujo, this.flujoObjetivo, 1 - Math.exp(-dt * 0.8));
+    Nudo.update(dt); Motas.update(dt, GameState.claridad); this.actualizarFichas(dt);
+    if (this.barco) {
+      const b = this.barco; const e = this.t - b.t0;
+      if (b.modo === 'irse') { const p = suave(clamp(e / CONFIG.rio.duracionDejarIr, 0, 1)); b.x = lerp(640, CONFIG.ancho + 80, p); b.escala = lerp(1, 0.5, p); b.alfa = 1 - p * 0.6; }
+      if (b.modo === 'volver') { const p = suave(clamp(e / CONFIG.rio.duracionVolver, 0, 1)); b.x = lerp(820, 640, p); b.escala = 1; b.alfa = 1; if (p >= 1) b.modo = 'quieto'; }
+      if (b.modo === 'plegar') { const p = suave(clamp(e / (1.4 * CONFIG.transicion), 0, 1)); b.escala = lerp(1, 0.15, p); b.y = lerp(522, 690, p); b.alfa = 1 - p * 0.3; }
+    }
+  },
+  render(ctx) {
+    const k = GameState.claridad;
+    Valle.dibujar(ctx, { t: this.t, k, modo: 'rio', flujo: this.flujo });
+    dibujarPersonaje(ctx, 170, 620, { t: this.t, k, escala: 0.9 });
+    if (this.fase === 'SENTIR' || this.fase === 'NOMBRAR') Nudo.dibujar(ctx, this.t);
+    if (this.barco) { ctx.save(); ctx.globalAlpha = this.barco.alfa; dibujarBarco(ctx, this.barco.x, this.barco.y, this.t, this.barco.escala); ctx.restore(); }
+    Motas.dibujar(ctx, k); Valle.bruma(ctx, this.t, k);
+  }
+};
+
+/* ============================================================================
+   MINIJUEGO_SENDERO · "El sendero de los pasos pequeños"
+   DETECTAR → ELEGIR → ACTUAR → REGISTRAR
+   Activación conductual (Lewinsohn, 1974; Martell, Dimidjian & Herman-Dunn,
+   2010): la acción precede a la motivación; la energía se recupera al actuar.
+   Conservación de energía como función adaptativa de la tristeza (Nesse, 2000).
+   ========================================================================== */
+Maquina.estados.MINIJUEGO_SENDERO = {
+  t: 0, fase: 'DETECTAR', energia: 0, casilla: 0, turno: 0, racha: 0, mazo: [], descarte: [], mano: [], historial: [], personaje: { x: 0, y: 0 },
+  entrar() {
+    Claridad.fijar(0.05);
+    this.energia = CONFIG.sendero.energiaInicial; this.casilla = 0; this.turno = 0; this.racha = 0;
+    this.mazo = barajar(MAZO); this.descarte = []; this.mano = []; this.historial = [];
+    const p0 = Valle.posCasilla(0, CONFIG.sendero.casillas); this.personaje = { x: p0.x, y: p0.y };
+    this.irA('DETECTAR');
+  },
+  salir() { Fases.cerrar(); Hud.setEnergia(null); },
+  irA(fase) {
+    this.fase = fase;
+    Hud.setFases(ESTRATEGIAS.sendero.fases, fase);
+    Fases.iniciar(`SENDERO_${fase}`);
+    Hud.cerrarPanel(); Hud.decir(null);
+    this[`fase${fase}`]();
+  },
+
+  /* ---- DETECTAR: el estado inicial y el principio ---- */
+  faseDETECTAR() {
+    Hud.setEnergia(this.energia, 0);
+    Hud.panel({
+      eyebrow: 'El sendero cubierto de bruma · DETECTAR',
+      titulo: `Energía disponible: ${this.energia} de ${CONFIG.sendero.energiaMaxima}`,
+      clase: 'ancho translucido abajo',
+      html: `<p class="clinico">${TEXTOS.senderoEntrada}</p>
+             <p class="nota">Aquí la energía <strong>no se gasta</strong> al actuar: se recupera. Cada carta despeja un tramo del sendero. DESCANSAR está siempre disponible y nunca resta.</p>`,
+      botones: [{ texto: 'EMPEZAR', primario: true, accion: () => this.irA('ELEGIR') }]
+    });
+  },
+
+  /* ---- ELEGIR: la mano de cartas ---- */
+  robar() {
+    while (this.mano.length < CONFIG.sendero.manoTamano) {
+      if (!this.mazo.length) { this.mazo = barajar(this.descarte); this.descarte = []; if (!this.mazo.length) break; }
+      this.mano.push(this.mazo.pop());
+    }
+  },
+  faseELEGIR() {
+    this.robar();
+    this.turno += 1;
+    capaJuego.innerHTML = `
+      <div id="mesa">
+        <div class="fila">
+          <span class="turno">Turno ${this.turno} · casilla ${this.casilla} de ${CONFIG.sendero.casillas}</span>
+          <button class="boton secundario" id="terminar" type="button" ${this.turno >= CONFIG.sendero.turnoTerminar ? '' : 'hidden'}>TERMINAR AQUÍ</button>
+        </div>
+        <div id="mano" aria-label="Cartas de acción"></div>
+      </div>`;
+    const mano = capaJuego.querySelector('#mano');
+    const pintarCarta = (c, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = `carta ${c.categoria}`; b.dataset.i = String(i);
+      const efecto = c.categoria === 'descanso' ? `+${CONFIG.sendero.descanso} energía · no avanza` : `${this.previsualizar(c)}`;
+      b.innerHTML = `<span class="categoria">${c.titulo}</span><strong>${c.nombre}</strong>
+        <span class="esfuerzo">${c.esfuerzo ? `Esfuerzo: ${'💧'.repeat(c.esfuerzo)}` : 'Sin coste'}</span><span class="efecto">${efecto}</span>`;
+      b.setAttribute('aria-label', `${c.nombre}. ${c.titulo}. ${c.esfuerzo ? `Esfuerzo ${c.esfuerzo}` : 'Sin coste'}. ${efecto}`);
+      b.addEventListener('click', () => this.jugar(c));
+      mano.appendChild(b);
+    };
+    this.mano.forEach(pintarCarta);
+    pintarCarta(CARTA_DESCANSAR, -1);
+    capaJuego.querySelector('#terminar').addEventListener('click', () => this.terminar(true));
+    mano.addEventListener('keydown', (e) => {
+      if (!['ArrowRight', 'ArrowLeft'].includes(e.key)) return;
+      const lista = [...mano.querySelectorAll('.carta')]; const i = lista.indexOf(document.activeElement); if (i < 0) return;
+      e.preventDefault(); lista[(i + (e.key === 'ArrowRight' ? 1 : lista.length - 1)) % lista.length].focus();
+    });
+    mano.querySelector('.carta')?.focus({ preventScroll: true });
+    Hud.setEnergia(this.energia, this.racha);
+  },
+  /* Cuánta energía devolvería la carta ahora mismo (se muestra en la carta) */
+  calcularEfecto(c) {
+    const cfg = CONFIG.sendero;
+    if (c.esfuerzo === 0) return { energia: cfg.descanso, aMedias: false, racha: this.racha };
+    if (c.esfuerzo === 3 && this.energia < cfg.umbralEnergiaBaja) return { energia: cfg.efectoAMedias, aMedias: true, racha: 0 };
+    if (c.esfuerzo === 3) return { energia: cfg.efectoBase[3], aMedias: false, racha: 0 };
+    // pasos pequeños encadenados: cada uno rinde más que el anterior
+    const racha = Math.min(cfg.rachaMaxima, this.racha + 1);
+    return { energia: cfg.efectoBase[c.esfuerzo] + (racha - 1) * cfg.bonusRacha, aMedias: false, racha };
+  },
+  previsualizar(c) {
+    const r = this.calcularEfecto(c);
+    return r.aMedias ? `Con poca energía saldría a medias: +${r.energia}` : `+${r.energia} energía${r.racha > 1 ? ` (racha ×${r.racha})` : ''} · avanza 1`;
+  },
+
+  /* ---- ACTUAR: la regla de oro del balance ---- */
+  jugar(c) {
+    this.irAFaseSinPanel('ACTUAR');
+    const cfg = CONFIG.sendero;
+    const r = this.calcularEfecto(c);
+    const antes = this.energia;
+    this.energia = clamp(this.energia + r.energia, 0, cfg.energiaMaxima);
+    this.racha = r.racha;
+    const log = window.sessionLog;
+    log.turnosTotales = this.turno;
+    log.cartasJugadas.push(c.nombre);
+    log.secuenciaDeEsfuerzo.push(c.esfuerzo);
+    log.energiaPorTurno.push(Math.round(this.energia));
+    this.historial.push({ turno: this.turno, carta: c, gano: this.energia - antes, energia: Math.round(this.energia), aMedias: r.aMedias });
+
+    if (c.esfuerzo === 0) {
+      log.vecesQueDescanso += 1;
+      Hud.decir(TEXTOS.descansar, { ms: 6000, suave: true });
+      Audio.suavecito();
+    } else {
+      this.mano = this.mano.filter((x) => x !== c); this.descarte.push(c);
+      this.casilla += 1;
+      Claridad.sumar(cfg.claridadPorCasilla);
+      if (r.aMedias) { Hud.decir(TEXTOS.aMedias, { ms: 6500, suave: true }); Audio.suavecito(); }
+      else if (r.racha >= 2) { Hud.decir(`Paso pequeño encadenado: +${r.energia} energía (racha ×${r.racha}). Cada acción pequeña rinde más que la anterior.`, { ms: 4500 }); Audio.gota(); }
+      else { Audio.gota(); }
+    }
+    Hud.setEnergia(this.energia, this.racha);
+    capaJuego.querySelectorAll('.carta').forEach((b) => { b.disabled = true; });
+    const espera = (c.esfuerzo === 0 ? 900 : 1300) * CONFIG.transicion;
+    setTimeout(() => {
+      if (this.casilla >= cfg.casillas) this.terminar(false);
+      else this.irA('ELEGIR');
+    }, Math.max(400, espera));
+  },
+  irAFaseSinPanel(fase) { this.fase = fase; Hud.setFases(ESTRATEGIAS.sendero.fases, fase); Fases.iniciar(`SENDERO_${fase}`); },
+
+  /* ---- REGISTRAR: el mapa de lo que funcionó ---- */
+  terminar(anticipado) {
+    window.sessionLog.terminoAnticipadamente = anticipado;
+    this.irA('REGISTRAR');
+  },
+  faseREGISTRAR() {
+    capaJuego.innerHTML = '';
+    Hud.setEnergia(null);
+    const jugadas = this.historial.filter((h) => h.carta.esfuerzo > 0);
+    const mejor = this.secuenciaMasEficiente();
+    const maxE = CONFIG.sendero.energiaMaxima;
+    otorgarHerramienta('semilla');
+    Hud.panel({
+      eyebrow: 'El sendero cubierto de bruma · REGISTRAR',
+      titulo: 'El mapa de lo que funcionó',
+      clase: 'ancho',
+      html: `
+        <div class="resumen"><span>Turnos: ${this.turno}</span><span>Casillas: ${this.casilla} de ${CONFIG.sendero.casillas}</span><span>Energía: ${CONFIG.sendero.energiaInicial} → ${Math.round(this.energia)}</span><span>Descansos: ${window.sessionLog.vecesQueDescanso}</span></div>
+        <h3>Energía turno a turno</h3>
+        <div class="grafica" aria-label="Energía por turno">${this.historial.map((h) => `<i style="height:${Math.max(4, (h.energia / maxE) * 100)}%" data-v="${h.energia}" title="Turno ${h.turno}: ${escapar(h.carta.nombre)} (${h.gano >= 0 ? '+' : ''}${h.gano})"></i>`).join('') || '<span class="nota">Sin turnos jugados.</span>'}</div>
+        <h3>Cartas que jugaste</h3>
+        <div class="lista-cartas">${this.historial.map((h) => `<span class="${h.carta.categoria}">${escapar(h.carta.nombre)} (+${h.gano})${h.aMedias ? ' · a medias' : ''}</span>`).join('') || '<span>Ninguna todavía</span>'}</div>
+        ${mejor ? `<h3>Tu secuencia más eficiente</h3><div class="lista-cartas">${mejor.cartas.map((c) => `<span class="${c.categoria}">${escapar(c.nombre)}</span>`).join('')}</div><p class="nota">${mejor.cartas.length} pasos seguidos que devolvieron <strong>+${mejor.total}</strong> de energía${mejor.pequenos ? ': todos pequeños y encadenados' : ''}.</p>` : ''}
+        <p class="clinico">${TEXTOS.senderoCierre}</p>
+        <p class="nota">${HERRAMIENTAS.semilla.icono} <strong>${HERRAMIENTAS.semilla.nombre}</strong> se guarda en tu caja de herramientas.${jugadas.length === 0 ? ' Salir sin jugar cartas también cuenta: elegiste parar.' : ''}</p>`,
+      botones: [{ texto: 'Ir a la caja de herramientas', primario: true, accion: () => Maquina.cambiar('CAJA_HERRAMIENTAS') }]
+    });
+  },
+  /* Ventana de hasta 3 jugadas consecutivas (sin descansos) con mayor energía devuelta */
+  secuenciaMasEficiente() {
+    const acciones = this.historial.filter((h) => h.carta.esfuerzo > 0);
+    let mejor = null;
+    for (let i = 0; i < acciones.length; i += 1) {
+      for (let n = 1; n <= 3 && i + n <= acciones.length; n += 1) {
+        const tramo = acciones.slice(i, i + n);
+        if (tramo.some((h, j) => j > 0 && h.turno !== tramo[j - 1].turno + 1)) break;   // solo turnos consecutivos
+        const total = tramo.reduce((s, h) => s + h.gano, 0);
+        if (!mejor || total > mejor.total || (total === mejor.total && n > mejor.cartas.length)) {
+          mejor = { total, cartas: tramo.map((h) => h.carta), pequenos: tramo.every((h) => h.carta.esfuerzo <= 2) && n > 1 };
+        }
+      }
+    }
+    return mejor;
+  },
+  update(dt) {
+    this.t += dt;
+    Motas.update(dt, GameState.claridad);
+    const destino = Valle.posCasilla(this.casilla, CONFIG.sendero.casillas);
+    const v = 1 - Math.exp(-dt * (REDUCIR_MOVIMIENTO ? 6 : 2.2));
+    this.personaje.x += (destino.x - this.personaje.x) * v; this.personaje.y += (destino.y - this.personaje.y) * v;
+  },
+  render(ctx) {
+    const k = GameState.claridad;
+    Valle.dibujar(ctx, { t: this.t, k, modo: 'sendero', casillas: { total: CONFIG.sendero.casillas, actual: this.casilla } });
+    dibujarPersonaje(ctx, this.personaje.x, this.personaje.y + 8, { t: this.t, k, escala: 0.75 });
+    Motas.dibujar(ctx, k); Valle.bruma(ctx, this.t, k);
+  }
+};
+
+/* ------------------------------------------------------ CAJA_HERRAMIENTAS */
+function otorgarHerramienta(id) {
+  GameState.herramientas.add(id);
+  GameState.ultimaHerramienta = id;
+  window.sessionLog.recompensaObtenida = HERRAMIENTAS[id].nombre;
+  Audio.exito();
+}
+
+Maquina.estados.CAJA_HERRAMIENTAS = {
+  t: 0,
+  entrar() {
+    Hud.setFases(null); Hud.setEnergia(null);
+    Fases.iniciar('CAJA_HERRAMIENTAS');
+    const nueva = GameState.ultimaHerramienta;
+    Hud.panel({
+      eyebrow: 'Recompensa guardada',
+      titulo: TEXTOS.caja,
+      html: `<div class="herramientas">${Object.values(HERRAMIENTAS).map((h) => `
+          <div class="herramienta ${GameState.herramientas.has(h.id) ? 'obtenida' : ''} ${h.id === nueva ? 'nueva' : ''}">
+            <span class="icono" aria-hidden="true">${h.icono}</span>
+            <strong>${h.nombre}</strong>
+            <span>${h.estrategia}</span>
+            <span class="estado">${h.id === nueva ? '¡Nueva!' : GameState.herramientas.has(h.id) ? 'Obtenida' : 'Pendiente'}</span>
+          </div>`).join('')}</div>
+        ${GameState.registros.length ? `<h3>Frases guardadas</h3><ul class="registros">${GameState.registros.map((f) => `<li>“${escapar(f)}”</li>`).join('')}</ul>` : ''}
+        <p class="nota">Cada herramienta es una forma de acompañar la tristeza que ya practicaste. Puedes volver por la otra cuando quieras.</p>`,
+      botones: [{ texto: 'Continuar', primario: true, accion: () => Maquina.cambiar('REEVALUACION') }]
+    });
+  },
+  salir() { Fases.cerrar(); },
+  update(dt) { this.t += dt; Motas.update(dt, GameState.claridad); },
+  render(ctx) { const k = GameState.claridad; Valle.dibujar(ctx, { t: this.t, k }); dibujarPersonaje(ctx, 250, 560, { t: this.t, k }); Motas.dibujar(ctx, k); Valle.bruma(ctx, this.t, k); }
+};
+
+/* ---------------------------------------------------------- REEVALUACION */
+Maquina.estados.REEVALUACION = {
+  t: 0,
+  entrar() {
+    Fases.iniciar('REEVALUACION');
+    const p = Hud.panel({
+      eyebrow: 'Reevaluación de intensidad',
+      titulo: TEXTOS.reevaluacion,
+      html: `<p>Al llegar la valoraste como <strong>${GameState.intensidadInicial}</strong>. No hay respuesta correcta: elige lo que sientas ahora.</p>
+             <div class="opciones fila">${['BAJA', 'MEDIA', 'ALTA'].map((n) => `<button class="opcion grande" type="button" data-n="${n}">${n}</button>`).join('')}</div>`
+    });
+    p.querySelectorAll('[data-n]').forEach((b) => b.addEventListener('click', () => {
+      GameState.intensidadFinal = b.dataset.n;
+      Audio.pling();
+      Maquina.cambiar('FEEDBACK');
+    }));
+  },
+  salir() { Fases.cerrar(); },
+  update(dt) { this.t += dt; Motas.update(dt, GameState.claridad); },
+  render(ctx) { const k = GameState.claridad; Valle.dibujar(ctx, { t: this.t, k }); dibujarPersonaje(ctx, 250, 560, { t: this.t, k }); Motas.dibujar(ctx, k); Valle.bruma(ctx, this.t, k); }
+};
+
+/* -------------------------------------------------------------- FEEDBACK */
+Maquina.estados.FEEDBACK = {
+  t: 0,
+  entrar() {
+    Fases.iniciar('FEEDBACK');
+    const ini = GameState.intensidadInicial; const fin = GameState.intensidadFinal;
+    const d = ORDEN_INTENSIDAD[fin] - ORDEN_INTENSIDAD[ini];
+    const direccion = d < 0 ? 'disminuyó' : d > 0 ? 'aumentó' : 'se mantiene';
+    const texto = d < 0 ? TEXTOS.disminuyo : d > 0 ? TEXTOS.aumento : TEXTOS.mantiene;
+    const log = window.sessionLog;
+    log.intensidadFinal = fin;
+    log.direccionDelCambio = direccion;
+    Fases.cerrar();
+    log.fin = new Date().toISOString();
+    window.sessionLogs.push(log);
+    console.log('[Valle de la Bruma] sessionLog', JSON.parse(JSON.stringify(log)));
+    console.table?.(log.tiempoPorFase);
+
+    const otra = GameState.estrategiaElegida === 'rio' ? ESTRATEGIAS.sendero : ESTRATEGIAS.rio;
+    Hud.panel({
+      eyebrow: 'Retroalimentación',
+      titulo: `Tu tristeza ${direccion}`,
+      html: `<div class="resumen"><span>Al llegar: ${ini}</span><span>Ahora: ${fin}</span><span>${log.recompensaObtenida ? HERRAMIENTAS[GameState.ultimaHerramienta].icono + ' ' + log.recompensaObtenida : ''}</span></div>
+             <p class="clinico">${texto}</p>
+             <p class="nota">Otro camino disponible: <strong>${otra.camino}</strong> (${otra.nombre}).</p>
+             <pre class="registro" data-registro hidden></pre>`,
+      botones: [
+        { texto: TEXTOS.btnPracticar, primario: true, accion: () => this.practicarOtra() },
+        { texto: 'Ver registro de sesión', accion: (panel) => { const pre = panel.querySelector('[data-registro]'); pre.hidden = !pre.hidden; pre.textContent = JSON.stringify(log, null, 2); } }
+      ]
+    });
+  },
+  practicarOtra() {
+    // nueva partida: se llega con la intensidad que se acaba de reportar
+    GameState.intensidadInicial = GameState.intensidadFinal;
+    GameState.estrategiaSugerida = CONFIG.sugeridaPorIntensidad[GameState.intensidadInicial];
+    GameState.intensidadFinal = null;
+    window.sessionLog = nuevoSessionLog();
+    Maquina.cambiar('MENU_ESTRATEGIA');
+  },
+  update(dt) { this.t += dt; Motas.update(dt, GameState.claridad); },
+  render(ctx) { const k = GameState.claridad; Valle.dibujar(ctx, { t: this.t, k }); dibujarPersonaje(ctx, 250, 560, { t: this.t, k }); Motas.dibujar(ctx, k); Valle.bruma(ctx, this.t, k); }
+};
+
+/* ============================================================================
+   BUCLE PRINCIPAL · requestAnimationFrame con deltaTime acotado
+   ========================================================================== */
+let ultimo = performance.now();
+function bucle(ahora) {
+  const dt = Math.min(0.05, (ahora - ultimo) / 1000);
+  ultimo = ahora;
+  Claridad.update(dt);
+  Maquina.actual?.update(dt);
+  ctx2d.setTransform(1, 0, 0, 1, 0, 0);
+  Maquina.actual?.render(ctx2d);
+  Audio.update();
+  requestAnimationFrame(bucle);
+}
+Maquina.cambiar('MENU_ESTRATEGIA');
+requestAnimationFrame(bucle);
+
+// acceso para pruebas y depuración
+window.ValleDeLaBruma = { Maquina, GameState, CONFIG, TEXTOS, Hud, Audio, Rumia, Claridad };
+</script>
+</body>
+</html>

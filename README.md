@@ -83,6 +83,26 @@ doble clic o, publicado, en `valle-luz/` junto al juego principal
 el mapa mecánica → fase → constructo y las instrucciones de prueba; la
 telemetría queda en `sessionLog` / `sessionLogs` (consola).
 
+## Valle de la Bruma · tristeza (juego aparte, un solo archivo)
+
+`public/valle-bruma/index.html` es el serious game autocontenido de la Isla de
+la Tristeza (HTML + CSS + JS, canvas 2D y Web Audio, sin dependencias), diseñado
+como opuesto mecánico del Valle de la Luz: sin reloj, sin reflejos, sin
+plataformas; el ritmo lo marca quien juega. Trae los dos mini-juegos:
+**El río de las palabras** (SENTIR → NOMBRAR → NARRAR → SOLTAR: fichas de
+matiz arrastrables, plantilla de frase con texto libre y un barco de papel
+que se deja ir, se guarda o se relee; releerlo tres veces seguidas estanca el
+río y abre la rama de rumia, siempre sin castigo) y **El sendero de los pasos
+pequeños** (DETECTAR → ELEGIR → ACTUAR → REGISTRAR: cartas de acción por
+turnos donde la energía se *recupera* al actuar, con racha de pasos pequeños,
+carta grande "a medias" y DESCANSAR siempre disponible), más la selección de
+estrategia, la caja de herramientas, la reevaluación y la retroalimentación.
+Se abre con doble clic o, publicado, en `valle-bruma/` (`?intensidad=BAJA|MEDIA|ALTA`
+fija la intensidad de llegada; `?rapido=1` acorta el sendero). La cabecera del
+archivo trae el mapa mecánica → fase → constructo, la nota de diferencias con
+Alegría y las instrucciones de prueba; la telemetría queda en `sessionLog` /
+`sessionLogs` (consola).
+
 ## Progreso y recompensas
 
 `src/data/gameState.js` guarda en `localStorage` puntos, herramientas,
