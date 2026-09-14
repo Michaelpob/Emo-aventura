@@ -344,14 +344,22 @@ impulso y la acción.
   oleada.
 - **Tres oleadas** de 4 rocas, cada una más rápida, con rocas que tardan más en
   enfriarse, menos margen una vez frías y más chispas. Con 12 bloques el volcán
-  se enfría (cielo azul, lava oscura) y aparece el portal, que se toca para
-  salir.
+  se apaga.
+- **Respiración 4-4-4-4 para enfriarlo del todo.** Aparecen unos pulmones que
+  son el botón: *mantener pulsado* para inhalar (4 s) y sostener (4 s), *soltar*
+  para exhalar (4 s) y esperar (4 s). Los pulmones se llenan y vacían, un anillo
+  marca el tiempo y hay cuenta atrás por fase. Soltar antes de tiempo solo
+  reinicia la respiración («sin prisa»); pulsar cuando toca soltar hace que la
+  fase espere. Cada respiración completa vira el cielo, la lava y los propios
+  pulmones un paso del rojo al azul; con tres, el volcán está frío y aparece el
+  portal, que se toca para salir. Teclado: barra espaciadora o E.
 - Una **reflexión al cerrar cada oleada**, sin cortar la partida: *Al rojo
   vivo* (lo primero que sale, sale al rojo), *Las chispas no se enfrían* (no
   hace falta responder a lo que solo busca reacción) y *Fría, la misma roca
   sirve* (el enojo no desaparece: se usa cuando baja la temperatura). La
-  primera erupción trae una cuarta: parar también es una decisión. La tarjeta
-  final las recoge.
+  primera erupción trae una cuarta: parar también es una decisión. Y al acabar
+  de respirar, *Respirar 4-4-4-4*: no apaga el enojo, le baja la temperatura lo
+  justo para elegir. La tarjeta final las recoge.
 - Todo se reutiliza: 4 rocas, 4 chispas y 12 bloques creados una vez; el toque
   se resuelve con un test rayo-esfera (sin raycast contra mallas), y las rocas
   vuelan con una parábola calculada para caer exactamente en su sitio.

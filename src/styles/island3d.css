@@ -543,6 +543,94 @@
   .i3d-intro__hint { margin-bottom: 10px; }
 }
 
+/* ------------------------------------ respiracion 4-4-4-4 (pulmones) */
+
+.i3d-breath-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.i3d-breath-layer[hidden] { display: none; }
+.i3d-breath {
+  --lung: #ff7a5c;
+  width: min(380px, calc(100% - 32px));
+  padding: 14px 18px 16px;
+  border-radius: 22px;
+  background: rgba(10, 18, 26, 0.82);
+  border: 1px solid color-mix(in srgb, var(--lung), transparent 55%);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 0 44px color-mix(in srgb, var(--lung), transparent 78%);
+  text-align: center;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  animation: i3d-pop 320ms ease;
+  transition: border-color 500ms ease, box-shadow 500ms ease;
+}
+.i3d-breath.is-out { animation: i3d-note-out 420ms ease forwards; }
+.i3d-breath__eyebrow {
+  margin: 0 0 4px;
+  max-width: none;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.i3d-breath__pad {
+  width: clamp(150px, 34vh, 220px);
+  margin: 0 auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+.i3d-breath.is-holding .i3d-breath__pad { filter: brightness(1.18); transform: scale(1.02); }
+.i3d-breath__lungs { display: block; width: 100%; height: auto; overflow: visible; }
+.i3d-breath__lungs .lobe {
+  transform-box: fill-box;
+  transition: transform 90ms linear;
+}
+.i3d-breath__lungs .lobe--l { transform-origin: 100% 0; }
+.i3d-breath__lungs .lobe--r { transform-origin: 0 0; }
+.i3d-breath__lungs .lobe path { fill: var(--lung); fill-opacity: 0.92; transition: fill 500ms ease; }
+.i3d-breath__lungs .trachea { fill: none; stroke: var(--lung); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; transition: stroke 500ms ease; }
+.i3d-breath__lungs .ring-bg { fill: none; stroke: rgba(255, 255, 255, 0.14); stroke-width: 6; }
+.i3d-breath__lungs .ring {
+  fill: none;
+  stroke: var(--lung);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke 500ms ease;
+}
+.i3d-breath__phase {
+  margin: 6px 0 0;
+  max-width: none;
+  color: #fff;
+  font-size: clamp(1.05rem, 3vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.i3d-breath__phase b { margin-left: 10px; color: var(--lung); transition: color 500ms ease; }
+.i3d-breath__phase b:empty { display: none; }
+.i3d-breath__hint { margin: 2px 0 0; max-width: none; min-height: 1.3em; font-size: 0.86rem; color: rgba(255, 255, 255, 0.75); }
+.i3d-breath__cycles { display: flex; justify-content: center; gap: 8px; margin: 8px 0 0; }
+.i3d-breath__cycles i { font-style: normal; color: rgba(255, 255, 255, 0.3); transition: color 400ms ease; }
+.i3d-breath__cycles i.is-on { color: var(--lung); text-shadow: 0 0 10px var(--lung); }
+
+@media (max-height: 520px) {
+  .i3d-breath { width: min(340px, calc(100% - 24px)); padding: 8px 14px 10px; }
+  .i3d-breath__eyebrow { display: none; }
+  .i3d-breath__pad { width: clamp(110px, 42vh, 150px); }
+  .i3d-breath__phase { margin-top: 2px; font-size: 1rem; }
+  .i3d-breath__hint { font-size: 0.78rem; }
+  .i3d-breath__cycles { margin-top: 4px; }
+}
+
 /* ------------------------------ pregunta con opciones antes de jugar */
 
 .i3d-choice {

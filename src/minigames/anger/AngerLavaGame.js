@@ -9,6 +9,11 @@
 // Fallar no resta nada de lo construido. Cuando la lava llega a la cornisa hay
 // una erupcion: el juego se para tres segundos y la unica forma de que baje es
 // no tocar nada. Despues sigue la misma oleada.
+//
+// Al terminar las oleadas el volcan se apaga, pero se enfria del todo con la
+// respiracion 4-4-4-4: unos pulmones que son el boton (mantener pulsado para
+// inhalar y sostener, soltar para exhalar y esperar). Cada respiracion vira el
+// cielo, la lava y los pulmones del rojo al azul. Tres, y se abre el portal.
 
 import * as THREE from 'three';
 import { MinigameBase, prefersReducedMotion } from '../../engine/MinigameBase.js';
@@ -101,8 +106,26 @@ const ERUPTION_NOTE = {
   title: 'Erupción',
   text: 'Subió demasiado y el volcán estalló. No has perdido nada de lo construido: parar y no tocar nada durante unos segundos también es una decisión, y es la que baja la lava.'
 };
+const BREATH_NOTE = {
+  title: 'Respirar 4-4-4-4',
+  text: 'Inhala 4, sostén 4, exhala 4, espera 4. No apaga el enojo: le baja la temperatura lo justo para que puedas elegir qué hacer. Te lo llevas a cualquier sitio.'
+};
+
+// Respiracion cuadrada: en cada fase hay que mantener pulsado o estar suelto
+const BREATH_PHASES = [
+  { id: 'in', label: 'INHALA', hint: 'mantén pulsado', seconds: 4, hold: true },
+  { id: 'hold', label: 'SOSTÉN', hint: 'sigue pulsando', seconds: 4, hold: true },
+  { id: 'out', label: 'EXHALA', hint: 'suelta', seconds: 4, hold: false },
+  { id: 'rest', label: 'ESPERA', hint: 'sin pulsar', seconds: 4, hold: false }
+];
+const BREATH_CYCLES = 3;
+const CALM_BASE = 0.12;       // el volcan apagado pero aun caliente; la respiracion hace el resto
+const LUNG_HOT = new THREE.Color('#ff7a5c');
+const LUNG_CALM = new THREE.Color('#7fd1ff');
+const RING_LEN = 2 * Math.PI * 94;
 
 const _v = new THREE.Vector3();
+const _c = new THREE.Color();
 
 export class AngerLavaGame extends MinigameBase {
   constructor(opts) {
@@ -117,7 +140,10 @@ export class AngerLavaGame extends MinigameBase {
     this.placed = 0;          // bloques ya puestos en el puente
     this.caughtInWave = 0;
     this.placedInWave = 0;
-    this.phase = 'idle';      // idle | play | between | venting | done
+    this.phase = 'idle';      // idle | play | between | venting | breathe | done
+    this.breath = null;       // respiracion en curso { cycle, phaseIndex, elapsed, idle }
+    this.holding = false;
+    this.calmTarget = 0;      // hacia donde va calmness (sube con cada respiracion)
     this.phaseTimer = 0;
     this.ventTimer = 0;
     this.rockTimer = 0;
@@ -165,6 +191,7 @@ export class AngerLavaGame extends MinigameBase {
     this.placeCamera();
     this.buildPicking();
     this.buildHud();
+    this.buildBreath();
 
     this.setObjective(TOTAL_ROCKS, '●');
   }
@@ -448,6 +475,7 @@ export class AngerLavaGame extends MinigameBase {
   }
 
   tap() {
+    if (this.phase === 'breathe') return;
     if (this.phase === 'venting') {
       // tocar durante la erupcion reinicia la cuenta: la calma pide no hacer nada
       this.ventTimer = 0;
@@ -566,7 +594,7 @@ export class AngerLavaGame extends MinigameBase {
     await this.showIntro({
       eyebrow: `Al rojo vivo · ${this.level.label}`,
       goal: `Construye el puente con ${TOTAL_ROCKS} rocas frías`,
-      hint: `Las rocas llegan al rojo vivo: si las tocas así te quemas y el volcán sube. Espera a que se pongan grises y entonces atrápalas. Las chispas nunca se enfrían: déjalas pasar. ${this.level.hint}`,
+      hint: `Las rocas llegan al rojo vivo: si las tocas así te quemas y el volcán sube. Espera a que se pongan grises y entonces atrápalas. Las chispas nunca se enfrían: déjalas pasar. Al final, tres respiraciones 4-4-4-4 enfrían el volcán del todo. ${this.level.hint}`,
       keys: [['Clic', 'atrapar una roca fría'], ['Esperar', 'si está al rojo'], ['Nada', 'con las chispas']],
       touch: [['Toca', 'atrapar una roca fría'], ['Espera', 'si está al rojo'], ['Nada', 'con las chispas']]
     });
@@ -622,11 +650,11 @@ export class AngerLavaGame extends MinigameBase {
     this.noteFor(this.wave);
   }
 
-  noteFor(index) {
+  noteFor(index, seconds = 9) {
     const note = REFLECTIONS[index];
     if (!note || this.seen.includes(note)) return;
     this.seen.push(note);
-    this.later(() => this.showNote({ ...note, seconds: 9 }), 700);
+    this.later(() => { this.lastNote = this.showNote({ ...note, seconds }); }, 700);
   }
 
   /** Vacia la cornisa: las rocas se hunden y las chispas se apagan */
@@ -1015,12 +1043,19 @@ export class AngerLavaGame extends MinigameBase {
         this.say('QUIETO · RESPIRA', 0);
       }
       if (this.ventTimer >= VENT_SECONDS) this.endVent();
-    } else if (this.phase === 'done') {
-      this.calmness = Math.min(1, this.calmness + dt / 3);
+    } else if (this.phase === 'breathe') {
       this.phaseTimer += dt;
-      if (!this.portal && this.phaseTimer > 1.6) this.openExit();
+      // los pulmones entran cuando la reflexion ya no esta en pantalla
+      const noteGone = !this.lastNote || !this.lastNote.isConnected;
+      if (!this.breath && this.phaseTimer > 1.8 && (noteGone || this.phaseTimer > 8)) this.startBreathing();
+      this.updateBreath(dt);
+    } else if (this.phase === 'done') {
+      this.phaseTimer += dt;
+      if (!this.portal && this.phaseTimer > 1.2) this.openExit();
       if (this.portalRing) this.portalRing.rotation.z += dt * 0.6;
     }
+    // el volcan se enfria despacio hacia donde lo lleve la respiracion
+    this.calmness += (this.calmTarget - this.calmness) * Math.min(1, dt * 0.9);
 
     this.updateRocks(dt);
     this.updateSparks(dt);
@@ -1048,16 +1083,226 @@ export class AngerLavaGame extends MinigameBase {
   /* ============================================================== cierre */
 
   calm() {
-    this.phase = 'done';
+    this.phase = 'breathe';
     this.phaseTimer = 0;
     this.heat = 0;
     this.heatBar.set(0);
+    this.calmTarget = CALM_BASE;  // el volcan deja de escupir, pero sigue caliente
     this.clearField(false);
     completeActivity(`anger-oleada-${this.wave + 1}`, 6);
-    this.say('EL VOLCÁN SE ENFRÍA', 2400);
+    this.say('EL VOLCÁN SE APAGA', 1600);
     this.audio.play('success', { volume: 0.5 });
     this.audio.ambient('wind', { volume: 0.22 });
-    this.noteFor(this.wave);
+    this.noteFor(this.wave, 6);   // breve: los pulmones esperan a que se vaya
+  }
+
+  /* ========================================================= respiracion */
+
+  buildBreath() {
+    const layer = document.createElement('div');
+    layer.className = 'i3d-breath-layer';
+    layer.hidden = true;
+    layer.innerHTML = `
+      <div class="i3d-breath" role="group" aria-label="Respiración 4-4-4-4">
+        <p class="i3d-breath__eyebrow">Respira · 4 · 4 · 4 · 4</p>
+        <div class="i3d-breath__pad" data-pad>
+          <svg class="i3d-breath__lungs" viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="ring-bg" cx="100" cy="100" r="94"></circle>
+            <circle class="ring" cx="100" cy="100" r="94" data-ring></circle>
+            <g class="lobe lobe--l" data-lobe>
+              <path d="M84 62 C 48 70, 26 118, 34 160 C 40 184, 80 186, 86 160 Z"></path>
+            </g>
+            <g class="lobe lobe--r" data-lobe>
+              <path d="M116 62 C 152 70, 174 118, 166 160 C 160 184, 120 186, 114 160 Z"></path>
+            </g>
+            <path class="trachea" d="M100 26 V 66 M100 66 L 86 78 M100 66 L 114 78"></path>
+          </svg>
+        </div>
+        <p class="i3d-breath__phase"><span data-phase>MANTÉN PULSADO</span><b data-count></b></p>
+        <p class="i3d-breath__hint" data-hint>para empezar a inhalar</p>
+        <div class="i3d-breath__cycles" data-cycles>${'<i>●</i>'.repeat(BREATH_CYCLES)}</div>
+      </div>
+    `;
+    this.root.appendChild(layer);
+    this.breathEl = {
+      layer,
+      card: layer.querySelector('.i3d-breath'),
+      pad: layer.querySelector('[data-pad]'),
+      ring: layer.querySelector('[data-ring]'),
+      lobes: [...layer.querySelectorAll('[data-lobe]')],
+      phase: layer.querySelector('[data-phase]'),
+      count: layer.querySelector('[data-count]'),
+      hint: layer.querySelector('[data-hint]'),
+      cycles: [...layer.querySelectorAll('[data-cycles] i')]
+    };
+    this.breathEl.ring.style.strokeDasharray = String(RING_LEN);
+    this.breathEl.ring.style.strokeDashoffset = String(RING_LEN);
+
+    // los pulmones son el boton: pulsar / mantener / soltar
+    const pad = this.breathEl.pad;
+    let pointerId = null;
+    const down = (e) => {
+      if (pointerId !== null) return;
+      e.preventDefault();
+      pointerId = e.pointerId;
+      try { pad.setPointerCapture(e.pointerId); } catch { /* opcional */ }
+      this.setHolding(true);
+    };
+    const up = (e) => {
+      if (pointerId === null) return;
+      if (e && e.pointerId !== undefined && e.pointerId !== pointerId) return;
+      pointerId = null;
+      this.setHolding(false);
+    };
+    pad.addEventListener('pointerdown', down);
+    pad.addEventListener('pointerup', up);
+    pad.addEventListener('pointercancel', up);
+    pad.addEventListener('lostpointercapture', up);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('blur', up);
+    this.listeners.push(() => window.removeEventListener('pointerup', up));
+    this.listeners.push(() => window.removeEventListener('blur', up));
+
+    // en escritorio tambien vale la barra espaciadora o la E
+    const isKey = (e) => e.key === ' ' || e.key === 'e' || e.key === 'E';
+    const keyDown = (e) => { if (this.breath && isKey(e)) { e.preventDefault(); this.setHolding(true); } };
+    const keyUp = (e) => { if (isKey(e)) this.setHolding(false); };
+    window.addEventListener('keydown', keyDown);
+    window.addEventListener('keyup', keyUp);
+    this.listeners.push(() => window.removeEventListener('keydown', keyDown));
+    this.listeners.push(() => window.removeEventListener('keyup', keyUp));
+  }
+
+  setHolding(on) {
+    this.holding = on;
+    this.breathEl?.card.classList.toggle('is-holding', on);
+  }
+
+  startBreathing() {
+    this.breath = { cycle: 0, phaseIndex: -1, elapsed: 0, idle: 0 };
+    this.clearSay();
+    this.breathEl.layer.hidden = false;
+    this.breathEl.card.classList.remove('is-out');
+    this.calmBar.set(0);
+    this.calmBar.show(true);
+    this.audio.duck(0.3);
+    this.setBreathText('MANTÉN PULSADO', 'para empezar a inhalar');
+    this.renderBreath(0.1, 0);
+    this.renderCycles();
+  }
+
+  setBreathText(phase, hint, count = '') {
+    const el = this.breathEl;
+    if (el.phase.textContent !== phase) el.phase.textContent = phase;
+    if (el.hint.textContent !== hint) el.hint.textContent = hint;
+    if (el.count.textContent !== count) el.count.textContent = count;
+  }
+
+  /** Tamano de los pulmones (0 vacios · 1 llenos) y progreso del anillo */
+  renderBreath(fill, progress) {
+    const el = this.breathEl;
+    const s = 0.8 + fill * 0.3;
+    el.lobes[0].style.transform = `scale(${s.toFixed(3)})`;
+    el.lobes[1].style.transform = `scale(${s.toFixed(3)})`;
+    el.ring.style.strokeDashoffset = String(RING_LEN * (1 - progress));
+    this.calmBar.set(progress);
+    // el color acompana al volcan: del rojo al azul
+    _c.lerpColors(LUNG_HOT, LUNG_CALM, (this.calmTarget - CALM_BASE) / (1 - CALM_BASE));
+    el.card.style.setProperty('--lung', `#${_c.getHexString()}`);
+  }
+
+  /** Del volcan apagado (CALM_BASE) al frio del todo (1), segun lo respirado */
+  calmFor(x) {
+    return CALM_BASE + (1 - CALM_BASE) * Math.max(0, Math.min(1, x));
+  }
+
+  renderCycles() {
+    this.breathEl.cycles.forEach((i, k) => i.classList.toggle('is-on', k < (this.breath?.cycle ?? 0)));
+  }
+
+  updateBreath(dt) {
+    const b = this.breath;
+    if (!b) return;
+
+    // Espera: los pulmones laten hasta que el jugador mantiene pulsado
+    if (b.phaseIndex === -1) {
+      b.idle += dt;
+      this.renderBreath(0.1 + Math.sin(this.time * 2.6) * 0.04, 0);
+      if (b.idle > 1.4) this.setBreathText('MANTÉN PULSADO', 'para empezar a inhalar');
+      if (this.holding) {
+        b.phaseIndex = 0;
+        b.elapsed = 0;
+        this.audio.play('breathIn', { volume: 0.4 });
+      }
+      return;
+    }
+
+    const phase = BREATH_PHASES[b.phaseIndex];
+
+    // Soltar mientras se inhala o se sostiene: se vuelve a empezar, sin prisa
+    if (phase.hold && !this.holding && b.elapsed > 0.2) {
+      b.phaseIndex = -1;
+      b.elapsed = 0;
+      b.idle = 0;
+      this.calmTarget = this.calmFor(b.cycle / BREATH_CYCLES);
+      this.setBreathText('SIN PRISA', 'mantén pulsado y empieza otra vez');
+      this.audio.play('soften', { volume: 0.3 });
+      return;
+    }
+    // Pulsar mientras se exhala o se espera: la fase aguarda a que sueltes
+    if (!phase.hold && this.holding) {
+      this.setBreathText(phase.id === 'out' ? 'SUELTA' : 'ESPERA', 'deja de pulsar', '');
+      return;
+    }
+
+    b.elapsed += dt;
+    const p = Math.min(1, b.elapsed / phase.seconds);
+    const fill = phase.id === 'in' ? p : phase.id === 'hold' ? 1 : phase.id === 'out' ? 1 - p : 0;
+    const cycleProgress = (b.phaseIndex + p) / BREATH_PHASES.length;
+    this.calmTarget = this.calmFor((b.cycle + cycleProgress) / BREATH_CYCLES);
+    this.setBreathText(phase.label, phase.hint, String(Math.ceil(phase.seconds - b.elapsed)));
+    this.renderBreath(fill, cycleProgress);
+
+    if (p >= 1) {
+      b.phaseIndex += 1;
+      b.elapsed = 0;
+      if (b.phaseIndex < BREATH_PHASES.length) {
+        const next = BREATH_PHASES[b.phaseIndex];
+        this.audio.play('tick', { volume: 0.3 });
+        if (next.id === 'out') this.audio.play('breathOut', { volume: 0.4 });
+        return;
+      }
+      // respiracion completa: el volcan da un paso mas hacia el azul
+      b.cycle += 1;
+      b.phaseIndex = -1;
+      b.idle = 0;
+      this.calmTarget = this.calmFor(b.cycle / BREATH_CYCLES);
+      this.renderCycles();
+      this.audio.play('chime', { volume: 0.45, rate: 0.9 + b.cycle * 0.1 });
+      this.feedback.flash(new THREE.Vector3(0, 2, 0), { color: '#9fe3ff', intensity: 3, duration: 1.2, distance: 20 });
+      if (b.cycle >= BREATH_CYCLES) this.finishBreathing();
+      else this.setBreathText('MANTÉN PULSADO', `otra vez · ${BREATH_CYCLES - b.cycle} más`);
+    }
+  }
+
+  finishBreathing() {
+    this.breath = null;
+    this.setHolding(false);
+    this.calmTarget = 1;
+    this.calmBar.show(false);
+    this.audio.unduck(1);
+    const el = this.breathEl;
+    el.card.classList.add('is-out');
+    this.later(() => { el.layer.hidden = true; }, 450);
+    this.phase = 'done';
+    this.phaseTimer = 0;
+    completeActivity('anger-respiracion-4x4', 8);
+    this.say('EL VOLCÁN ESTÁ FRÍO', 2200);
+    this.audio.play('success', { volume: 0.5 });
+    if (!this.seen.includes(BREATH_NOTE)) {
+      this.seen.push(BREATH_NOTE);
+      this.later(() => this.showNote({ ...BREATH_NOTE, seconds: 9 }), 900);
+    }
   }
 
   openExit() {
@@ -1115,7 +1360,7 @@ export class AngerLavaGame extends MinigameBase {
     this.showClosingCard({
       title: 'Esperar a que se enfríe',
       lines: [
-        `${this.level.closing} El puente está hecho de las mismas rocas que te quemaban. Esto es lo que fuiste encontrando:`,
+        `${this.level.closing} El puente está hecho de las mismas rocas que te quemaban, y el volcán se enfrió del todo respirando. Esto es lo que fuiste encontrando:`,
         ...this.seen.map((r) => `<strong>${r.title}.</strong> ${r.text}`)
       ],
       onDone: () => super.finish()
@@ -1123,6 +1368,11 @@ export class AngerLavaGame extends MinigameBase {
   }
 
   onReset() {
+    this.breath = null;
+    this.setHolding(false);
+    this.calmTarget = 0;
+    this.breathEl.layer.hidden = true;
+    this.audio.unduck(0.3);
     this.clearField(false);
     this.rocks.forEach((r) => this.freeRock(r));
     this.sparks.forEach((s) => this.freeSpark(s));
@@ -1162,5 +1412,6 @@ export class AngerLavaGame extends MinigameBase {
     this.tooltip?.remove();
     this.waveEl?.remove();
     this.veil?.remove();
+    this.breathEl?.layer.remove();
   }
 }

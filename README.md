@@ -32,7 +32,7 @@ botones de saltar/interactuar.
 
 | Isla | Emoción | Vista | Verbo | Reto |
 |---|---|---|---|---|
-| Al rojo vivo | Ira | cámara fija | **distinguir y contenerte** (go / no-go) | Las rocas caen al rojo: tocarlas quema y el volcán sube; hay que esperar a que se enfríen para atraparlas y hacer el puente. Las chispas nunca se enfrían. Al entrar dices cómo está tu enojo (bajo / medio / alto) y eso sube la dificultad |
+| Al rojo vivo | Ira | cámara fija | **distinguir y contenerte** (go / no-go) | Las rocas caen al rojo: tocarlas quema y el volcán sube; hay que esperar a que se enfríen para atraparlas y hacer el puente. Las chispas nunca se enfrían. Al entrar dices cómo está tu enojo (bajo / medio / alto) y eso sube la dificultad; al final, tres respiraciones 4-4-4-4 con unos pulmones que se mantienen pulsados y se sueltan |
 | Bosque de la Noche | Miedo | 1ª persona | **explorar en la oscuridad** | Linterna con batería: correr la gasta, respirar la recarga; encender 5 faroles |
 | El mundo que vuelve | Tristeza | 3ª persona | **encontrar y restaurar** | 6 fragmentos de recuerdo; cada uno hace brotar vegetación, reconstruye una estructura y añade una capa de audio |
 | Valle de la Luz | Alegría | 3ª persona | **saltar y recoger** | 12 orbes entre plataformas flotantes, con combo si no tocas el suelo |
