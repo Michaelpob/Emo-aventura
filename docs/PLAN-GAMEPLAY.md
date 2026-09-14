@@ -328,6 +328,14 @@ impulso y la acción.
   Nunca se enfrían: tocarlas también sube el volcán. Se apagan solas.
 - **Una sola regla**: solo se toca lo que ya no está al rojo. Todo lo demás
   (esperar, dejar pasar) es inhibición.
+- **Al entrar, el jugador dice cómo está su enojo** (nivel 1 bajo · 2 medio ·
+  3 alto, con la frase de cada nivel) y eso fija la dificultad: a más nivel,
+  más tarda la roca en enfriarse (la pausa que hace falta es más larga), menos
+  margen una vez fría, más chispas y más veces encima de las rocas, y el
+  volcán sube más rápido con cada error (×1 / ×1,15 / ×1,3). La respuesta
+  queda guardada como intensidad inicial y la tarjeta final la retoma.
+  `MinigameBase.showChoice()` queda disponible para preguntar con opciones en
+  cualquier isla.
 - **La lava es la barra de fallo**: sube con cada quemadura (+0,22), chispa
   (+0,18) y roca perdida (+0,07); baja un poco con cada acierto y sola con el
   tiempo. Cuando llega a la cornisa hay **erupción**: la cornisa se vacía, el

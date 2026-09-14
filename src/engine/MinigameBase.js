@@ -359,6 +359,48 @@ export class MinigameBase {
     });
   }
 
+  /**
+   * Pregunta con opciones antes de jugar (por ejemplo, con cuanta intensidad
+   * llega el jugador). Mismo aspecto que las instrucciones; el juego queda en
+   * pausa hasta elegir. Devuelve el `value` de la opcion elegida.
+   * @param {object} q
+   * @param {string} q.eyebrow
+   * @param {string} q.title
+   * @param {Array<{label:string, text:string, value:any, color?:string}>} q.options
+   */
+  showChoice({ eyebrow = '', title = '', options = [] } = {}) {
+    this.paused = true;
+    return new Promise((resolve) => {
+      const box = document.createElement('div');
+      box.className = 'i3d-intro';
+      box.innerHTML = `
+        <div class="i3d-intro__card" role="dialog" aria-modal="true" aria-label="${title}">
+          ${eyebrow ? `<p class="i3d-intro__eyebrow">${eyebrow}</p>` : ''}
+          <h3>${title}</h3>
+          <div class="i3d-choice">
+            ${options.map((o, i) => `
+              <button class="i3d-choice__btn" type="button" data-choice="${i}" style="--c:${o.color ?? '#ffd166'}">
+                <strong>${o.label}</strong>
+                <span>${o.text}</span>
+              </button>`).join('')}
+          </div>
+        </div>
+      `;
+      this.el.overlay.appendChild(box);
+      box.querySelectorAll('[data-choice]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const opt = options[Number(btn.dataset.choice)];
+          box.remove();
+          this.paused = false;
+          this.clock.getDelta();
+          this.audio?.setEnabled(gameState.settings.sound);
+          resolve(opt.value);
+        });
+      });
+      box.querySelector('[data-choice]')?.focus({ preventScroll: true });
+    });
+  }
+
   start() {
     if (this.running) return;
     this.running = true;

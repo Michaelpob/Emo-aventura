@@ -24,6 +24,34 @@ const WAVES = [
   { rocks: 4, rockEvery: 2.2, cool: 2.1, stay: 2.0, sparkEvery: 2.5, cover: 0.85, flight: 1.5 }
 ];
 const TOTAL_ROCKS = WAVES.reduce((s, w) => s + w.rocks, 0);
+
+// Con cuanta intensidad llega el jugador. Lo dice el mismo al entrar y la
+// dificultad sube con el nivel: mas tarda la roca en enfriarse (la pausa que
+// hace falta es mas larga), menos margen una vez fria, mas chispas y mas
+// veces encima de las rocas, y el volcan sube mas rapido con cada error.
+const LEVELS = [
+  {
+    n: 1, id: 'baja', name: 'BAJO', label: 'Nivel 1 · Bajo', color: '#7fd1a8',
+    text: 'Estoy molesto, pero todavía puedo pensar y decidir cómo responder.',
+    cool: 1, stay: 1, spark: 1, pace: 1, cover: 0, heat: 1,
+    hint: 'Nivel bajo: ritmo tranquilo.',
+    closing: 'Llegaste con el enojo bajo: todavía podías pensar, y lo usaste.'
+  },
+  {
+    n: 2, id: 'media', name: 'MEDIO', label: 'Nivel 2 · Medio', color: '#ffd166',
+    text: 'Estoy bastante enojado. Mi cuerpo está más tenso y siento ganas de responder inmediatamente.',
+    cool: 1.25, stay: 0.88, spark: 0.7, pace: 0.9, cover: 0.15, heat: 1.15,
+    hint: 'Nivel medio: las rocas tardan más en enfriarse y hay más chispas.',
+    closing: 'Llegaste bastante enojado, con ganas de responder al momento: las rocas tardaban más en enfriarse y aun así esperaste.'
+  },
+  {
+    n: 3, id: 'alta', name: 'ALTO', label: 'Nivel 3 · Alto', color: '#ff7a5c',
+    text: 'Estoy muy enojado. Mi activación es intensa y necesito hacer una pausa antes de actuar.',
+    cool: 1.5, stay: 0.8, spark: 0.5, pace: 0.8, cover: 0.3, heat: 1.3,
+    hint: 'Nivel alto: la pausa es más larga, las chispas no paran y el volcán sube más rápido.',
+    closing: 'Llegaste muy enojado: la pausa era más larga y las chispas no paraban, y aun así construiste el puente.'
+  }
+];
 const MAX_ROCKS = 3;
 const MAX_SPARKS = 3;
 const HEAT = { burn: 0.22, spark: 0.18, lost: 0.07, caught: -0.04, perSecond: -0.015 };
@@ -83,6 +111,8 @@ export class AngerLavaGame extends MinigameBase {
     this.heatShown = 0;       // lo que se ve, siguiendo a heat con suavidad
     this.calmness = 0;        // 0..1 al terminar: el volcan se enfria del todo
     this.wave = -1;
+    this.level = LEVELS[0];   // lo elige el jugador al entrar
+    this.current = null;      // parametros de la oleada en curso, ya con el nivel aplicado
     this.caught = 0;          // rocas atrapadas (en vuelo hacia el puente o ya puestas)
     this.placed = 0;          // bloques ya puestos en el puente
     this.caughtInWave = 0;
@@ -137,7 +167,6 @@ export class AngerLavaGame extends MinigameBase {
     this.buildHud();
 
     this.setObjective(TOTAL_ROCKS, '●');
-    setInitialIntensity('alta');
   }
 
   buildLava() {
@@ -502,6 +531,7 @@ export class AngerLavaGame extends MinigameBase {
   }
 
   addHeat(d) {
+    if (d > 0) d *= this.level.heat;
     this.heat = Math.max(0, Math.min(1, this.heat + d));
     this.heatBar.set(this.heat);
     if (this.heat >= 1 && this.phase === 'play') this.erupt();
@@ -522,33 +552,61 @@ export class AngerLavaGame extends MinigameBase {
   /* ============================================================= oleadas */
 
   async onStart() {
-    await this.showIntro({
+    // primero, con cuanta intensidad llega: eso fija la dificultad
+    const n = await this.showChoice({
       eyebrow: 'Al rojo vivo',
+      title: '¿Cómo está tu enojo ahora mismo?',
+      options: LEVELS.map((l) => ({ label: l.label, text: l.text, value: l.n, color: l.color }))
+    });
+    this.level = LEVELS.find((l) => l.n === n) ?? LEVELS[0];
+    setInitialIntensity(this.level.id);
+    completeActivity(`anger-nivel-${this.level.n}`, 2);
+    this.renderWaveLabel();
+
+    await this.showIntro({
+      eyebrow: `Al rojo vivo · ${this.level.label}`,
       goal: `Construye el puente con ${TOTAL_ROCKS} rocas frías`,
-      hint: 'Las rocas llegan al rojo vivo: si las tocas así te quemas y el volcán sube. Espera a que se pongan grises y entonces atrápalas. Las chispas nunca se enfrían: déjalas pasar.',
+      hint: `Las rocas llegan al rojo vivo: si las tocas así te quemas y el volcán sube. Espera a que se pongan grises y entonces atrápalas. Las chispas nunca se enfrían: déjalas pasar. ${this.level.hint}`,
       keys: [['Clic', 'atrapar una roca fría'], ['Esperar', 'si está al rojo'], ['Nada', 'con las chispas']],
       touch: [['Toca', 'atrapar una roca fría'], ['Espera', 'si está al rojo'], ['Nada', 'con las chispas']]
     });
     this.ambientRumble = this.audio.ambient('rumble', { volume: 0.3, rate: 0.85 });
+    this.say(`NIVEL ${this.level.n} · ${this.level.name}`, 1900);
     this.phase = 'between';
-    this.phaseTimer = BETWEEN_SECONDS - 1.4;
+    this.phaseTimer = BETWEEN_SECONDS - 2.2;
+  }
+
+  /** Parametros de una oleada con el nivel del jugador aplicado */
+  waveParams(n) {
+    const w = WAVES[n];
+    const L = this.level;
+    return {
+      rocks: w.rocks,
+      rockEvery: w.rockEvery * L.pace,
+      cool: w.cool * L.cool,
+      stay: w.stay * L.stay,
+      sparkEvery: w.sparkEvery * L.spark,
+      cover: Math.min(0.9, w.cover + L.cover),
+      flight: w.flight
+    };
   }
 
   startWave(n) {
     this.wave = n;
+    this.current = this.waveParams(n);
     this.caughtInWave = 0;
     this.placedInWave = 0;
     this.phase = 'play';
     this.rockTimer = 1.3;
-    this.sparkTimer = WAVES[n].sparkEvery * 0.7;
-    this.waveEl.querySelector('b').textContent = String(n + 1);
+    this.sparkTimer = this.current.sparkEvery * 0.7;
+    this.renderWaveLabel();
     this.say(`OLEADA ${n + 1} DE ${WAVES.length}`, 2000);
     this.audio.play('interact', { volume: 0.35, rate: 0.9 });
   }
 
   checkWave() {
-    const wave = WAVES[this.wave];
-    if (this.placedInWave < wave.rocks) return;
+    const wave = this.current;
+    if (!wave || this.placedInWave < wave.rocks) return;
     if (this.placed >= TOTAL_ROCKS) this.calm();
     else this.endWave();
   }
@@ -929,9 +987,9 @@ export class AngerLavaGame extends MinigameBase {
 
   onUpdate(dt) {
     this.time += dt;
-    const wave = WAVES[Math.max(0, this.wave)];
+    const wave = this.current;
 
-    if (this.phase === 'play') {
+    if (this.phase === 'play' && wave) {
       if (this.heat > 0) {
         this.heat = Math.max(0, this.heat + HEAT.perSecond * dt);
         this.heatBar.set(this.heat);
@@ -978,8 +1036,13 @@ export class AngerLavaGame extends MinigameBase {
 
     this.waveEl = document.createElement('div');
     this.waveEl.className = 'i3d-wave';
-    this.waveEl.innerHTML = `Oleada <b>1</b> de ${WAVES.length}`;
     this.el.hud.appendChild(this.waveEl);
+    this.renderWaveLabel();
+  }
+
+  renderWaveLabel() {
+    const n = Math.max(0, this.wave) + 1;
+    this.waveEl.innerHTML = `Oleada <b>${n}</b> de ${WAVES.length} <small>· ${this.level.label}</small>`;
   }
 
   /* ============================================================== cierre */
@@ -1048,11 +1111,11 @@ export class AngerLavaGame extends MinigameBase {
     addReward('gota-calma');
     addReward('escudo-autocontrol');
     completeActivity('anger-rojo-vivo', 20);
-    recordReevaluation('anger', 'alta', 'Pausa antes de actuar', 'baja');
+    recordReevaluation('anger', this.level.id, 'Pausa antes de actuar', 'baja');
     this.showClosingCard({
       title: 'Esperar a que se enfríe',
       lines: [
-        'El puente está hecho de las mismas rocas que te quemaban. Esto es lo que fuiste encontrando:',
+        `${this.level.closing} El puente está hecho de las mismas rocas que te quemaban. Esto es lo que fuiste encontrando:`,
         ...this.seen.map((r) => `<strong>${r.title}.</strong> ${r.text}`)
       ],
       onDone: () => super.finish()
@@ -1080,7 +1143,8 @@ export class AngerLavaGame extends MinigameBase {
     this.veil?.remove();
     this.veil = null;
     this.tooltip.hidden = true;
-    this.waveEl.querySelector('b').textContent = '1';
+    this.current = null;
+    this.renderWaveLabel();
     if (this.portal) {
       this.scene.remove(this.portal);
       this.portal = null;
