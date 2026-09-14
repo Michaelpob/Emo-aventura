@@ -323,6 +323,28 @@ function makeEmoji(emoji, size = 1) {
 /* ------------------------------------------------ voz, memoria y diario */
 
 const VOICE_KEY = 'emo-desagrado-voz';        // 'on' | 'off'
+const VOICE_NAME_KEY = 'emo-desagrado-voz-nombre'; // voz elegida por el jugador
+
+const CHEERS = ['¡Muy bien!', '¡Genial!', '¡Así se hace!', '¡Excelente!', '¡Qué bien lo haces!'];
+
+/**
+ * Puntua una voz del navegador: cuanto mas natural y cercana, mejor.
+ * Las "Natural"/"Neural" (Edge, Windows 11) suenan a persona; las de Google
+ * tambien son buenas; el acento latino resulta mas cercano para el publico.
+ */
+function scoreVoice(v) {
+  if (!/^es([-_]|$)/i.test(v.lang)) return -1;
+  let score = 1;
+  const name = v.name || '';
+  if (/natural|neural|premium|enhanced|mejorad/i.test(name)) score += 60;
+  if (/google/i.test(name)) score += 35;
+  if (/es[-_](MX|CO|419|US|AR|CL|PE|VE)/i.test(v.lang)) score += 20;
+  if (/Dalia|Sabina|Paulina|Camila|Andrea|Lucia|Lucía|Elvira|Laura|Helena|Mónica|Monica|Salome|Salomé|Ximena|female|femenina/i.test(name)) score += 10;
+  if (/Pablo|Jorge|Raul|Raúl|Alvaro|Álvaro|male|masculin/i.test(name)) score += 2;
+  if (!v.localService) score += 3;     // las voces en linea suelen ser mas naturales
+  return score;
+}
+
 const CUSTOM_KEY = 'emo-desagrado-estimulos'; // textos que el nino escribio
 const DIARY_KEY = 'emo-desagrado-diario';     // resumen de cada partida
 
@@ -1421,7 +1443,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.clearNotes();
     this.noteClose?.();
     this.audio.play('chime', { volume: 0.45 });
-    this.speak(`${title}. ${text}`);
+    const cheer = this.stageDone.size ? `${CHEERS[this.stageDone.size % CHEERS.length]} ` : '';
+    const name = this.player?.name && this.stageDone.size ? `${this.player.name}, ` : '';
+    this.speak(`${cheer}${name}${eyebrow.toLowerCase()}: ${title}. ${text}`);
     this.later(() => {
       el.classList.add('is-out');
       this.later(() => el.remove(), 450);
@@ -1591,13 +1615,15 @@ export class DisgustTerritoryGame extends MinigameBase {
   initVoice() {
     if (this.voice) { this.buildVoiceButton(); return; }
     const available = typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
-    this.voice = { available, on: false, chosen: null };
+    this.voice = { available, on: false, chosen: null, all: [] };
     if (!available) return;
     this.voice.on = readStore(VOICE_KEY, 'on') !== 'off';
     const pick = () => {
       const voices = window.speechSynthesis.getVoices();
-      const es = voices.filter((v) => /^es([-_]|$)/i.test(v.lang));
-      this.voice.chosen = es.find((v) => /(Google|Microsoft|Paulina|Mónica|Monica|Sabina|Helena|Laura|Elvira)/i.test(v.name)) || es[0] || null;
+      const es = voices.filter((v) => scoreVoice(v) > 0).sort((a, b) => scoreVoice(b) - scoreVoice(a));
+      this.voice.all = es;
+      const wanted = readStore(VOICE_NAME_KEY, null);
+      this.voice.chosen = es.find((v) => v.name === wanted) || es[0] || null;
     };
     pick();
     window.speechSynthesis.addEventListener?.('voiceschanged', pick);
@@ -1636,6 +1662,58 @@ export class DisgustTerritoryGame extends MinigameBase {
     else this.speak('Lectura en voz alta activada.');
   }
 
+  /** Cambia la voz elegida (desde el menu de pausa) y la prueba. */
+  chooseVoice(name) {
+    const v = this.voice;
+    if (!v?.available) return;
+    const found = v.all.find((x) => x.name === name);
+    if (!found) return;
+    v.chosen = found;
+    writeStore(VOICE_NAME_KEY, name);
+    this.speak(`Hola, ${this.player?.name ?? 'explorador'}. Así suena esta voz. ¿Te gusta?`, { priority: true });
+  }
+
+  /** Nombre corto y legible de una voz del sistema. */
+  voiceLabel(v) {
+    const lang = (v.lang || '').replace('_', '-');
+    const region = { 'es-MX': 'México', 'es-CO': 'Colombia', 'es-ES': 'España', 'es-US': 'Estados Unidos', 'es-AR': 'Argentina', 'es-419': 'Latinoamérica', 'es-CL': 'Chile', 'es-PE': 'Perú' }[lang] || lang;
+    const natural = /natural|neural|premium|enhanced/i.test(v.name) ? ' · natural' : /google/i.test(v.name) ? ' · Google' : '';
+    const name = v.name.replace(/Microsoft |Google |Online|\(Natural\)|- Spanish.*$|español.*$/gi, '').trim() || v.name;
+    return `${name} (${region})${natural}`;
+  }
+
+  /** El menu de pausa lleva ademas el selector de voz. */
+  _showPauseMenu() {
+    super._showPauseMenu();
+    const v = this.voice;
+    if (!v?.available || !v.all.length) return;
+    const panel = this.el.overlay.querySelector('.i3d-panel');
+    if (!panel) return;
+    const box = document.createElement('div');
+    box.className = 'dg-voicepick';
+    box.innerHTML = `
+      <label for="dg-voice-select">🔊 Voz de la guía</label>
+      <div class="dg-voicepick__row">
+        <select id="dg-voice-select">
+          ${v.all.map((x) => `<option value="${escapeHtml(x.name)}" ${x === v.chosen ? 'selected' : ''}>${escapeHtml(this.voiceLabel(x))}</option>`).join('')}
+        </select>
+        <button class="i3d-btn" type="button" data-voice-test>Probar</button>
+      </div>
+      <p class="dg-voicepick__hint">${v.all.some((x) => /natural|neural/i.test(x.name)) ? 'Las voces marcadas «natural» suenan a persona.' : 'Consejo: en Microsoft Edge hay voces «naturales» en español que suenan a persona.'}</p>
+    `;
+    panel.querySelector('.i3d-panel__hint')?.before(box);
+    const select = box.querySelector('select');
+    const test = () => {
+      // el menu pausa la voz: para probar se reanuda un momento
+      this.speechPaused = false;
+      try { window.speechSynthesis?.resume(); } catch { /* sin voz */ }
+      this.chooseVoice(select.value);
+      this.later(() => { if (this.paused) this.speechPaused = true; }, 100);
+    };
+    select.addEventListener('change', test);
+    box.querySelector('[data-voice-test]').addEventListener('click', test);
+  }
+
   /**
    * Lee un texto. Por defecto se pone en cola detras de lo que ya se esta
    * leyendo: ningun mensaje se corta. `priority` solo para lo urgente (la
@@ -1662,8 +1740,9 @@ export class DisgustTerritoryGame extends MinigameBase {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = v.chosen?.lang ?? 'es-ES';
       if (v.chosen) u.voice = v.chosen;
-      u.rate = 0.95;
-      u.pitch = 1.05;
+      u.rate = 0.92;                   // un poco mas pausado: se entiende mejor
+      u.pitch = 1.08;                  // ligeramente mas alto: suena mas amable
+      u.volume = 1;
       this.speechBusy = true;
       this._utter = u;                 // si se recoge como basura, Chrome nunca avisa del final
       const done = () => {
@@ -1694,17 +1773,19 @@ export class DisgustTerritoryGame extends MinigameBase {
   /** La tarjeta de instrucciones tambien se lee (el clic en Jugar ya autorizo la voz). */
   interactionIntro() {
     const promise = super.interactionIntro();
-    const { goal, hint, eyebrow } = this._intro ?? {};
+    const { goal, hint } = this._intro ?? {};
     // "Como se juega" desde el menu de pausa llega con la voz en pausa: se reanuda
     this.speechPaused = false;
     try { window.speechSynthesis?.resume(); } catch { /* sin voz */ }
-    this.speak(`${eyebrow ?? ''}. ${goal ?? ''}. ${hint ?? ''}`);
+    const name = this.player?.name;
+    this.speak(`${name ? `¡Hola, ${name}! ` : '¡Hola! '}${goal ?? ''} ${hint ?? ''} Cuando quieras, pulsa Empezar.`);
     return promise;
   }
 
   togglePause(on) {
     super.togglePause(on);
     this.speechPaused = this.paused;
+    this.root.classList.toggle('is-paused', this.paused);   // el HUD se esconde tras el menu
     try {
       if (this.paused) window.speechSynthesis?.pause();
       else { window.speechSynthesis?.resume(); this.pumpSpeech(); }
@@ -2261,7 +2342,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (tool && !this.rewards.includes(path.tool)) this.rewards.push(path.tool);
     this.audio.play('success', { volume: 0.5 });
     this.feedback.burst(_v.set(path.x, path.y + 3, path.z), { count: 34, color: '#ffd166', speed: 3.4, life: 1.5, gravity: -0.6 });
-    this.later(() => this.toast(`${path.icon} Recompensa: ${tool?.name ?? path.tool}`), 700);
+    this.later(() => this.toast(`${path.icon} ¡Genial! Recompensa: ${tool?.name ?? path.tool}`), 700);
     path.sign.userData.setText(`✓ ${path.icon} ${path.name}\n${path.technique}`, { color: '#a8e06a' });
     this.renderStages();
 

@@ -613,3 +613,32 @@
   .dg-stage__icon { font-size: 2.4rem; }
   .dg-stage h3 { font-size: 1.15rem; }
 }
+
+/* ---- selector de voz en el menu de pausa ---- */
+.dg-voicepick {
+  margin: 14px 0 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(168, 224, 106, 0.35);
+  text-align: left;
+}
+.dg-voicepick label { display: block; margin-bottom: 8px; font-weight: 800; color: #a8e06a; font-size: 0.9rem; }
+.dg-voicepick__row { display: flex; gap: 8px; align-items: center; }
+.dg-voicepick select {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 18, 26, 0.9);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+}
+.dg-voicepick__hint { margin: 8px 0 0; font-size: 0.78rem; color: rgba(255, 255, 255, 0.65); }
+
+/* en pausa, los avisos y el HUD de la isla no compiten con el menu */
+.i3d.dg.is-paused .dg-hud,
+.i3d.dg.is-paused .i3d__notes { visibility: hidden; }
