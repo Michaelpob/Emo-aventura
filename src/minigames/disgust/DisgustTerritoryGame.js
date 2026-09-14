@@ -1654,7 +1654,8 @@ export class DisgustTerritoryGame extends MinigameBase {
   }
 
   pumpSpeech() {
-    if (this.speechBusy || !this.speechQueue.length || this.paused) return;
+    // `paused` tambien es true en la bienvenida y el formulario: ahi si hay que leer.
+    if (this.speechBusy || !this.speechQueue.length || this.speechPaused) return;
     const v = this.voice;
     const text = this.speechQueue.shift();
     try {
@@ -1693,13 +1694,17 @@ export class DisgustTerritoryGame extends MinigameBase {
   /** La tarjeta de instrucciones tambien se lee (el clic en Jugar ya autorizo la voz). */
   interactionIntro() {
     const promise = super.interactionIntro();
-    const { goal, hint } = this._intro ?? {};
-    this.later(() => this.speak(`${goal ?? ''}. ${hint ?? ''}`), 300);
+    const { goal, hint, eyebrow } = this._intro ?? {};
+    // "Como se juega" desde el menu de pausa llega con la voz en pausa: se reanuda
+    this.speechPaused = false;
+    try { window.speechSynthesis?.resume(); } catch { /* sin voz */ }
+    this.speak(`${eyebrow ?? ''}. ${goal ?? ''}. ${hint ?? ''}`);
     return promise;
   }
 
   togglePause(on) {
     super.togglePause(on);
+    this.speechPaused = this.paused;
     try {
       if (this.paused) window.speechSynthesis?.pause();
       else { window.speechSynthesis?.resume(); this.pumpSpeech(); }
