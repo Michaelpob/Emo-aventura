@@ -36,7 +36,7 @@ botones de saltar/interactuar.
 | Bosque de la Noche | Miedo | 1ª persona | **explorar en la oscuridad** | Linterna con batería: correr la gasta, respirar la recarga; encender 5 faroles |
 | El mundo que vuelve | Tristeza | 3ª persona | **encontrar y restaurar** | 6 fragmentos de recuerdo; cada uno hace brotar vegetación, reconstruye una estructura y añade una capa de audio |
 | Valle de la Luz | Alegría | 3ª persona | **saltar y recoger** | 12 orbes entre plataformas flotantes, con combo si no tocas el suelo |
-| Guardianes del Desagrado | Asco | 1ª persona | **manipular y ordenar** | Empujar objetos con el cuerpo a su contenedor en 4 zonas y activar las válvulas |
+| Guardianes del Desagrado | Asco | 1ª persona | **reconocer, medir y responder** | Sigue el documento de la isla etapa por etapa: los estímulos se responden con el cuerpo (alejarse = sí me genera desagrado), el Espejo de las Reacciones se contesta pisando baldosas, el termómetro se sube por terrazas y cambia el mundo en vivo, cada herramienta tiene su propia mecánica (burbuja de respiración, mariposas con la mirada, cargar la sensación por tres arcos, 5-4-3-2-1 con un modo por sentido, puertas del pensamiento, llamar al Guardián) y La Reacción Impulsiva crece si corres, saltas o chocas |
 | El jardín que cambia | Sorpresa | 1ª persona | **observar** | Algo cambia siempre fuera de tu campo de visión: date cuenta y acércate |
 
 Al superar cada reto se abre un **portal físico** en la escena que el jugador

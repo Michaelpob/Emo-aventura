@@ -269,3 +269,162 @@
 .emo-theme-disgust .emo-world[data-scene='isla-limpia'] .emo-sky { --sky-top: #7fc9e8; --sky-bottom: #d9f2c4; }
 .emo-theme-disgust .emo-world[data-scene='isla-limpia'] .emo-ground { --ground: linear-gradient(180deg, #7cc067, #4f9448); }
 .emo-theme-disgust .emo-world[data-scene='isla-limpia'] .emo-layer--near { opacity: 0.08; }
+
+/* ===================================================================
+   ISLA 3D · GUARDIANES DEL DESAGRADO (DisgustTerritoryGame)
+   HUD propio de la isla: pregunta de los estimulos, tarea actual,
+   anillo de mirada, avisos de recompensa y panel del Guardian.
+   =================================================================== */
+
+.i3d.dg .dg-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.dg-task {
+  position: absolute;
+  top: 16px;
+  left: 62px;
+  max-width: calc(100% - 210px);
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgba(8, 16, 22, 0.62);
+  border: 1px solid rgba(168, 224, 106, 0.45);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: i3d-pop 220ms ease;
+}
+.dg-task[hidden] { display: none; }
+
+.dg-ask {
+  position: absolute;
+  top: 27%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, calc(100% - 32px));
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px 16px;
+  border-radius: 18px;
+  background: rgba(8, 16, 22, 0.8);
+  border: 1px solid rgba(168, 224, 106, 0.55);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  animation: i3d-pop 260ms ease;
+}
+.dg-ask[hidden] { display: none; }
+.dg-ask__icon { font-size: 2.2rem; line-height: 1; }
+.dg-ask__body { flex: 1; min-width: 0; }
+.dg-ask__q {
+  margin: 0;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a8e06a;
+}
+.dg-ask__label { margin: 3px 0; font-weight: 800; font-size: 1rem; line-height: 1.3; }
+.dg-ask__hint { margin: 0; font-size: 0.8rem; color: rgba(255, 255, 255, 0.78); }
+.dg-ask__hint b { color: #ffd166; }
+.dg-ask__meter {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 7px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.dg-ask__meter i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #a8e06a, #ffd166, #ff9d8a);
+  transition: width 120ms linear;
+}
+.dg-ask[data-result='yes'] { border-color: #ff9d8a; }
+.dg-ask[data-result='yes'] .dg-ask__q { color: #ff9d8a; }
+.dg-ask[data-result='no'] { border-color: #a8e06a; }
+
+.dg-focus {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62px;
+  height: 62px;
+  margin: -31px 0 0 -31px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+}
+.dg-focus[hidden] { display: none; }
+.dg-focus i {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: conic-gradient(#ffd166 calc(var(--p, 0) * 1turn), transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 61%);
+  mask: radial-gradient(circle, transparent 58%, #000 61%);
+}
+
+.dg-toasts {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+.dg-toast {
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(20, 40, 20, 0.92);
+  border: 1px solid #a8e06a;
+  color: #fff;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  animation: dg-toast 3.4s ease forwards;
+}
+@keyframes dg-toast {
+  0% { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  10% { opacity: 1; transform: translateY(0) scale(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
+.dg-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(4, 10, 8, 0.4);
+  z-index: 9;
+}
+.dg-panel { text-align: center; }
+.dg-choices { display: grid; gap: 10px; margin-top: 14px; }
+.dg-choice {
+  width: 100%;
+  text-align: left;
+  line-height: 1.35;
+  white-space: normal;
+  border-radius: 14px;
+}
+.dg-choice:hover, .dg-choice:focus-visible { background: rgba(168, 224, 106, 0.22); border-color: #a8e06a; }
+
+@media (max-width: 640px) {
+  .dg-ask { top: 24%; padding: 10px 12px 14px; gap: 10px; }
+  .dg-ask__icon { font-size: 1.7rem; }
+  .dg-ask__label { font-size: 0.9rem; }
+  .dg-task { top: 14px; left: 56px; font-size: 0.78rem; max-width: calc(100% - 150px); }
+  .dg-toasts { top: 40%; }
+}

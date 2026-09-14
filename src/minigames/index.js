@@ -11,6 +11,7 @@ import { SadnessRestoreGame } from './sadness/SadnessRestoreGame.js';
 import { SadnessDaysGame } from './sadness/SadnessDaysGame.js';
 import { JoyOrbsGame } from './joy/JoyOrbsGame.js';
 import { DisgustSortGame } from './disgust/DisgustSortGame.js';
+import { DisgustTerritoryGame } from './disgust/DisgustTerritoryGame.js';
 import { SurpriseObserveGame } from './surprise/SurpriseObserveGame.js';
 
 export const minigameRegistry = {
@@ -22,6 +23,7 @@ export const minigameRegistry = {
   'sadness-restore': SadnessRestoreGame,
   'joy-orbs': JoyOrbsGame,
   'disgust-sort': DisgustSortGame,
+  'disgust-territory': DisgustTerritoryGame,
   'surprise-observe': SurpriseObserveGame,
   // EMO-AVENTURA (2D, en migracion a 3D)
   'fear-island': FearIslandGame,
