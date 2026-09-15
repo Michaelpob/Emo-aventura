@@ -70,11 +70,6 @@ const ZONES = [
         label: 'C. Percibir un olor muy desagradable.', icon: '👃',
         yes: 'Alejarte de un olor fuerte es una respuesta muy común: el cuerpo avisa de lo que podría hacerte daño.',
         no: 'A ti este olor no te alejó. Cada persona reacciona a su manera, y eso también está bien.'
-      },
-      {
-        label: 'Oler pan recién hecho.', icon: '🍞',
-        yes: 'A ti este olor te generó desagrado. No todas las personas reaccionan igual ante lo mismo.',
-        no: 'Dejaste que se acercara: hay estímulos que no despiertan desagrado.'
       }
     ]
   },
@@ -85,11 +80,6 @@ const ZONES = [
         label: 'A. Encontrar comida en mal estado.', icon: '🥫',
         yes: 'Rechazar comida en mal estado protege: el desagrado ayudó a nuestros antepasados a no comer lo que podía dañarlos.',
         no: 'Te acercaste sin problema. Aun así, conviene revisar: el desagrado a veces avisa de un riesgo real.'
-      },
-      {
-        label: 'Probar una fruta fresca.', icon: '🍎',
-        yes: 'A ti esta fruta te dio rechazo. Puede ser por su textura, su sabor o un recuerdo: cada persona es distinta.',
-        no: 'Una fruta fresca no suele generar desagrado. Dejaste que se acercara.'
       }
     ]
   },
@@ -100,11 +90,6 @@ const ZONES = [
         label: 'B. Escuchar una canción que me gusta.', icon: '🎵',
         yes: 'Te alejaste de una canción que te gusta. Puede pasar si la asocias con un mal recuerdo: el desagrado también aparece con pensamientos y recuerdos.',
         no: 'Una canción que te gusta no genera desagrado. Dejaste que se acercara.'
-      },
-      {
-        label: 'Ver una imagen que me incomoda.', icon: '🖼️',
-        yes: 'Apartar la vista de lo que incomoda es una respuesta frecuente del desagrado.',
-        no: 'A ti esta imagen no te alejó. No todas las personas reaccionan de la misma manera.'
       }
     ]
   },
@@ -115,11 +100,6 @@ const ZONES = [
         label: 'D. Ver una situación que me produce rechazo.', icon: '🙅',
         yes: 'El desagrado también aparece frente a conductas y situaciones, no solo frente a cosas. Es información sobre lo que te importa.',
         no: 'A ti esta situación no te alejó. Cada persona tiene su propio umbral.'
-      },
-      {
-        label: 'Recibir un saludo amable.', icon: '👋',
-        yes: 'A ti este saludo te generó rechazo. Puede depender del contexto o de quién lo hace.',
-        no: 'Un saludo amable no suele generar desagrado. Dejaste que se acercara.'
       }
     ]
   }
@@ -231,8 +211,8 @@ const SUPPORT_LINES = [
 
 const PROVOCATIONS = ['¡GRÍTALE!', '¡INSÚLTALO!', '¡VETE DANDO UN PORTAZO!', '¡REACCIONA YA!', '¡NO PIENSES, ACTÚA!'];
 
-const STIM_SPEED = 1.1;          // el estimulo viene despacio: hay tiempo para decidir
-const STIM_INTRO = 4;            // segundos quieto presentandose antes de moverse
+const STIM_SPEED = 1.6;          // el estimulo viene a paso tranquilo
+const STIM_INTRO = 2;            // cuenta atras tras la lectura de la pregunta
 const STIM_ESCAPE = 4;           // metros que hay que alejarse para responder "si"
 
 /* ============================================================== utilidad */
@@ -1496,12 +1476,23 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.audio.play('chime', { volume: 0.45 });
     const cheer = this.stageDone.size ? `${CHEERS[this.stageDone.size % CHEERS.length]} ` : '';
     const name = this.player?.name && this.stageDone.size ? `${this.player.name}, ` : '';
-    this.speak(`${cheer}${name}${eyebrow.toLowerCase()}: ${title}. ${text}`, { priority: true });
-    this.later(() => {
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
       el.classList.add('is-out');
       this.root.classList.remove('has-banner');
       this.later(() => el.remove(), 450);
-    }, seconds * 1000);
+    };
+    // el banner dura lo que dure su lectura (minimo `seconds`)
+    this.speak(`${cheer}${name}${eyebrow.toLowerCase()}: ${title}. ${text}`, {
+      priority: true,
+      onEnd: () => {
+        this.bannerUntil = Math.max(this.bannerUntil, Date.now() + 1800);
+        this.later(close, Math.max(0, this.bannerUntil - Date.now()));
+      }
+    });
+    this.later(close, 60000);   // tope de seguridad
   }
 
   /**
@@ -1567,8 +1558,12 @@ export class DisgustTerritoryGame extends MinigameBase {
     };
     this.noteStack.push(entry);
     note.querySelector('.i3d-note__x').addEventListener('click', entry.close);
-    this.later(entry.close, n.seconds * 1000);
-    this.speak(`${n.title ? `${n.title}. ` : ''}${n.text}`, { priority: !n.queue });
+    // se queda hasta que la voz termina de leerlo (y un poco mas); tope de seguridad
+    this.later(entry.close, Math.max(n.seconds, 45) * 1000);
+    this.speak(`${n.title ? `${n.title}. ` : ''}${n.text}`, {
+      priority: !n.queue,
+      onEnd: () => this.later(entry.close, 2600)
+    });
   }
 
   closeAllNotes() {
@@ -1699,8 +1694,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     const e = this.entranceOf(zone.x, zone.z, 10.5);
     this.later(() => this.enterEnvironment(zone.id, e, zone, `LLEGAS A: ${zone.name.toUpperCase()}`), 1900);
     let text = ZONE_INTROS[zone.id];
-    if (zone.id === 'rechazo' && this.customTexts?.length) text += ' También te esperan las cosas que tú escribiste.';
-    this.showNote({ queue: true, icon: zone.icon, title: `Aparece: ${zone.name}`, text: `${text} Sigue la columna de luz.` });
+    if (zone.id === 'rechazo' && this.customTexts?.length) text += ' También te espera lo que tú escribiste.';
+    this.showNote({ queue: true, icon: zone.icon, title: zone.name, text });
   }
 
   startMirrorStage() {
@@ -1868,25 +1863,49 @@ export class DisgustTerritoryGame extends MinigameBase {
    * leyendo: ningun mensaje se corta. `priority` solo para lo urgente (la
    * pregunta de un estimulo que ya viene hacia ti).
    */
-  speak(text, { priority = false } = {}) {
+  /**
+   * Lee un texto. Por defecto se pone en cola detras de lo que ya se esta
+   * leyendo. `priority` interrumpe (las acciones del jugador mandan).
+   * `onEnd` avisa cuando termina la lectura de ese texto (o cuando se
+   * interrumpe): los mensajes en pantalla se sincronizan con la voz.
+   */
+  speak(text, { priority = false, onEnd = null } = {}) {
     const v = this.voice;
-    if (!v?.available || !v.on || this.finished) return;
     const plain = cleanForSpeech(text);
-    if (!plain) return;
-    if (priority) this.stopSpeaking();
+    const words = plain ? plain.split(' ').length : 0;
+    if (!v?.available || !v.on || this.finished || !plain) {
+      // sin voz: se espera lo que tardaria leerlo con calma
+      if (onEnd) this.later(onEnd, plain ? 700 + words * 300 : 0);
+      return;
+    }
+    if (priority) {
+      this.stopSpeaking();
+      // Chrome pierde la locucion si se habla justo despues de cancelar: un respiro
+      this._speakHold = true;
+      clearTimeout(this._speakHoldTimer);
+      this._speakHoldTimer = setTimeout(() => { this._speakHold = false; this.pumpSpeech(); }, 150);
+    }
     const chunks = splitSentences(plain);
-    chunks.forEach((c) => this.speechQueue.push(c));
-    if (this.speechQueue.length > 24) this.speechQueue.splice(0, this.speechQueue.length - 24);
+    const batch = { onEnd, left: chunks.length, done: false };
+    chunks.forEach((c) => this.speechQueue.push({ text: c, batch }));
+    while (this.speechQueue.length > 30) this.finishBatch(this.speechQueue.shift().batch, true);
     this.pumpSpeech();
   }
 
+  finishBatch(batch, force = false) {
+    if (!batch || batch.done) return;
+    if (force) batch.left = 0;
+    if (batch.left > 0) return;
+    batch.done = true;
+    try { batch.onEnd?.(); } catch { /* el aviso ya no existe */ }
+  }
+
   pumpSpeech() {
-    // `paused` tambien es true en la bienvenida y el formulario: ahi si hay que leer.
-    if (this.speechBusy || !this.speechQueue.length || this.speechPaused) return;
+    if (this.speechBusy || !this.speechQueue.length || this.speechPaused || this._speakHold) return;
     const v = this.voice;
-    const text = this.speechQueue.shift();
+    const item = this.speechQueue.shift();
     try {
-      const u = new SpeechSynthesisUtterance(text);
+      const u = new SpeechSynthesisUtterance(item.text);
       u.lang = v.chosen?.lang ?? 'es-ES';
       if (v.chosen) u.voice = v.chosen;
       u.rate = 0.92;                   // un poco mas pausado: se entiende mejor
@@ -1894,29 +1913,39 @@ export class DisgustTerritoryGame extends MinigameBase {
       u.volume = 1;
       this.speechBusy = true;
       this._utter = u;                 // si se recoge como basura, Chrome nunca avisa del final
+      this._current = item;
       const done = () => {
         if (this._utter !== u) return;
         this.speechBusy = false;
         this._utter = null;
+        this._current = null;
         clearTimeout(this._speechGuard);
+        item.batch.left -= 1;
+        this.finishBatch(item.batch);
         this.pumpSpeech();
       };
       u.onend = done;
       u.onerror = done;
       clearTimeout(this._speechGuard);
-      this._speechGuard = setTimeout(done, 1500 + text.length * 95);   // red de seguridad
+      this._speechGuard = setTimeout(done, 1200 + item.text.length * 85);   // red de seguridad
       window.speechSynthesis.speak(u);
     } catch {
       this.speechBusy = false;
+      this.finishBatch(item.batch, true);
     }
   }
 
   stopSpeaking() {
+    // todo lo pendiente se da por terminado: los mensajes que esperaban siguen su curso
+    const batches = new Set(this.speechQueue.map((i) => i.batch));
+    if (this._current) batches.add(this._current.batch);
     this.speechQueue.length = 0;
     this.speechBusy = false;
     this._utter = null;
+    this._current = null;
     clearTimeout(this._speechGuard);
     try { window.speechSynthesis?.cancel(); } catch { /* nada que parar */ }
+    batches.forEach((b) => this.finishBatch(b, true));
   }
 
   /** La tarjeta de instrucciones tambien se lee (el clic en Jugar ya autorizo la voz). */
@@ -2171,6 +2200,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const p = this.controller.position;
     const dz = Math.hypot(p.x - zone.x, p.z - zone.z);
     if (!zone.current) {
+      if (zone.waiting) return;
       zone.cooldown = Math.max(0, zone.cooldown - dt);
       if (dz < 8.5 && zone.cooldown <= 0) this.activateStimulus(zone);
       return;
@@ -2184,24 +2214,26 @@ export class DisgustTerritoryGame extends MinigameBase {
     const dzz = p.z - m.position.z;
     const d = Math.hypot(dx, dzz);
 
-    if (st.state === 'intro') {
-      // quieto en el centro, presentandose: hay tiempo para leer la pregunta
+    if (st.state === 'listen' || st.state === 'intro') {
+      // quieto en el centro mientras se lee la pregunta; despues, cuenta atras corta
       m.position.y = zone.y + 1.25 + Math.sin(this.time * 2.2 + st.phase) * 0.15;
       st.ring.scale.setScalar(1 + Math.sin(this.time * 6) * 0.2);
-      const left = Math.max(1, Math.ceil(STIM_INTRO - st.t));
-      this.dg.askHint.innerHTML = `Se acerca en <b>${left}</b>… Si te genera desagrado, <b>aléjate</b>. Si no, quédate y deja que llegue hasta ti.`;
-      this.dg.askMeter.style.width = `${(st.t / STIM_INTRO) * 100}%`;
-      if (st.t >= STIM_INTRO) {
-        st.state = 'approach';
-        st.t = 0;
-        st.startDist = d;
-        this.audio.play('buzz', { volume: 0.22, rate: 1.1 });
-        this.dg.askHint.innerHTML = 'Viene hacia ti. <b>Aléjate</b> si te genera desagrado, o <b>quédate</b> si no.';
+      if (st.state === 'intro') {
+        const left = Math.max(1, Math.ceil(STIM_INTRO - st.t));
+        this.dg.askHint.innerHTML = `Se acerca en <b>${left}</b>… <b>Aléjate</b> si te genera desagrado; <b>quédate</b> si no.`;
+        this.dg.askMeter.style.width = `${(st.t / STIM_INTRO) * 100}%`;
+        if (st.t >= STIM_INTRO) {
+          st.state = 'approach';
+          st.t = 0;
+          st.startDist = d;
+          this.audio.play('buzz', { volume: 0.22, rate: 1.1 });
+          this.dg.askHint.innerHTML = 'Viene hacia ti. <b>Aléjate</b> si te genera desagrado, o <b>quédate</b> si no.';
+        }
       }
       return;
     }
 
-    // se acerca despacio al jugador
+    // se acerca a paso tranquilo
     if (d > 0.01) {
       m.position.x += (dx / d) * STIM_SPEED * dt;
       m.position.z += (dzz / d) * STIM_SPEED * dt;
@@ -2213,7 +2245,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     // la decision se mide desde donde estabas: alejarse de verdad, no un paso
     const away = d - st.startDist;
     this.dg.askMeter.style.width = `${Math.max(0, Math.min(1, away / STIM_ESCAPE)) * 100}%`;
-    if (st.t < 1.2) return;                       // nada se decide en el primer segundo
+    if (st.t < 0.8) return;
     if (d < 1.9) this.resolveStimulus(zone, st, false);
     else if (away >= STIM_ESCAPE && d > 5) this.resolveStimulus(zone, st, true);
   }
@@ -2221,57 +2253,73 @@ export class DisgustTerritoryGame extends MinigameBase {
   activateStimulus(zone) {
     const st = zone.stimuli[zone.answered];
     if (!st) return;
-    if (!zone.entered) {
-      zone.entered = true;
-      this.say(zone.name.toUpperCase(), 2600, { speak: false });
-    }
+    zone.entered = true;
     st.group.visible = true;
     st.group.position.set(zone.x, zone.y + 1.25, zone.z);
-    st.state = 'intro';
+    st.state = 'listen';
     st.t = 0;
     st.startDist = 0;
     zone.current = st;
+    this.setTask('');
     this.dg.askIcon.textContent = st.icon;
     this.dg.askQ.textContent = '¿Esto me genera desagrado?';
     this.dg.askLabel.textContent = st.label;
-    this.dg.askHint.innerHTML = `Se acerca en <b>${STIM_INTRO}</b>… Si te genera desagrado, <b>aléjate</b>. Si no, quédate y deja que llegue hasta ti.`;
+    this.dg.askHint.innerHTML = `${this.voice?.on ? '🔊 Escucha…' : 'Lee con calma.'} <b>Aléjate</b> si te genera desagrado; <b>quédate</b> si no.`;
     this.dg.askMeter.style.width = '0%';
     this.dg.ask.hidden = false;
     this.dg.ask.dataset.result = '';
     this.feedback.burst(st.group.position, { count: 16, color: '#cfffa0', speed: 2, life: 1, gravity: -0.4 });
     this.audio.play('interact', { volume: 0.3 });
-    this.speak(`¿Esto me genera desagrado? ${st.label}. Si te genera desagrado, aléjate. Si no, quédate y deja que llegue hasta ti.`, { priority: true });
+    // en cuanto termina la lectura de la pregunta, empieza la cuenta atras
+    this.speak(`¿Esto me genera desagrado? ${st.label}. Si te da desagrado, aléjate. Si no, quédate.`, {
+      priority: true,
+      onEnd: () => { if (zone.current === st && st.state === 'listen') { st.state = 'intro'; st.t = 0; } }
+    });
   }
 
   resolveStimulus(zone, st, yes) {
     zone.current = null;
-    zone.cooldown = 7;                            // pausa para leer el resultado antes del siguiente
+    zone.waiting = true;                          // hasta que la voz termine de explicar el resultado
     zone.answered += 1;
     st.group.visible = false;
     this.answers.push({ label: st.label, yes, custom: !!st.custom });
     this.feedback.burst(st.group.position, { count: 22, color: yes ? '#ff9d8a' : '#a8e06a', speed: 2.6, life: 1, gravity: -0.3 });
     this.audio.play(yes ? 'soften' : 'collect', { volume: 0.5 });
 
-    // resultado grande y claro: que hiciste y que significa
+    // una sola tarjeta con todo: que hiciste, que significa y por que
     const did = yes ? 'TE ALEJASTE' : 'DEJASTE QUE LLEGARA';
-    const meaning = yes ? 'Respuesta: sí me genera desagrado.' : 'Respuesta: no me genera desagrado.';
+    const meaning = yes ? 'Sí me genera desagrado.' : 'No me genera desagrado.';
+    const why = yes ? st.yes : st.no;
     this.dg.askQ.textContent = did;
-    this.dg.askHint.innerHTML = `<b>${meaning}</b> ${yes ? 'Poner distancia fue tu forma de responder.' : 'Quedarte fue tu forma de responder.'}`;
+    this.dg.askLabel.textContent = meaning;
+    this.dg.askHint.textContent = why;
     this.dg.ask.dataset.result = yes ? 'yes' : 'no';
     this.dg.askMeter.style.width = yes ? '100%' : '0%';
-    this.later(() => { if (!zone.current) this.dg.ask.hidden = true; }, 6000);
-    this.say(`${did} · ${yes ? 'SÍ ME GENERA DESAGRADO' : 'NO ME GENERA DESAGRADO'}`, 4200, { speak: false });
-    this.showNote({ icon: st.icon, title: `${did}: ${st.label}`, text: `${meaning} ${yes ? st.yes : st.no}` });
 
-    if (zone.answered >= zone.stimuli.length) {
-      zone.done = true;
-      zone.beacon.visible = false;
-      zone.label.userData.setText(`✓ ${zone.icon} ${zone.name}`, { color: '#a8e06a' });
-      this.explored += 1;
-      this.audio.play('light', { volume: 0.4 });
-      this.feedback.burst(_v.set(zone.x, zone.y + 2.5, zone.z), { count: 24, color: '#a8e06a', speed: 3, life: 1.3, gravity: -0.5 });
-      if (this.explored >= this.zones.length) this.later(() => this.finishExplore(), 7000);
-      else this.later(() => { this.say(`ZONA LISTA · ${this.explored}/4`, 3000, { speak: false }); this.unlockZone(this.zoneIndex + 1); }, 7000);
+    const isLast = zone.answered >= zone.stimuli.length;
+    this.speak(`${did}. ${meaning} ${why}`, {
+      priority: true,
+      onEnd: () => this.later(() => {
+        this.dg.ask.hidden = true;
+        zone.waiting = false;
+        zone.cooldown = 0.8;
+        if (isLast) this.finishZone(zone);
+      }, 1500)
+    });
+  }
+
+  finishZone(zone) {
+    zone.done = true;
+    zone.beacon.visible = false;
+    zone.label.userData.setText(`✓ ${zone.icon} ${zone.name}`, { color: '#a8e06a' });
+    this.explored += 1;
+    this.audio.play('light', { volume: 0.45 });
+    this.feedback.burst(_v.set(zone.x, zone.y + 2.5, zone.z), { count: 30, color: '#a8e06a', speed: 3, life: 1.3, gravity: -0.5 });
+    if (this.explored >= this.zones.length) {
+      this.later(() => this.finishExplore(), 800);
+    } else {
+      this.say(`ZONA LISTA · ${this.explored}/4`, 3000, { speak: false });
+      this.later(() => this.unlockZone(this.zoneIndex + 1), 1600);
     }
   }
 
@@ -3722,6 +3770,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.disposedFlag = true;
     this.stopSpeaking();
     clearTimeout(this._speechGuard);
+    clearTimeout(this._speakHoldTimer);
     this.scene?.traverse((obj) => {
       if (obj.isSprite) {
         obj.material.map?.dispose();
