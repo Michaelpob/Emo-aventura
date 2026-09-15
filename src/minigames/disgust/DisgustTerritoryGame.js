@@ -1624,12 +1624,13 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.currentEnv = id;
     Object.values(this.envs).forEach((e) => { if (e.group) e.group.visible = e === env; });
     if (this.guardian && id !== 'apoyo' && id !== 'arena') this.guardian.visible = false;
-    this.controller.bounds = { minX: env.x - env.rx, maxX: env.x + env.rx, minZ: env.z - env.rz, maxZ: env.z + env.rz };
+    // sin limites: el area de cada actividad es toda la isla (solo cambia lo que se ve)
+    this.controller.bounds = { minX: -BOUND, maxX: BOUND, minZ: -BOUND, maxZ: BOUND };
     const tint = ENV_TINTS[id] ?? ENV_TINTS.plaza;
     this.feedback.tweenColor(this.scene.fog.color, tint.fog, 2);
     this.sky.userData.setColors(tint.sky[0], tint.sky[1]);
-    // la niebla cierra el horizonte: no se ve el resto de la isla
-    if (this.scene.fog.density < 0.024) this.feedback.tweenValue(this.scene.fog, 'density', 0.024, 2);
+    // niebla suave: el horizonte queda abierto y el area se siente amplia
+    if (this.scene.fog.density > 0.02) this.feedback.tweenValue(this.scene.fog, 'density', 0.02, 2);
     if (entrance) this.travelTo(entrance.x, entrance.z, look, label);
   }
 
