@@ -70,6 +70,11 @@ const ZONES = [
         label: 'C. Percibir un olor muy desagradable.', icon: '👃',
         yes: 'Alejarte de un olor fuerte es una respuesta muy común: el cuerpo avisa de lo que podría hacerte daño.',
         no: 'A ti este olor no te alejó. Cada persona reacciona a su manera, y eso también está bien.'
+      },
+      {
+        label: 'Oler pan recién hecho.', icon: '🍞',
+        yes: 'A ti este olor te generó desagrado. No todas las personas reaccionan igual ante lo mismo.',
+        no: 'Dejaste que se acercara: hay estímulos que no despiertan desagrado.'
       }
     ]
   },
@@ -80,6 +85,11 @@ const ZONES = [
         label: 'A. Encontrar comida en mal estado.', icon: '🥫',
         yes: 'Rechazar comida en mal estado protege: el desagrado ayudó a nuestros antepasados a no comer lo que podía dañarlos.',
         no: 'Te acercaste sin problema. Aun así, conviene revisar: el desagrado a veces avisa de un riesgo real.'
+      },
+      {
+        label: 'Probar una fruta fresca.', icon: '🍎',
+        yes: 'A ti esta fruta te dio rechazo. Puede ser por su textura, su sabor o un recuerdo: cada persona es distinta.',
+        no: 'Una fruta fresca no suele generar desagrado. Dejaste que se acercara.'
       }
     ]
   },
@@ -90,6 +100,11 @@ const ZONES = [
         label: 'B. Escuchar una canción que me gusta.', icon: '🎵',
         yes: 'Te alejaste de una canción que te gusta. Puede pasar si la asocias con un mal recuerdo: el desagrado también aparece con pensamientos y recuerdos.',
         no: 'Una canción que te gusta no genera desagrado. Dejaste que se acercara.'
+      },
+      {
+        label: 'Ver una imagen que me incomoda.', icon: '🖼️',
+        yes: 'Apartar la vista de lo que incomoda es una respuesta frecuente del desagrado.',
+        no: 'A ti esta imagen no te alejó. No todas las personas reaccionan de la misma manera.'
       }
     ]
   },
@@ -100,6 +115,11 @@ const ZONES = [
         label: 'D. Ver una situación que me produce rechazo.', icon: '🙅',
         yes: 'El desagrado también aparece frente a conductas y situaciones, no solo frente a cosas. Es información sobre lo que te importa.',
         no: 'A ti esta situación no te alejó. Cada persona tiene su propio umbral.'
+      },
+      {
+        label: 'Recibir un saludo amable.', icon: '👋',
+        yes: 'A ti este saludo te generó rechazo. Puede depender del contexto o de quién lo hace.',
+        no: 'Un saludo amable no suele generar desagrado. Dejaste que se acercara.'
       }
     ]
   }
@@ -177,6 +197,14 @@ const ACCEPT_STEPS = [
 ];
 
 const THOUGHTS = [
+  {
+    text: '¡No puedo con esto!',
+    options: [
+      { label: 'Esto es difícil, pero puedo pedir ayuda o tomar distancia.', balanced: true, feedback: 'Lo difícil sigue ahí, y ahora tienes dos salidas: pedir ayuda o tomar distancia.' },
+      { label: 'Nunca voy a poder con nada.', feedback: 'De un momento difícil a "nunca" y "nada" hay un salto enorme. Ese salto lo da la urgencia, no los hechos.' },
+      { label: 'Tengo que aguantarme y ya.', feedback: 'Aguantar sin más suele acumular tensión. Hay opciones intermedias.' }
+    ]
+  },
   {
     text: '¡Esto es insoportable!',
     options: [
@@ -1061,6 +1089,14 @@ export class DisgustTerritoryGame extends MinigameBase {
       };
     };
     colors.forEach((c) => path.butterflies.push(mkButterfly(c, true)));
+    // reto extra: una mariposa dorada, mas rapida y esquiva, que aparece al final
+    path.golden = mkButterfly('#ffd166', true);
+    path.golden.golden = true;
+    path.golden.w *= 1.8;
+    path.golden.r += 1.5;
+    path.golden.group.visible = false;
+    path.golden.found = true;                    // no cuenta hasta que se active
+    path.butterflies.push(path.golden);
     for (let i = 0; i < 12; i += 1) path.butterflies.push(mkButterfly(i % 2 ? '#6fa35a' : '#8bbf6a', false));
 
     const fmat = new THREE.MeshStandardMaterial({ color: '#cfe6b8', roughness: 0.9, flatShading: true });
@@ -1261,18 +1297,20 @@ export class DisgustTerritoryGame extends MinigameBase {
     const len = Math.hypot(x, z);
     const u = { x: x / len, z: z / len };
     const right = { x: -u.z, z: u.x };
+    // tres estaciones en fila lateral, a 16 m entre si: hay que caminar hasta cada una
     path.stations = THOUGHTS.map((th, i) => {
-      const base = { x: x + u.x * (i ? 1.5 : -7), z: z + u.z * (i ? 1.5 : -7) };
+      const side = (i - 1) * 16;
+      const base = { x: x + right.x * side - u.x * 4, z: z + right.z * side - u.z * 4 };
       const station = new THREE.Group();
       group.add(station);
       const by = this.heightAt(base.x, base.z);
       const thought = makeText(`💭 ${th.text}`, { size: 1.1, maxChars: 22, bg: 'rgba(60,20,30,0.85)' });
-      thought.position.set(base.x, by + 3.4, base.z);
+      thought.position.set(base.x, by + 4.6, base.z);
       station.add(thought);
-      const doorsBase = { x: base.x + u.x * 4.5, z: base.z + u.z * 4.5 };
+      const doorsBase = { x: base.x + u.x * 6, z: base.z + u.z * 6 };
       const order = shuffle(th.options);
       const doors = order.map((opt, j) => {
-        const off = (j - 1) * 3.4;
+        const off = (j - 1) * 6.5;                 // puertas bien separadas: los letreros no se tocan
         const dx = doorsBase.x + right.x * off;
         const dz = doorsBase.z + right.z * off;
         const dy = this.heightAt(dx, dz);
@@ -1642,7 +1680,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.later(entry.close, Math.max(n.seconds, 45) * 1000);
     this.speak(`${n.title ? `${n.title}. ` : ''}${n.text}`, {
       priority: !n.queue,
-      onEnd: () => this.later(entry.close, 2600)
+      onEnd: () => { this.later(entry.close, 2600); n.onEnd?.(); }
     });
   }
 
@@ -2008,7 +2046,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       u.onend = done;
       u.onerror = done;
       clearTimeout(this._speechGuard);
-      this._speechGuard = setTimeout(done, 1200 + item.text.length * 85);   // red de seguridad
+      this._speechGuard = setTimeout(done, 4000 + item.text.length * 160);  // red de seguridad, solo si el navegador no avisa
       window.speechSynthesis.speak(u);
     } catch {
       this.speechBusy = false;
@@ -2416,13 +2454,13 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.showNote({
       icon: '🧭',
       title: '¿Esto me genera desagrado?',
-      text: `Marcaste ${yes} de ${this.answers.length} situaciones como desagradables. El desagrado puede aparecer frente a diferentes estímulos y no todas las personas reaccionan de la misma manera.`
+      text: `Marcaste ${yes} de ${this.answers.length} situaciones como desagradables. El desagrado puede aparecer frente a diferentes estímulos y no todas las personas reaccionan de la misma manera.`,
+      onEnd: () => {
+        this.toast('🏆 Insignia de Explorador del Desagrado');
+        this.audio.play('success', { volume: 0.5 });
+        this.speak('Ganaste la Insignia de Explorador del Desagrado.', { onEnd: () => this.later(() => this.startMirrorStage(), 900) });
+      }
     });
-    this.later(() => {
-      this.toast('🏆 Insignia de Explorador del Desagrado');
-      this.audio.play('success', { volume: 0.5 });
-    }, 1200);
-    this.later(() => this.startMirrorStage(), 9000);
   }
 
   /* =========================================================== (2) espejo */
@@ -2547,9 +2585,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.showNote({
       icon: '🪞',
       title: '¡Bien hecho!',
-      text: 'Ahora sabes que las emociones también pueden aparecer en nuestro cuerpo, pensamientos y comportamientos.'
+      text: 'Ahora sabes que las emociones también pueden aparecer en nuestro cuerpo, pensamientos y comportamientos.',
+      onEnd: () => this.later(() => this.startPathsStage(), 900)
     });
-    this.later(() => this.startPathsStage(), 7000);
   }
 
   /* ====================================================== (3) termómetro */
@@ -2603,7 +2641,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       this.stageDone.add('thermo');
       this.renderStages();
       this.setBeacons([]);
-      this.say(`NIVEL ${lvl} CONFIRMADO`, 2200);
+      this.say(`NIVEL ${lvl} CONFIRMADO`, 2600, { speak: lvl !== 3 });
       this.later(() => this.startExploreStage(), lvl === 3 ? 7000 : 2800);
       return;
     }
@@ -2683,6 +2721,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         if (d > 10.5) continue;
         path.engaged = true;
         path.inside = true;
+        this.later(() => { path.sign.visible = false; }, 6000);
         this[`activate_${id}`]?.(path);
       } else if (path.inside && d > 13.5) {
         path.inside = false;
@@ -2699,7 +2738,7 @@ export class DisgustTerritoryGame extends MinigameBase {
   /** Texto de tarea de cada camino, para restaurarlo al volver a su area. */
   pathTask(path) {
     switch (path.id) {
-      case 'atencion': return `🦋 Encuentra 5 objetos de color diferente · ${path.count}/5`;
+      case 'atencion': return path.count >= 5 ? '🌟 Reto: sigue con la mirada a la mariposa dorada (es más rápida)' : `🦋 Encuentra 5 objetos de color diferente · ${path.count}/5`;
       case 'acepta': return path.carrying
         ? `🫳 Camina con calma hasta el arco: ${ACCEPT_STEPS[path.step].key}`
         : '🫳 Sostén la sensación (E) y llévala con calma por los tres arcos';
@@ -2707,7 +2746,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         const sense = path.senses[path.senseIndex];
         return sense ? `${sense.icon} ${sense.count} ${sense.prompt} · ${sense.found}/${sense.count}` : '';
       }
-      case 'reevalua': return `💭 Pensamiento ${path.stationIndex + 1}/2: atraviesa la puerta equilibrada`;
+      case 'reevalua': return `💭 Pensamiento ${path.stationIndex + 1}/${path.stations.length}: atraviesa la puerta equilibrada`;
       case 'apoyo': return '📣 Pulsa E para llamar al Guardián de Confianza · sigue su luz';
       default: return '';
     }
@@ -2863,15 +2902,24 @@ export class DisgustTerritoryGame extends MinigameBase {
     g.add(glow);
     this.audio.play('collect', { volume: 0.45 });
     this.feedback.burst(from, { count: 14, color: bf.color, speed: 2, life: 0.9 });
+    if (bf.golden) {
+      this.setFocus(0);
+      this.say('¡MARIPOSA DORADA!', 3000);
+      this.showNote({
+        icon: '🌟', title: 'Despliegue atencional',
+        text: 'Cuando una emoción ocupa demasiado espacio, dirigir temporalmente nuestra atención hacia otra actividad puede ayudarnos a recuperar el control.',
+        onEnd: () => this.completePath('atencion')
+      });
+      return;
+    }
     this.setTask(`🦋 Encuentra 5 objetos de color diferente · ${path.count}/5`);
     if (path.count >= 5) {
       this.setFocus(0);
-      this.showNote({
-        title: 'Despliegue atencional',
-        text: 'Cuando una emoción ocupa demasiado espacio, dirigir temporalmente nuestra atención hacia otra actividad puede ayudarnos a recuperar el control.',
-        seconds: 9
-      });
-      this.completePath('atencion');
+      // reto extra: la mariposa dorada
+      path.golden.found = false;
+      path.golden.group.visible = true;
+      this.setTask('🌟 Reto: sigue con la mirada a la mariposa dorada (es más rápida)');
+      this.showNote({ icon: '🌟', title: '¡Las cinco! Un reto más', text: 'Apareció una mariposa dorada, más rápida y escurridiza. Síguela con la mirada hasta que se pose.' });
     }
   }
 
@@ -2958,7 +3006,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     arch.label.userData.setText(`${arch.step.key}\n«${arch.step.phrase}»`, { color: '#ffffff', size: 1.4, maxChars: 26 });
     this.audio.play('light', { volume: 0.45 });
     this.feedback.burst(_v.set(arch.x, this.heightAt(arch.x, arch.z) + 2.5, arch.z), { count: 18, color: '#a8e06a', speed: 2.4, life: 1 });
-    this.say(arch.step.key, 1800);
+    this.say(arch.step.key, 2400, { speak: false });
     this.showNote({ title: arch.step.key, text: `«${arch.step.phrase}»`, seconds: 6 });
     if (path.step >= path.arches.length) this.plantSeed(path);
     else this.setTask(`🫳 Camina con calma hasta el arco: ${ACCEPT_STEPS[path.step].key}`);
@@ -2986,16 +3034,36 @@ export class DisgustTerritoryGame extends MinigameBase {
           onUpdate: (t) => path.plant.scale.setScalar(0.001 + t),
           onDone: () => {
             this.feedback.burst(_v.set(path.plot.x, path.plot.y + 2.4, path.plot.z), { count: 26, color: '#ff8fb8', speed: 2.6, life: 1.3, gravity: -1 });
-            this.showNote({
-              title: 'Aceptación emocional',
-              text: 'Aceptar una emoción no significa que te guste lo que está ocurriendo. Significa reconocer lo que sientes antes de decidir cómo actuar.',
-              seconds: 10
-            });
-            this.completePath('acepta');
+            // un paso mas: cuidar la semilla quedandose un momento junto a ella
+            path.tending = 0;
+            path.tendDone = false;
+            this.setTask('🌱 Cuida la semilla: quédate quieto junto a la planta 4 segundos');
+            this.showNote({ icon: '🌱', title: 'Brotó', text: 'Ahora cuídala: quédate quieto a su lado unos segundos. Lo que reconoces también hay que sostenerlo.' });
           }
         });
       }
     });
+  }
+
+  /** Tras plantar: cuidar la semilla quedandose quieto a su lado. */
+  update_acepta(dt, path) {
+    if (path.tending === undefined || path.tendDone) return;
+    const p = this.controller.position;
+    const near = Math.hypot(p.x - path.plot.x, p.z - path.plot.z) < 2.6;
+    const speed = Math.hypot(this.controller.velocity.x, this.controller.velocity.z);
+    if (near && speed < 0.5) path.tending += dt; else path.tending = Math.max(0, path.tending - dt);
+    const n = Math.min(4, Math.floor(path.tending));
+    this.setTask(`🌱 Cuida la semilla: quédate quieto junto a la planta · ${n}/4 s`);
+    if (path.tending >= 4) {
+      path.tendDone = true;
+      this.feedback.burst(_v.set(path.plot.x, path.plot.y + 2.4, path.plot.z), { count: 30, color: '#ff8fb8', speed: 2.8, life: 1.4, gravity: -1 });
+      this.audio.play('success', { volume: 0.5 });
+      this.showNote({
+        icon: '🌸', title: 'Aceptación emocional',
+        text: 'Aceptar una emoción no significa que te guste lo que está ocurriendo. Significa reconocer lo que sientes antes de decidir cómo actuar.',
+        onEnd: () => this.completePath('acepta')
+      });
+    }
   }
 
   /* ······ (d) presente */
@@ -3127,12 +3195,20 @@ export class DisgustTerritoryGame extends MinigameBase {
       }
     });
     this.doorSets.push({ station: st, u: path.u, right: path.right, onDone: (opt) => this.stationDone(path, st, opt) });
-    this.setTask(`💭 Pensamiento ${index + 1}/2: atraviesa la puerta equilibrada`);
+    this.setTask(`💭 Pensamiento ${index + 1}/${path.stations.length}: atraviesa la puerta equilibrada`);
+    if (!path.stationBeacon) path.stationBeacon = this.makeBeacon(st.base.x, st.base.z, '#c9a3ff');
+    path.stationBeacon.position.set(st.base.x, this.heightAt(st.base.x, st.base.z), st.base.z);
+    path.stationBeacon.visible = true;
   }
 
   updateDoors(dt) {
     if (!this.doorSets.length) return;
     const p = this.controller.position;
+    const rp = this.paths.reevalua;
+    if (rp?.stationBeacon?.visible) {
+      const st = rp.stations[rp.stationIndex];
+      if (st && Math.hypot(p.x - st.base.x, p.z - st.base.z) < 7) rp.stationBeacon.visible = false;
+    }
     for (let s = this.doorSets.length - 1; s >= 0; s -= 1) {
       const set = this.doorSets[s];
       if (set.station.done) { this.doorSets.splice(s, 1); continue; }
@@ -3174,14 +3250,13 @@ export class DisgustTerritoryGame extends MinigameBase {
     st.thought.userData.setText(`✨ ${opt.label}`, { bg: 'rgba(20,60,30,0.85)' });
     this.audio.play('light', { volume: 0.45 });
     this.feedback.burst(st.thought.position, { count: 20, color: '#c9a3ff', speed: 2.4, life: 1 });
-    this.say('PENSAMIENTO EQUILIBRADO', 2000);
-    this.showNote({ title: 'Respuesta equilibrada', text: opt.feedback, seconds: 7 });
+    this.say('PENSAMIENTO EQUILIBRADO', 2400, { speak: false });
     const next = path.stationIndex + 1;
     if (next < path.stations.length) {
-      this.later(() => this.activateStation(path, next), 1500);
+      this.showNote({ icon: '✨', title: 'Respuesta equilibrada', text: opt.feedback, onEnd: () => this.activateStation(path, next) });
     } else {
-      this.showNote({ title: 'Reevaluación cognitiva', text: 'Cambiar el pensamiento no cambia la situación: cambia lo que puedes hacer con ella.', seconds: 9 });
-      this.completePath('reevalua');
+      this.showNote({ icon: '✨', title: 'Respuesta equilibrada', text: opt.feedback });
+      this.showNote({ queue: true, icon: '🔮', title: 'Reevaluación cognitiva', text: 'Cambiar el pensamiento no cambia la situación: cambia lo que puedes hacer con ella.', onEnd: () => this.completePath('reevalua') });
     }
   }
 
@@ -3214,14 +3289,15 @@ export class DisgustTerritoryGame extends MinigameBase {
     const dx = p.x - g.position.x;
     const dz = p.z - g.position.z;
     const d = Math.hypot(dx, dz) || 1;
-    const step = Math.min(3, Math.max(0, d - 2.2));
+    // las dos primeras llamadas responde con luz y se acerca un poco; a la tercera viene hasta ti
+    const step = path.calls >= 3 ? Math.max(0, d - 2.2) : Math.min(3, Math.max(0, d - 2.2));
     const to = new THREE.Vector3(g.position.x + (dx / d) * step, 0, g.position.z + (dz / d) * step);
     to.y = this.heightAt(to.x, to.z);
     const from = g.position.clone();
     this.feedback.tween({ from: 0, to: 1, duration: 1.1, onUpdate: (t) => g.position.lerpVectors(from, to, t) });
     g.userData.state = 'walk';
     this.later(() => { g.userData.state = 'idle'; }, 1100);
-    this.say(path.calls === 1 ? '¡ALGUIEN RESPONDE!' : 'SE ACERCA', 1400);
+    this.say(path.calls === 1 ? '¡ALGUIEN RESPONDE! · SIGUE LLAMANDO' : path.calls === 2 ? 'SE ACERCA · LLAMA OTRA VEZ' : 'VIENE HACIA TI', 2600);
   }
 
   update_apoyo(dt, path) {
@@ -3229,7 +3305,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     const g = this.guardian;
     g.lookAt(this.controller.position.x, g.position.y, this.controller.position.z);
     const p = this.controller.position;
-    if (!path.met && Math.hypot(p.x - g.position.x, p.z - g.position.z) < 2.6) this.meetGuardian(path);
+    // hay que llamarlo al menos dos veces: pedir apoyo es insistir un poco
+    if (!path.met && path.calls >= 2 && Math.hypot(p.x - g.position.x, p.z - g.position.z) < 2.6) this.meetGuardian(path);
   }
 
   meetGuardian(path) {
@@ -3244,12 +3321,9 @@ export class DisgustTerritoryGame extends MinigameBase {
       options: SUPPORT_LINES.map((l) => l.label),
       onPick: (i) => {
         const line = SUPPORT_LINES[i];
-        this.showNote({ title: 'Guardián de Confianza', text: line.reply, seconds: 8 });
+        this.showNote({ icon: '🧙', title: 'Guardián de Confianza', text: line.reply });
+        this.showNote({ queue: true, icon: '❤️', title: 'Búsqueda de apoyo', text: 'Pedir apoyo también es una forma de cuidar tus emociones.', onEnd: () => this.completePath('apoyo') });
         this.feedback.burst(_v.copy(this.guardian.position).setY(this.guardian.position.y + 2), { count: 24, color: '#ff8fb8', speed: 2.4, life: 1.4, gravity: -0.8 });
-        this.later(() => {
-          this.showNote({ title: 'Búsqueda de apoyo', text: 'Pedir apoyo también es una forma de cuidar tus emociones.', seconds: 8 });
-          this.completePath('apoyo');
-        }, 4200);
       }
     });
   }
@@ -3308,8 +3382,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     }
     this.applyLevelWorld(Math.max(lvl, 2));
     this.controller.speedScale = 1;
-    this.showNote({ icon: '🔁', title, text });
-    this.later(() => this.startBoss(), 7500);
+    this.showNote({ icon: '🔁', title, text, onEnd: () => this.later(() => this.startBoss(), 900) });
   }
 
   /* ======================================================= (6) el desafío */
@@ -3465,7 +3538,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.audio.play('rumble', { volume: 0.5 });
     this.feedback.shakeCamera(0.3, 2);
     this.feedback.burst(_v.copy(b.creature.position).setY(b.creature.position.y + 2), { count: 20, color: '#ff5c5c', speed: 3, life: 1 });
-    this.say('LA CRIATURA CRECE', 1800);
+    this.say('LA CRIATURA CRECE', 2400, { speak: false });
     this.setTask(this.bossTask());
     const texts = {
       correr: 'Correr por la arena es reaccionar sin pensar: la criatura crece. Camina.',
@@ -3573,7 +3646,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       const opts = shuffle(th.options).slice(0, 3);
       if (!opts.some((o) => o.balanced)) opts[0] = th.options.find((o) => o.balanced);
       const doors = opts.map((opt, j) => {
-        const off = (j - 1) * 3.4;
+        const off = (j - 1) * 5.2;
         const dx = altar.x + u.x * 3.5 + right.x * off;
         const dz = altar.z + u.z * 3.5 + right.z * off;
         const dy = this.heightAt(dx, dz);
@@ -3661,7 +3734,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.setTask(this.bossTask());
     if (b.size <= 0) this.victory();
     else {
-      this.say(`LA CRIATURA SE ENCOGE · FALTAN ${b.size}`, 3000);
+      this.say(`LA CRIATURA SE ENCOGE · FALTAN ${b.size}`, 3000, { speak: this.diary.altars.length !== 1 });
       if (this.diary.altars.length === 1) {
         this.showNote({ icon: '🛡️', title: '¡Muy bien! Así se derrota', text: `Cada altar la encoge un tamaño. Sigue con otro altar iluminado: te faltan ${b.size}. Recuerda: camina, no corras.` });
       }
@@ -3704,6 +3777,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.later(() => {
       this.toast('🛡️ Recompensa: Escudo de Autocontrol');
       this.showNote({
+        queue: true,
+        icon: '🌤️',
         title: 'Isla protegida',
         text: 'La niebla desaparece. La isla recupera su color. Aparece la luz. Se desbloquea el camino hacia la siguiente isla.',
         seconds: 9
