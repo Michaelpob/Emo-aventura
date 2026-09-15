@@ -109,13 +109,15 @@ const SIGNALS = [
   { id: 'aplaudir', label: 'Aplaudir', icon: '👏', disgust: false }
 ];
 
+// `accion`: lo que hay que hacer, en una linea. Es lo que dice el letrero del
+// altar y el chip de interaccion, para que nadie pase de largo sin entenderlo.
 const PATHS = {
-  respira: { name: 'Toma el control', technique: 'Respiración consciente', tool: 'cristal-calma', icon: '💎', x: 21, z: -17, levels: [1] },
-  atencion: { name: 'Cambio mi atención', technique: 'Despliegue atencional', tool: 'estrella-atencion', icon: '⭐', x: 26, z: 6, levels: [2] },
-  acepta: { name: 'Me detengo y reconozco', technique: 'Aceptación emocional', tool: 'semilla-aceptacion', icon: '🌱', x: 12, z: 24, levels: [2] },
-  presente: { name: 'Regreso al presente', technique: 'Técnica 5-4-3-2-1', tool: 'estrella-presente', icon: '⭐', x: -12, z: 24, levels: [3] },
-  reevalua: { name: 'Cambio mi respuesta', technique: 'Reevaluación cognitiva', tool: 'cristal-perspectiva', icon: '🔮', x: -26, z: 6, levels: [3] },
-  apoyo: { name: 'No tengo que hacerlo solo', technique: 'Búsqueda de apoyo', tool: 'corazon-apoyo', icon: '❤️', x: -21, z: -17, levels: [3] }
+  respira: { name: 'Toma el control', technique: 'Respiración consciente', tool: 'cristal-calma', icon: '💎', x: 21, z: -17, levels: [1], accion: 'Respira en la burbuja: quieto y E al mantener el aire' },
+  atencion: { name: 'Cambio mi atención', technique: 'Despliegue atencional', tool: 'estrella-atencion', icon: '🦋', x: 26, z: 6, levels: [2], accion: 'Sigue con la mirada las mariposas de color' },
+  acepta: { name: 'Me detengo y reconozco', technique: 'Aceptación emocional', tool: 'semilla-aceptacion', icon: '🌱', x: 12, z: 24, levels: [2], accion: 'Sostén la sensación: E junto a ella y quieto 3 s' },
+  presente: { name: 'Regreso al presente', technique: 'Técnica 5-4-3-2-1', tool: 'estrella-presente', icon: '👀', x: -12, z: 24, levels: [3], accion: 'Usa tus sentidos: 5 ver, 4 tocar, 3 oír, 2 oler, 1 probar' },
+  reevalua: { name: 'Cambio mi respuesta', technique: 'Reevaluación cognitiva', tool: 'cristal-perspectiva', icon: '🔮', x: -26, z: 6, levels: [3], accion: 'Lee el pensamiento y cruza la puerta equilibrada' },
+  apoyo: { name: 'No tengo que hacerlo solo', technique: 'Búsqueda de apoyo', tool: 'corazon-apoyo', icon: '❤️', x: -21, z: -17, levels: [3], accion: 'Camina hasta el Guardián y pídele apoyo' }
 };
 const PATH_ORDER = ['respira', 'atencion', 'acepta', 'presente', 'reevalua', 'apoyo'];
 
@@ -1417,13 +1419,13 @@ export class DisgustTerritoryGame extends MinigameBase {
       icon.position.set(x, y + 1.9, z);
       icon.visible = false;
       this.arenaGroup.add(icon);
-      const lb = makeText(`${def.technique}\n(aprende esta herramienta en su camino)`, { size: 0.43, maxChars: 24, color: '#cfd8c4' });
+      const lb = makeText(`${def.icon} ${def.name}\n${def.accion}`, { size: 0.43, maxChars: 26, color: '#cfd8c4' });
       lb.position.set(x, y + 3.1, z);
       lb.visible = false;
       this.arenaGroup.add(lb);
       const altar = { id, def, x, z, y, stone, icon, label: lb, busy: false, cooldown: 0, task: null };
       altar.interact = this.interactable({
-        object: stone, radius: 2.6, icon: def.icon, label: `Usar: ${def.technique}`,
+        object: stone, radius: 2.6, icon: def.icon, label: def.accion,
         onInteract: () => this.useAltar(altar)
       });
       altar.interact.enabled = false;
@@ -1751,8 +1753,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.standLevel = 0;
     this.setBeacons([this.thermoBeacon]);
     this.showStageBanner({
-      icon: '🌡️', title: 'El Termómetro del Desagrado',
-      text: '¿Qué tan intenso es tu desagrado ahora? Ve a la plaza, sube por las terrazas hasta tu nivel y confirma con E.'
+      icon: '🌡️', title: 'Etapa 1 de 4: el Termómetro del Desagrado',
+      text: '¿Qué tan intenso es tu desagrado ahora? Sigue la columna de luz hasta la plaza, sube por las terrazas hasta tu nivel (1, 2 o 3) y confirma con E.'
     });
     this.later(() => this.stage === 'thermo' && this.showNote({
       queue: true,
@@ -1765,8 +1767,8 @@ export class DisgustTerritoryGame extends MinigameBase {
   startExploreStage() {
     this.setStage('explore');
     this.showStageBanner({
-      icon: '🗺️', title: 'Primera parte: explora la isla',
-      text: 'Dos zonas se abren una tras otra. Los estímulos vendrán hacia ti: aléjate si te generan desagrado, o deja que se acerquen si no.'
+      icon: '🗺️', title: 'Etapa 2 de 4: explora la isla',
+      text: 'Dos zonas se abren una tras otra; sigue la columna de luz. En cada una, algo vendrá hacia ti y te preguntará «¿esto me genera desagrado?»: responde con el cuerpo, alejándote si te da desagrado o quedándote quieto si no.'
     });
     this.later(() => this.unlockZone(0), 5200);
   }
@@ -1790,7 +1792,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.setStage('mirror');
     this.activateMirror();
     this.showStageBanner({
-      icon: '🪞', title: 'Segunda etapa: el Espejo de las Reacciones',
+      icon: '🪞', title: 'Etapa 3 de 4: el Espejo de las Reacciones',
       text: 'Al norte, tu reflejo mostrará expresiones y comportamientos del desagrado. Párate sobre la baldosa que diga lo que ves.'
     });
   }
@@ -2720,6 +2722,10 @@ export class DisgustTerritoryGame extends MinigameBase {
     // los altares del desafio final se encienden con lo aprendido
     this.altars.forEach((al) => { if (al.id === id) this.lightAltar(al); });
 
+    // si se llego aqui desde un altar del desafio final, de vuelta a la arena
+    const altar = this.boss?.active ? this.boss.task?.altar : null;
+    if (altar && altar.id === id) { this.returnFromPath(altar); return; }
+
     // la primera herramienta devuelve el ritmo si el nivel era intenso
     if (this.learned.size === 1 && this.controller.speedScale < 1) {
       this.controller.speedScale = 1;
@@ -3410,7 +3416,7 @@ export class DisgustTerritoryGame extends MinigameBase {
   lightAltar(altar) {
     altar.interact.enabled = this.boss?.active ?? false;
     altar.stone.material.emissiveIntensity = 0.6;
-    altar.label.userData.setText(`${altar.def.technique}\n✓ pulsa E aquí`, { color: '#a8e06a', size: 0.43 });
+    altar.label.userData.setText(`${altar.def.icon} ${altar.def.name}\n${altar.def.accion}\n✓ pulsa E aquí`, { color: '#a8e06a', size: 0.43 });
   }
 
   startBoss() {
@@ -3447,8 +3453,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.setBeacons(this.altars.map((al) => al.beacon));
     this.later(() => this.enterEnvironment('arena', { x: ARENA.x, z: ARENA.z + 11 }, ARENA, 'LLEGAS A LA ARENA'), 2400);
     this.showStageBanner({
-      icon: '🛡️', title: 'Desafío final: protege la isla',
-      text: 'En el centro aparece La Reacción Impulsiva. No se vence con fuerza: se vence con herramientas. Cada altar te enseña una.',
+      icon: '🛡️', title: 'Etapa 4 de 4 · Desafío final: protege la isla',
+      text: 'En el centro aparece La Reacción Impulsiva. No se vence con fuerza: se vence con herramientas. Cada altar dice en su letrero qué hacer; camina hasta uno y pulsa E.',
       seconds: 7
     });
     this.showNote({
@@ -3600,6 +3606,10 @@ export class DisgustTerritoryGame extends MinigameBase {
       this.startBreath({ center: { x: bx, z: bz }, radius: 2.2, target: 2, bubble: this.altarBubble, onDone: () => { this.altarBubble.visible = false; done(); } });
       this.say('COMPLETA 2 RESPIRACIONES EN LA BURBUJA', 3200);
       this.setTask('🫁 Entra en la burbuja, quédate quieto y pulsa E al mantener el aire · 2 ciclos');
+    } else if ((altar.id === 'presente' || altar.id === 'atencion') && !this.learned.has(altar.id)) {
+      // la primera vez, la actividad completa que tenia la isla (sendero 5-4-3-2-1 /
+      // claro de las mariposas de color); las siguientes, el repaso breve junto al altar
+      this.travelToPath(altar);
     } else if (altar.id === 'presente') {
       const glints = [];
       for (let i = 0; i < 3; i += 1) {
@@ -3777,6 +3787,32 @@ export class DisgustTerritoryGame extends MinigameBase {
         }
       };
     }
+  }
+
+  /**
+   * Viaje al entorno completo de la tecnica (el que tenia la isla en su etapa
+   * de herramientas). Al terminarla, completePath() trae al jugador de vuelta
+   * a la arena y el altar encoge a la criatura.
+   */
+  travelToPath(altar) {
+    const path = this.paths[altar.id];
+    this.openPath(altar.id);
+    this.setBeacons([path.beacon]);
+    this.say(`VIAJAS A: ${path.name.toUpperCase()}`, 3200, { speak: false });
+    const e = this.entranceOf(path.x, path.z, 12.5);
+    this.later(() => this.enterEnvironment(altar.id, e, path, `LLEGAS A: ${path.name.toUpperCase()}`), 1200);
+    this.showNote({
+      queue: true, icon: path.icon, title: path.name,
+      text: `${path.accion}. Sigue la columna de luz dorada; cuando termines, vuelves a la arena y la criatura se encoge.`
+    });
+  }
+
+  /** Vuelta a la arena desde una tecnica completa; el altar cuenta como usado. */
+  returnFromPath(altar) {
+    altar.interact.enabled = false;
+    this.setBeacons([]);
+    this.later(() => this.enterEnvironment('arena', { x: ARENA.x, z: ARENA.z + 11 }, ARENA, 'VUELVES A LA ARENA'), 1600);
+    this.later(() => this.altarDone(altar), 2400);
   }
 
   altarDone(altar) {
