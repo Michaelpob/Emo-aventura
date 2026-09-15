@@ -362,7 +362,7 @@
 .i3d.dg .dg-voice {
   position: absolute;
   top: 14px;
-  left: 62px;
+  left: 112px;                      /* a la derecha del boton de sonido del nucleo (64px) */
   font-size: 1.05rem;
   transition: transform 160ms ease, background 200ms ease;
 }
@@ -381,7 +381,7 @@
   border-radius: 999px;
   background: rgba(8, 16, 22, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  max-width: calc(100% - 230px);
+  max-width: calc(100% - 330px);
   overflow: hidden;
 }
 .dg-chip {
@@ -670,7 +670,7 @@
   .dg-chip { padding: 3px 6px; font-size: 0.7rem; }
   .dg-chip[data-state='active'] b { display: inline; }
   .dg-chip-sep { width: 5px; }
-  .i3d.dg .dg-voice { left: 58px; }
+  .i3d.dg .dg-voice { left: 106px; top: 10px; }
   .dg-task { font-size: 0.78rem; max-width: calc(100% - 24px); }
   .i3d.dg .dg-column { top: 54px; }
   .i3d.dg .i3d__notes { max-height: 34vh; }

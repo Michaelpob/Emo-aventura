@@ -24,6 +24,7 @@
 
 import * as THREE from 'three';
 import { MinigameBase } from '../../engine/MinigameBase.js';
+import { SwampMusic } from '../../engine/SwampMusic.js';
 import {
   createGround, createSky, createLights, GEO, scatterInstanced,
   makeTree, makeRock, makeAvatar, terrainHeight
@@ -1707,6 +1708,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const env = this.envs[id];
     if (!env) return;
     this.currentEnv = id;
+    this.music?.setMood(id === 'plaza' ? 'plaza' : id === 'mirror' ? 'mirror' : id === 'arena' ? 'arena' : 'swamp');
     Object.values(this.envs).forEach((e) => { if (e.group) e.group.visible = e === env; });
     if (this.guardian && id !== 'apoyo' && id !== 'arena') this.guardian.visible = false;
     // sin limites: el area de cada actividad es toda la isla (solo cambia lo que se ve)
@@ -1878,9 +1880,9 @@ export class DisgustTerritoryGame extends MinigameBase {
   renderVoiceButton() {
     if (!this.voiceBtn) return;
     const on = this.voice.on;
-    this.voiceBtn.textContent = on ? '🔊' : '🔇';
-    this.voiceBtn.setAttribute('aria-label', on ? 'Lectura en voz alta activada' : 'Lectura en voz alta desactivada');
-    this.voiceBtn.title = on ? 'Voz: activada (toca para silenciar)' : 'Voz: silenciada (toca para activar)';
+    this.voiceBtn.textContent = on ? '🗣️' : '🤐';
+    this.voiceBtn.setAttribute('aria-label', on ? 'Guía en voz alta activada' : 'Guía en voz alta desactivada');
+    this.voiceBtn.title = on ? 'Guía en voz alta: activada (toca para silenciar)' : 'Guía en voz alta: silenciada (toca para activar)';
     this.voiceBtn.dataset.on = on ? 'true' : 'false';
   }
 
@@ -1984,6 +1986,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (force) batch.left = 0;
     if (batch.left > 0) return;
     batch.done = true;
+    if (!this.speechQueue.length) this.music?.duck(false);
     try { batch.onEnd?.(); } catch { /* el aviso ya no existe */ }
   }
 
@@ -2001,6 +2004,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       this.speechBusy = true;
       this._utter = u;                 // si se recoge como basura, Chrome nunca avisa del final
       this._current = item;
+      this.music?.duck(true);
       const done = () => {
         if (this._utter !== u) return;
         this.speechBusy = false;
@@ -2240,6 +2244,10 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.controller.on('interact', () => this.onAction());
     this.onHoldStart = () => this.onAction();
     this.controller.on('jump', () => this.onJump());
+    // en las zonas del pantano cada paso chapotea
+    this.controller.on('step', () => {
+      if (this.currentEnv === 'olores' || this.currentEnv === 'rechazo') this.audio.play('squelch', { volume: 0.22, rate: 0.9 + Math.random() * 0.3 });
+    });
   }
 
   onAction() {
@@ -2275,12 +2283,38 @@ export class DisgustTerritoryGame extends MinigameBase {
       keys: [['W A S D', 'moverte'], ['Ratón', 'mirar'], ['SHIFT', 'correr'], ['E', 'interactuar']],
       touch: [['Joystick', 'moverte'], ['Arrastra', 'mirar'], ['E', 'interactuar']]
     });
-    this.ambient = this.audio.ambient('swamp', { volume: 0.35, rate: 0.9 });
+    this.ambient = this.audio.ambient('swamp', { volume: 0.22, rate: 0.9 });
+    // musica del pantano: viscosa y traviesa; cambia de animo por entorno y de tension por nivel
+    this.music = new SwampMusic(this.audio);
+    this.music.start();
+    this.music.setMood('plaza');
+    this.nextAmbientSound = 3 + Math.random() * 3;
     if (!this.customTexts) await this.askCustomStimuli();
     this.startThermoStage();
   }
 
   /* ============================================================ (1) zonas */
+
+  /** Burbujas que estallan, ranas y goteos alrededor del jugador, cada pocos segundos */
+  updateAmbientSounds(dt) {
+    this.nextAmbientSound -= dt;
+    if (this.nextAmbientSound > 0) return;
+    const env = this.currentEnv;
+    const inSwamp = env === 'olores' || env === 'rechazo';
+    this.nextAmbientSound = (inSwamp ? 1.4 : 4) + Math.random() * (inSwamp ? 2.2 : 5);
+    if (env === 'mirror' || this.finished) return;
+    if (!this.ambientSpot) {
+      this.ambientSpot = new THREE.Object3D();
+      this.scene.add(this.ambientSpot);
+    }
+    const p = this.controller.position;
+    const a = Math.random() * Math.PI * 2;
+    const d = 3 + Math.random() * 9;
+    this.ambientSpot.position.set(p.x + Math.cos(a) * d, p.y + 0.6, p.z + Math.sin(a) * d);
+    const r = Math.random();
+    const name = env === 'arena' ? (r < 0.6 ? 'gurgle' : 'bubble') : r < 0.55 ? 'bubble' : r < 0.8 ? 'frog' : 'drip';
+    this.audio.playAt(name, this.ambientSpot, { volume: name === 'bubble' ? 0.35 : 0.3, refDistance: 5 });
+  }
 
   updateExplore(dt) {
     const zone = this.zones[this.zoneIndex];
@@ -2361,6 +2395,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.dg.ask.dataset.result = '';
     this.feedback.burst(st.group.position, { count: 16, color: '#cfffa0', speed: 2, life: 1, gravity: -0.4 });
     this.audio.play('interact', { volume: 0.3 });
+    this.audio.playAt('gurgle', st.group, { volume: 0.6, refDistance: 5 });
     // en cuanto termina la lectura de la pregunta, empieza la cuenta atras
     this.speak(`¿Esto me genera desagrado? ${st.label}. Si te da desagrado, aléjate. Si no, quédate.`, {
       priority: true,
@@ -2376,6 +2411,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.answers.push({ label: st.label, yes, custom: !!st.custom });
     this.feedback.burst(st.group.position, { count: 22, color: yes ? '#ff9d8a' : '#a8e06a', speed: 2.6, life: 1, gravity: -0.3 });
     this.audio.play(yes ? 'soften' : 'collect', { volume: 0.5 });
+    this.audio.play('squelch', { volume: 0.5, rate: yes ? 0.8 : 1.1 });
 
     // una sola tarjeta con todo: que hiciste, que significa y por que
     const did = yes ? 'TE ALEJASTE' : 'DEJASTE QUE LLEGARA';
@@ -2490,6 +2526,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     plate.mesh.material.emissive.set('#6fe07a');
     plate.mesh.material.emissiveIntensity = 0.9;
     plate.label.userData.setText(`✓ ${plate.item.icon} ${plate.item.label}`, { color: '#a8e06a' });
+    this.audio.play('glass', { volume: 0.45 });
     this.audio.play('collect', { volume: 0.5 });
     this.feedback.burst(_v.set(plate.x, this.heightAt(plate.x, plate.z) + 0.6, plate.z), { count: 16, color: '#a8e06a', speed: 2.4, life: 0.9 });
     mr.solved += 1;
@@ -2640,6 +2677,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.sky.userData.setColors(target.sky[0], target.sky[1]);
     this.feedback.tweenValue(this.sun, 'intensity', target.sun, 2.5);
     this.controller.speedScale = target.speed;
+    this.music?.setIntensity(lvl === 3 ? 0.85 : lvl === 2 ? 0.5 : 0.2);
     if (lvl === 3) {
       this.showNote({
         icon: '🌫️',
@@ -3521,6 +3559,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     b.size = Math.min(5, b.size + 1);
     this.diary.grows += 1;
     this.audio.play('rumble', { volume: 0.5 });
+    this.audio.playAt('growl', b.creature, { volume: 0.9, refDistance: 8 });
+    this.music?.setIntensity(1);
+    this.later(() => this.music?.setIntensity(0.7), 3000);
     this.feedback.shakeCamera(0.3, 2);
     this.feedback.burst(_v.copy(b.creature.position).setY(b.creature.position.y + 2), { count: 20, color: '#ff5c5c', speed: 3, life: 1 });
     this.say('LA CRIATURA CRECE', 2400, { speak: false });
@@ -3602,6 +3643,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         const m = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), new THREE.MeshStandardMaterial({ color: i ? '#ff8fb8' : '#7fd1ff', emissive: i ? '#ff5c9a' : '#3a9ad8', emissiveIntensity: 1.3 }));
         this.scene.add(m);
         moths.push({ mesh: m, focus: 0, found: false, phase: i * Math.PI, r: 2.6 + i * 0.8, h: 1.6 + i * 0.5 });
+        this.later(() => this.audio.playAt('flutter', m, { volume: 0.5, refDistance: 4 }), 200 + i * 300);
       }
       let found = 0;
       this.say('SIGUE CON LA MIRADA LAS MARIPOSAS DE LUZ', 3200);
@@ -3756,6 +3798,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (altar.beacon) altar.beacon.visible = false;
     b.size -= 1;
     this.audio.play('success', { volume: 0.5 });
+    this.audio.playAt('gurgle', b.creature, { volume: 0.8, refDistance: 8 });
     this.feedback.burst(_v.copy(b.creature.position).setY(b.creature.position.y + 2.2), { count: 26, color: '#a8e06a', speed: 3, life: 1.1 });
     this.feedback.flash(_v, { color: '#a8e06a', intensity: 6, duration: 0.9 });
     this.setTask(this.bossTask());
@@ -3798,6 +3841,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (this.pool) this.feedback.tweenColor(this.pool.material.color, '#6fc3d8', 4);
     this.controller.speedScale = 1;
     this.ambient?.setVolume(0.1);
+    this.music?.setMood('clear');
+    this.music?.setIntensity(0);
+    this.audio.play('bloom', { volume: 0.5 });
     this.audio.play('success', { volume: 0.6 });
     this.setTask('');
     this.say('LA NIEBLA DESAPARECE', 3400, { speak: false });
@@ -3831,6 +3877,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         bb.scale.setScalar(0.7 + Math.sin(this.time * 2 + i) * 0.15);
       }
     }
+    this.updateAmbientSounds(dt);
     if (this.spores) {
       const pos = this.spores.geometry.attributes.position;
       const seeds = this.spores.userData.seeds;
@@ -3927,7 +3974,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.stopSpeaking();
     this.build();
     if (this.lowMode) { this.lowMode = false; this.setLowMode(true); }
-    this.ambient = this.audio.ambient('swamp', { volume: 0.35, rate: 0.9 });
+    this.ambient = this.audio.ambient('swamp', { volume: 0.22, rate: 0.9 });
+    this.music?.setMood('plaza');
+    this.music?.setIntensity(0.2);
     this.startThermoStage();
   }
 
@@ -3965,6 +4014,7 @@ export class DisgustTerritoryGame extends MinigameBase {
 
   onDispose() {
     this.disposedFlag = true;
+    this.music?.stop();
     this.stopSpeaking();
     clearTimeout(this._speechGuard);
     clearTimeout(this._speakHoldTimer);

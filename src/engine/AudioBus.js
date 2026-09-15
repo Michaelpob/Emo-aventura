@@ -98,7 +98,17 @@ const RECIPES = {
     if (p < 0.42) return Math.sin(Math.PI * p / 0.42) * 0.5;
     if (p > 0.55) return Math.sin(Math.PI * (p - 0.55) / 0.45) * 0.45;
     return 0;
-  }, 1)
+  }, 1),
+  // Isla del Desagrado: pantano vivo, espejo de cristal y la criatura
+  bubble:    (ctx) => toneBuffer(ctx, 0.22, 260, 720, (p) => Math.min(1, p * 12) * Math.pow(1 - p, 2.2), 1),
+  frog:      (ctx) => toneBuffer(ctx, 0.5, 150, 120, (p) => (p < 0.4 ? bell(p / 0.4) : p > 0.5 ? bell((p - 0.5) / 0.5) * 0.8 : 0) * 0.7, 4),
+  drip:      (ctx) => toneBuffer(ctx, 0.28, 1900, 1200, (p) => Math.pow(1 - p, 5), 2),
+  squelch:   (ctx) => noiseBuffer(ctx, 0.22, 380, (p) => Math.min(1, p * 5) * Math.pow(1 - p, 2.6) * 0.8),
+  gurgle:    (ctx) => noiseBuffer(ctx, 0.9, 240, (p) => bell(p) * (0.55 + 0.45 * Math.sin(p * 55)) * 0.7),
+  flutter:   (ctx) => noiseBuffer(ctx, 0.5, 1800, (p) => bell(p) * (Math.sin(p * Math.PI * 2 * 22) > 0 ? 1 : 0.2) * 0.35),
+  glass:     (ctx) => toneBuffer(ctx, 1.2, 1568, 1568, (p) => Math.pow(1 - p, 2.2) * 0.6, 3),
+  growl:     (ctx) => toneBuffer(ctx, 0.9, 95, 70, (p) => bell(p) * (0.7 + 0.3 * Math.sin(p * 90)) * 0.8, 6),
+  bloom:     (ctx) => toneBuffer(ctx, 1.1, 520, 1040, (p) => bell(p) * 0.6, 3)
 };
 
 export class AudioBus {
