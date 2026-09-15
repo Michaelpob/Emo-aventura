@@ -248,7 +248,7 @@ function wrapLines(text, maxChars) {
   });
 }
 
-function paintText(text, { px = 44, color = '#ffffff', bg = 'rgba(8,16,22,0.72)', weight = 700, maxChars = 26, pad = 18 } = {}) {
+function paintText(text, { px = 36, color = '#ffffff', bg = 'rgba(8,16,22,0.72)', weight = 700, maxChars = 26, pad = 14 } = {}) {
   const lines = wrapLines(text, maxChars);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -398,6 +398,66 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.speechBusy = false;
   }
 
+  /* ------------------------------------------------------- rendimiento */
+
+  /**
+   * Renderer ligero para esta isla: sin antialiasing por hardware (en graficas
+   * integradas cuesta mas de lo que aporta), resolucion acotada y sin sombras.
+   */
+  _initRenderer() {
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    this.basePixelRatio = Math.min(window.devicePixelRatio || 1, coarse ? 1.25 : 1.35);
+    this.qualityScale = 1;
+    this._qAcc = 0;
+    this._qFrames = 0;
+    this.renderer.setPixelRatio(this.basePixelRatio);
+    this.renderer.shadowMap.enabled = false;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.el.canvas.appendChild(this.renderer.domElement);
+    this.camera = new THREE.PerspectiveCamera(72, 1, 0.1, 220);
+    this._resize();
+    this._onResize = () => this._resize();
+    window.addEventListener('resize', this._onResize);
+    this.listeners.push(() => window.removeEventListener('resize', this._onResize));
+  }
+
+  /**
+   * Si no llega a 34 fps: primero se apaga el decorado (modo ligero) y solo
+   * despues baja un poco la resolucion, nunca por debajo del 75%: mejor
+   * menos flores que una pantalla borrosa.
+   */
+  adaptQuality(dt) {
+    if (this.paused || dt <= 0) return;
+    this._qAcc += dt;
+    this._qFrames += 1;
+    if (this._qAcc < 1.5) return;
+    const fps = this._qFrames / this._qAcc;
+    this._qAcc = 0;
+    this._qFrames = 0;
+    this.lastFps = fps;
+    const prev = this.qualityScale;
+    if (fps < 34) {
+      if (!this.lowMode) { this.setLowMode(true); return; }
+      if (this.qualityScale > 0.75) this.qualityScale = Math.max(0.75, this.qualityScale - 0.12);
+    } else if (fps > 55 && this.qualityScale < 1) {
+      this.qualityScale = Math.min(1, this.qualityScale + 0.08);
+    }
+    if (this.qualityScale !== prev) {
+      this.renderer.setPixelRatio(this.basePixelRatio * this.qualityScale);
+      this._resize();
+    }
+  }
+
+  setLowMode(on) {
+    if (this.lowMode === on) return;
+    this.lowMode = on;
+    [this.spores, this.fireflies, ...(this.decor ?? [])].forEach((o) => { if (o) o.visible = !on; });
+    if (on) this.toast('⚡ Modo ligero: menos decorado para que vaya fluido');
+  }
+
   /* ------------------------------------------------------------ estado */
 
   initState() {
@@ -440,13 +500,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.initState();
     const scene = this.scene;
 
-    // Rendimiento: en esta isla casi nada proyecta sombra, y el muestreo suave
-    // de sombras sobre todo el suelo costaba cada frame. Fuera. Y la resolucion
-    // interna se acota: en pantallas densas 1.75x disparaba el trabajo de la GPU.
-    this.renderer.shadowMap.enabled = false;
-    this.basePixelRatio = Math.min(this.basePixelRatio, 1.25);
-    this.renderer.setPixelRatio(this.basePixelRatio * this.qualityScale);
-    this._resize();
+    this.decor = [];
 
     scene.fog = new THREE.FogExp2(FOG.base, 0.016);
     // radio < far de la camara (220) - distancia maxima del jugador: sin agujeros negros en el cielo
@@ -486,7 +540,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       const flat = smoothstep(7.5, 10.5, d);
       return terrainHeight(x, z, { amplitude: 0.5, scale: 0.07 }) * flat + terrace(d);
     };
-    const ground = createGround({ size: 112, segments: 112, color: '#4f6b45', amplitude: 0.5, scale: 0.07 });
+    const ground = createGround({ size: 112, segments: 72, color: '#4f6b45', amplitude: 0.5, scale: 0.07 });
     const pos = ground.geometry.attributes.position;
     for (let i = 0; i < pos.count; i += 1) pos.setY(i, this.heightAt(pos.getX(i), pos.getZ(i)));
     pos.needsUpdate = true;
@@ -522,7 +576,7 @@ export class DisgustTerritoryGame extends MinigameBase {
 
   buildVegetation() {
     const reedMat = new THREE.MeshStandardMaterial({ color: '#3f6b3a', roughness: 1, flatShading: true });
-    const reeds = scatterInstanced(GEO.grass(), reedMat, 420, (i) => {
+    const reeds = scatterInstanced(GEO.grass(), reedMat, 240, (i) => {
       const a = i * 2.399;
       const r = 10 + (i % 70) * 0.55;
       const x = Math.cos(a) * r;
@@ -530,22 +584,24 @@ export class DisgustTerritoryGame extends MinigameBase {
       return { x, y: this.heightAt(x, z) + 0.28, z, ry: a, scale: 1 + (i % 4) * 0.35 };
     });
     this.scene.add(reeds);
+    this.decor.push(reeds);
 
     // arboles en el borde del mapa
-    for (let i = 0; i < 26; i += 1) {
-      const a = (i / 26) * Math.PI * 2 + (i % 2) * 0.1;
+    for (let i = 0; i < 16; i += 1) {
+      const a = (i / 16) * Math.PI * 2 + (i % 2) * 0.1;
       const r = 40 + (i % 3) * 2.5;
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const tree = makeTree({ color: i % 2 ? '#3f7a45' : '#4a8a52', trunkColor: '#5a3f2a', scale: 1.4 + (i % 3) * 0.3 });
       tree.position.set(x, this.heightAt(x, z), z);
       this.scene.add(tree);
+      this.decor.push(tree);
     }
   }
 
   /** Esporas flotando y flores de color: la isla respira aunque nadie se mueva. */
   buildAmbience() {
-    const n = 360;
+    const n = 200;
     const positions = new Float32Array(n * 3);
     const seeds = new Float32Array(n);
     for (let i = 0; i < n; i += 1) {
@@ -563,7 +619,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.scene.add(this.spores);
 
     // luciernagas: puntos calidos y aditivos que brillan sin ser luces
-    const fn = 90;
+    const fn = 60;
     const fpos = new Float32Array(fn * 3);
     const fseeds = new Float32Array(fn);
     for (let i = 0; i < fn; i += 1) {
@@ -605,7 +661,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const flowerColors = ['#ff9ac9', '#ffd166', '#f4f1de'];
     flowerColors.forEach((color, ci) => {
       const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25, roughness: 0.9, flatShading: true });
-      const flowers = scatterInstanced(new THREE.IcosahedronGeometry(0.16, 0), mat, 70, (i) => {
+      const flowers = scatterInstanced(new THREE.IcosahedronGeometry(0.16, 0), mat, 45, (i) => {
         const a = i * 2.399 + ci * 1.3;
         const r = 12 + ((i * 37 + ci * 11) % 260) / 10;
         const x = Math.cos(a) * r;
@@ -613,6 +669,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         return { x, y: this.heightAt(x, z) + 0.22, z, ry: a, scale: 0.8 + (i % 3) * 0.3 };
       });
       this.scene.add(flowers);
+      this.decor.push(flowers);
     });
   }
 
@@ -3752,7 +3809,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.altarOrbInteract = null;
     this.stopSpeaking();
     this.build();
-    this.renderer.shadowMap.needsUpdate = true;
+    if (this.lowMode) { this.lowMode = false; this.setLowMode(true); }
     this.ambient = this.audio.ambient('swamp', { volume: 0.35, rate: 0.9 });
     this.startThermoStage();
   }
