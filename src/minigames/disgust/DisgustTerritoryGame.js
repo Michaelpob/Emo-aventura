@@ -64,7 +64,7 @@ const LEVELS = {
 
 const ZONES = [
   {
-    id: 'olores', name: 'Pantano de los olores', icon: '🤢', x: -11, z: -12, kind: 'pantano',
+    id: 'olores', name: 'Pantano de los olores y sabores', icon: '🤢', x: -11, z: -12, kind: 'pantano',
     stimuli: [
       {
         label: 'C. Percibir un olor muy desagradable.', icon: '👃',
@@ -72,29 +72,14 @@ const ZONES = [
         no: 'A ti este olor no te alejó. Cada persona reacciona a su manera, y eso también está bien.'
       },
       {
-        label: 'Oler pan recién hecho.', icon: '🍞',
-        yes: 'A ti este olor te generó desagrado. No todas las personas reaccionan igual ante lo mismo.',
-        no: 'Dejaste que se acercara: hay estímulos que no despiertan desagrado.'
-      }
-    ]
-  },
-  {
-    id: 'sabores', name: 'Cueva de los sabores', icon: '🧁', x: 11, z: -12, kind: 'cueva',
-    stimuli: [
-      {
         label: 'A. Encontrar comida en mal estado.', icon: '🥫',
         yes: 'Rechazar comida en mal estado protege: el desagrado ayudó a nuestros antepasados a no comer lo que podía dañarlos.',
         no: 'Te acercaste sin problema. Aun así, conviene revisar: el desagrado a veces avisa de un riesgo real.'
-      },
-      {
-        label: 'Probar una fruta fresca.', icon: '🍎',
-        yes: 'A ti esta fruta te dio rechazo. Puede ser por su textura, su sabor o un recuerdo: cada persona es distinta.',
-        no: 'Una fruta fresca no suele generar desagrado. Dejaste que se acercara.'
       }
     ]
   },
   {
-    id: 'imagenes', name: 'Bosque de las imágenes', icon: '🌳', x: 13, z: 16, kind: 'bosque',
+    id: 'rechazo', name: 'Zona de rechazo', icon: '🙅', x: 13, z: 16, kind: 'rechazo',
     stimuli: [
       {
         label: 'B. Escuchar una canción que me gusta.', icon: '🎵',
@@ -102,24 +87,9 @@ const ZONES = [
         no: 'Una canción que te gusta no genera desagrado. Dejaste que se acercara.'
       },
       {
-        label: 'Ver una imagen que me incomoda.', icon: '🖼️',
-        yes: 'Apartar la vista de lo que incomoda es una respuesta frecuente del desagrado.',
-        no: 'A ti esta imagen no te alejó. No todas las personas reaccionan de la misma manera.'
-      }
-    ]
-  },
-  {
-    id: 'rechazo', name: 'Zona de rechazo', icon: '🙅', x: -13, z: 16, kind: 'rechazo',
-    stimuli: [
-      {
         label: 'D. Ver una situación que me produce rechazo.', icon: '🙅',
         yes: 'El desagrado también aparece frente a conductas y situaciones, no solo frente a cosas. Es información sobre lo que te importa.',
         no: 'A ti esta situación no te alejó. Cada persona tiene su propio umbral.'
-      },
-      {
-        label: 'Recibir un saludo amable.', icon: '👋',
-        yes: 'A ti este saludo te generó rechazo. Puede depender del contexto o de quién lo hace.',
-        no: 'Un saludo amable no suele generar desagrado. Dejaste que se acercara.'
       }
     ]
   }
@@ -150,10 +120,11 @@ const PATH_ORDER = ['respira', 'atencion', 'acepta', 'presente', 'reevalua', 'ap
 
 // Orden en que se abren los caminos segun el nivel del termometro: primero
 // los que el documento asigna a ese nivel, despues el resto.
+// Caminos por nivel, tal como los asigna el documento: leve 1, moderado 2, intenso 3.
 const PATH_SEQUENCE = {
-  1: ['respira', 'atencion', 'acepta', 'presente', 'reevalua', 'apoyo'],
-  2: ['atencion', 'acepta', 'respira', 'presente', 'reevalua', 'apoyo'],
-  3: ['presente', 'reevalua', 'apoyo', 'respira', 'atencion', 'acepta']
+  1: ['respira'],
+  2: ['atencion', 'acepta'],
+  3: ['presente', 'reevalua', 'apoyo']
 };
 
 // Recorrido lineal de la isla: cada etapa se abre al terminar la anterior.
@@ -184,10 +155,8 @@ const ENV_TINTS = {
 };
 
 const ZONE_INTROS = {
-  olores: 'En el pantano el aire trae olores fuertes. Acércate y responde con el cuerpo a lo que aparezca.',
-  sabores: 'En la cueva hay comidas y sabores. Algunos pueden estar en mal estado: tu cuerpo lo notará.',
-  imagenes: 'Entre los árboles aparecen imágenes y sonidos. No todo lo que ves o escuchas genera desagrado.',
-  rechazo: 'Aquí el desagrado aparece frente a situaciones y conductas, no frente a cosas.'
+  olores: 'En el pantano el aire trae olores fuertes y hay comida de dudoso estado. Responde con el cuerpo a lo que aparezca.',
+  rechazo: 'Aquí aparecen sonidos, situaciones y conductas. No todo lo que ves o escuchas genera desagrado.'
 };
 
 const ACCEPT_STEPS = [
@@ -1432,7 +1401,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     beam.position.set(ARENA.x, ay + 20, ARENA.z);
     this.arenaGroup.add(beam);
 
-    this.altars = PATH_ORDER.filter((id) => id !== 'atencion').map((id, i, arr) => {
+    this.altars = PATH_ORDER.map((id, i, arr) => {
       const def = PATHS[id];
       const a = (i / arr.length) * Math.PI * 2 + Math.PI / 5;
       const x = ARENA.x + Math.cos(a) * 7.5;
@@ -1568,7 +1537,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (!this.dg?.stages) return;
     this.dg.stages.innerHTML = STAGES.map((st) => {
       const state = this.stageDone.has(st.id) ? 'done' : st.id === this.stage ? 'active' : 'locked';
-      const extra = st.id === 'paths' && (state !== 'locked') ? ` ${this.learned.size}/6` : '';
+      const extra = st.id === 'paths' && (state !== 'locked') && this.pathTotal ? ` ${this.learned.size}/${this.pathTotal}` : '';
       return `<span class="dg-chip" data-state="${state}" title="${st.label}"><i>${state === 'done' ? '✓' : state === 'locked' ? '🔒' : st.icon}</i><b>${st.label}${extra}</b></span>`;
     }).join('<span class="dg-chip-sep" aria-hidden="true"></span>');
   }
@@ -1797,7 +1766,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.setStage('explore');
     this.showStageBanner({
       icon: '🗺️', title: 'Primera parte: explora la isla',
-      text: 'Las cuatro zonas se abren una a una. Los estímulos vendrán hacia ti: aléjate si te generan desagrado, o deja que se acerquen si no.'
+      text: 'Dos zonas se abren una tras otra. Los estímulos vendrán hacia ti: aléjate si te generan desagrado, o deja que se acerquen si no.'
     });
     this.later(() => this.unlockZone(0), 5200);
   }
@@ -1809,7 +1778,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     zone.unlocked = true;
     this.reveal(zone.group, { x: zone.x, z: zone.z, y: zone.y, colliders: zone.colliders });
     this.setBeacons([zone.beacon]);
-    this.say(`ZONA ${i + 1}/4 · ${zone.name.toUpperCase()}`, 3200, { speak: false });
+    this.say(`ZONA ${i + 1}/${this.zones.length} · ${zone.name.toUpperCase()}`, 3200, { speak: false });
     const e = this.entranceOf(zone.x, zone.z, 10.5);
     this.later(() => this.enterEnvironment(zone.id, e, zone, `LLEGAS A: ${zone.name.toUpperCase()}`), 1900);
     let text = ZONE_INTROS[zone.id];
@@ -1828,11 +1797,13 @@ export class DisgustTerritoryGame extends MinigameBase {
 
   startPathsStage() {
     this.setStage('paths');
-    this.pathQueue = [...(PATH_SEQUENCE[this.level] ?? PATH_ORDER)];
+    this.pathQueue = [...(PATH_SEQUENCE[this.level] ?? PATH_SEQUENCE[1])];
+    this.pathTotal = this.pathQueue.length;
     const name = (LEVELS[this.level]?.title.split('— ')[1] ?? '').toLowerCase();
+    const n = this.pathTotal;
     this.showStageBanner({
       icon: '🧰', title: 'Cuarta etapa: elige tu herramienta',
-      text: `Tu desagrado está en ${name}. Los seis caminos se abren uno a uno, empezando por el que más te sirve ahora. Cada uno te da una recompensa.`
+      text: `Tu desagrado está en ${name}: ${n === 1 ? 'se abre el camino que te corresponde' : `se abren ${n} caminos, uno tras otro`}. Cada herramienta te da una recompensa.`
     });
     this.later(() => this.unlockNextPath(), 6200);
   }
@@ -1847,12 +1818,11 @@ export class DisgustTerritoryGame extends MinigameBase {
     const path = this.paths[id];
     this.openPath(id);
     this.setBeacons([path.beacon]);
-    const n = 6 - this.pathQueue.length;
-    this.say(`CAMINO ${n}/6 · ${path.name.toUpperCase()}`, 3200, { speak: false });
+    const n = this.pathTotal - this.pathQueue.length;
+    this.say(`CAMINO ${n}/${this.pathTotal} · ${path.name.toUpperCase()}`, 3200, { speak: false });
     const e = this.entranceOf(path.x, path.z, 12.5);
     this.later(() => this.enterEnvironment(id, e, path, `LLEGAS A: ${path.name.toUpperCase()}`), 1900);
-    const forLevel = path.levels.includes(this.level) ? ' Es el camino que el documento sugiere para tu nivel.' : '';
-    this.showNote({ queue: true, icon: path.icon, title: `Aparece el camino «${path.name}»`, text: `Técnica: ${path.technique}.${forLevel} Sigue la columna de luz dorada.` });
+    this.showNote({ queue: true, icon: path.icon, title: `Aparece el camino «${path.name}»`, text: `Técnica: ${path.technique}. Sigue la columna de luz dorada.` });
   }
 
   startReevalStage() {
@@ -1864,7 +1834,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.later(() => this.enterEnvironment('plaza', { x: CENTER.x, z: CENTER.z + 11 }, CENTER, 'VUELVES AL TERMÓMETRO'), 900);
     this.showStageBanner({
       icon: '🔁', title: 'Reevaluación',
-      text: 'Ya practicaste las seis herramientas. Vuelve al termómetro: ¿cómo está ahora tu desagrado? Sube a tu nivel y confirma con E.'
+      text: `Ya practicaste ${this.pathTotal === 1 ? 'tu herramienta' : 'tus herramientas'}. Vuelve al termómetro: ¿cómo está ahora tu desagrado? Sube a tu nivel y confirma con E.`
     });
   }
 
@@ -2440,7 +2410,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (this.explored >= this.zones.length) {
       this.later(() => this.finishExplore(), 800);
     } else {
-      this.say(`ZONA LISTA · ${this.explored}/4`, 3000, { speak: false });
+      this.say(`ZONA LISTA · ${this.explored}/${this.zones.length}`, 3000, { speak: false });
       this.later(() => this.unlockZone(this.zoneIndex + 1), 1600);
     }
   }
@@ -3422,7 +3392,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.feedback.tweenColor(this.scene.fog.color, FOG.high, 2.5);
     this.feedback.tweenValue(this.scene.fog, 'density', 0.045, 2.5);
     this.sky.userData.setColors('#2a3a26', '#5a7a4a');
-    this.altars.forEach((al, i) => {
+    // solo emergen los altares de las herramientas aprendidas (se pueden volver a usar)
+    this.altars.filter((al) => this.learned.has(al.id)).forEach((al, i) => {
       al.stone.visible = true;
       al.icon.visible = true;
       al.label.visible = true;
@@ -3430,7 +3401,8 @@ export class DisgustTerritoryGame extends MinigameBase {
       const from = al.y - 2;
       al.stone.position.y = from;
       this.later(() => this.feedback.tween({ from, to: al.y + 0.55, duration: 0.9, onUpdate: (v) => { al.stone.position.y = v; } }), 300 + i * 220);
-      if (this.learned.has(al.id)) { al.interact.enabled = true; al.stone.material.emissiveIntensity = 0.6; }
+      al.interact.enabled = true;
+      al.stone.material.emissiveIntensity = 0.6;
     });
     // balizas sobre todos los altares con herramienta aprendida: se ve a donde ir
     this.altars.forEach((al) => { if (!al.beacon) al.beacon = this.makeBeacon(al.x, al.z, '#ffd166'); });
@@ -3443,7 +3415,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     });
     this.showNote({
       queue: true, icon: '🧭', title: '¿Cómo se derrota? Paso a paso',
-      text: '1) Camina (sin correr) hasta uno de los altares con columna de luz dorada. 2) Al llegar, pulsa E y completa la herramienta que te pide. 3) Cada herramienta que uses la encoge un tamaño. Tiene tamaño 3: necesitas usar tres altares.'
+      text: '1) Camina (sin correr) hasta un altar con columna de luz dorada. 2) Al llegar, pulsa E y completa la herramienta que te pide. 3) Cada uso la encoge un tamaño; tiene tamaño 3. Un altar se vuelve a encender a los pocos segundos: puedes repetirlo.'
     });
     this.showNote({
       queue: true, icon: '⚠️', title: 'Lo que la hace crecer',
@@ -3457,7 +3429,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const used = this.diary.altars.length;
     const step = used === 0
       ? 'Paso 1: camina hasta un altar dorado y pulsa E'
-      : b.size > 0 ? `¡Así se hace! Ve a otro altar y pulsa E (faltan ${b.size})` : '¡Lo lograste!';
+      : b.size > 0 ? `¡Así se hace! Ve a un altar encendido y pulsa E (faltan ${b.size})` : '¡Lo lograste!';
     return `🛡️ ${step} · criatura tamaño ${Math.max(0, b.size)}`;
   }
 
@@ -3624,6 +3596,41 @@ export class DisgustTerritoryGame extends MinigameBase {
         if (found >= 3) { b.task.update = null; this.setFocus(0); done(); return; }
         this.setFocus(best);
       };
+    } else if (altar.id === 'atencion') {
+      // dos mariposas de luz que giran alrededor del altar: seguirlas con la mirada un segundo
+      const moths = [];
+      for (let i = 0; i < 2; i += 1) {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), new THREE.MeshStandardMaterial({ color: i ? '#ff8fb8' : '#7fd1ff', emissive: i ? '#ff5c9a' : '#3a9ad8', emissiveIntensity: 1.3 }));
+        this.scene.add(m);
+        moths.push({ mesh: m, focus: 0, found: false, phase: i * Math.PI, r: 2.6 + i * 0.8, h: 1.6 + i * 0.5 });
+      }
+      let found = 0;
+      this.say('SIGUE CON LA MIRADA LAS MARIPOSAS DE LUZ', 3200);
+      this.setTask('🦋 Sigue con la mirada cada mariposa de luz hasta que se pose · 0/2');
+      b.task.update = (dt) => {
+        this.camera.getWorldDirection(_dir);
+        let best = 0;
+        moths.forEach((mo) => {
+          if (mo.found) return;
+          const t = this.time * 0.9 + mo.phase;
+          mo.mesh.position.set(altar.x + Math.cos(t) * mo.r, y + mo.h + Math.sin(t * 2.2) * 0.4, altar.z + Math.sin(t * 1.3) * mo.r);
+          _v.copy(mo.mesh.position).sub(this.camera.position);
+          const dist = _v.length();
+          _v.normalize();
+          const angle = Math.acos(Math.max(-1, Math.min(1, _v.dot(_dir))));
+          if (dist < 14 && angle < 0.09) mo.focus = Math.min(1, mo.focus + dt); else mo.focus = Math.max(0, mo.focus - dt * 1.6);
+          best = Math.max(best, mo.focus);
+          if (mo.focus >= 1) {
+            mo.found = true;
+            found += 1;
+            this.scene.remove(mo.mesh);
+            this.audio.play('collect', { volume: 0.4 });
+            this.setTask(`🦋 Sigue con la mirada cada mariposa de luz hasta que se pose · ${found}/2`);
+          }
+        });
+        if (found >= 2) { b.task.update = null; this.setFocus(0); done(); return; }
+        this.setFocus(best);
+      };
     } else if (altar.id === 'acepta') {
       if (!this.altarOrb) {
         this.altarOrb = this.makeSensationOrb();
@@ -3734,7 +3741,7 @@ export class DisgustTerritoryGame extends MinigameBase {
   altarDone(altar) {
     const b = this.boss;
     altar.busy = false;
-    altar.cooldown = 6;
+    altar.cooldown = 4;
     this.diary.altars.push(altar.def.technique);
     altar.stone.material.emissiveIntensity = 0.15;
     b.task = null;
@@ -3749,7 +3756,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     else {
       this.say(`LA CRIATURA SE ENCOGE · FALTAN ${b.size}`, 3000, { speak: this.diary.altars.length !== 1 });
       if (this.diary.altars.length === 1) {
-        this.showNote({ icon: '🛡️', title: '¡Muy bien! Así se derrota', text: `Cada altar la encoge un tamaño. Sigue con otro altar iluminado: te faltan ${b.size}. Recuerda: camina, no corras.` });
+        this.showNote({ icon: '🛡️', title: '¡Muy bien! Así se derrota', text: `Cada uso la encoge un tamaño: te faltan ${b.size}. Sigue con un altar encendido (el mismo se vuelve a encender en unos segundos). Recuerda: camina, no corras.` });
       }
     }
   }
