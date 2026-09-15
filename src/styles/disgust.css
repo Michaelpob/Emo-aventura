@@ -289,6 +289,17 @@
 }
 .i3d.dg .i3d__objective { display: none; }
 
+/* Rendimiento: el desenfoque de fondo (backdrop-filter) sobre el 3D se paga en
+   cada frame. En esta isla, fuera; los fondos son un poco mas opacos a cambio. */
+.i3d.dg .i3d__btn,
+.i3d.dg .i3d-bar,
+.i3d.dg .i3d-prompt,
+.i3d.dg .i3d-note,
+.i3d.dg .i3d-panel,
+.i3d.dg .i3d-intro__card { backdrop-filter: none; -webkit-backdrop-filter: none; }
+.i3d.dg .i3d__btn { background: rgba(8, 16, 22, 0.78); }
+.i3d.dg .i3d-prompt { background: rgba(8, 16, 22, 0.82); }
+
 /* ---- columna superior: tarea -> avisos -> texto breve (nunca se pisan) ---- */
 .i3d.dg .dg-column {
   position: absolute;
@@ -395,8 +406,7 @@
 .dg-chip[data-state='active'] {
   background: linear-gradient(90deg, rgba(255, 209, 102, 0.28), rgba(168, 224, 106, 0.28));
   color: #fff;
-  box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.6), 0 0 18px rgba(255, 209, 102, 0.35);
-  animation: dg-chip-pulse 2.4s ease-in-out infinite;
+  box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.7), 0 0 14px rgba(255, 209, 102, 0.35);
 }
 .dg-chip-sep { width: 10px; height: 2px; border-radius: 1px; background: rgba(255, 255, 255, 0.2); flex: none; }
 @keyframes dg-chip-pulse {
@@ -472,7 +482,7 @@
 .dg-stage__icon {
   font-size: 3rem;
   line-height: 1;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+  text-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
   animation: dg-stage-icon 1.8s ease-in-out infinite;
 }
 .dg-stage__body { min-width: 0; text-align: left; }
@@ -511,7 +521,7 @@
   animation: i3d-pop 260ms ease;
 }
 .dg-ask[hidden] { display: none; }
-.dg-ask__icon { font-size: 2.2rem; line-height: 1; animation: dg-stage-icon 1.6s ease-in-out infinite; }
+.dg-ask__icon { font-size: 2.2rem; line-height: 1; }
 .dg-ask__body { flex: 1; min-width: 0; }
 .dg-ask__q {
   margin: 0;

@@ -440,6 +440,14 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.initState();
     const scene = this.scene;
 
+    // Rendimiento: en esta isla casi nada proyecta sombra, y el muestreo suave
+    // de sombras sobre todo el suelo costaba cada frame. Fuera. Y la resolucion
+    // interna se acota: en pantallas densas 1.75x disparaba el trabajo de la GPU.
+    this.renderer.shadowMap.enabled = false;
+    this.basePixelRatio = Math.min(this.basePixelRatio, 1.25);
+    this.renderer.setPixelRatio(this.basePixelRatio * this.qualityScale);
+    this._resize();
+
     scene.fog = new THREE.FogExp2(FOG.base, 0.016);
     // radio < far de la camara (220) - distancia maxima del jugador: sin agujeros negros en el cielo
     this.sky = createSky({ top: '#3f6b58', bottom: '#b6d88c', size: 150 });
@@ -499,6 +507,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     ground.material.vertexColors = true;
     ground.material.color.set('#ffffff');
     ground.userData.heightAt = this.heightAt;
+    ground.receiveShadow = false;
     this.ground = ground;
     this.scene.add(ground);
 
@@ -1424,8 +1433,18 @@ export class DisgustTerritoryGame extends MinigameBase {
   }
 
   setTask(text) {
+    if (this.lastTask === text) return;
+    this.lastTask = text;
     this.dg.task.hidden = !text;
     this.dg.task.textContent = text || '';
+  }
+
+  /** Barra de la pregunta: se escribe solo cuando cambia de verdad (pasos de 2%). */
+  setMeter(pct) {
+    const v = Math.round(pct / 2) * 2;
+    if (this.lastMeter === v) return;
+    this.lastMeter = v;
+    this.dg.askMeter.style.width = `${v}%`;
   }
 
   toast(text) {
@@ -2221,8 +2240,11 @@ export class DisgustTerritoryGame extends MinigameBase {
       st.ring.scale.setScalar(1 + Math.sin(this.time * 6) * 0.2);
       if (st.state === 'intro') {
         const left = Math.max(1, Math.ceil(STIM_INTRO - st.t));
-        this.dg.askHint.innerHTML = `Se acerca en <b>${left}</b>… <b>Aléjate</b> si te genera desagrado; <b>quédate</b> si no.`;
-        this.dg.askMeter.style.width = `${(st.t / STIM_INTRO) * 100}%`;
+        if (st.shownLeft !== left) {
+          st.shownLeft = left;
+          this.dg.askHint.innerHTML = `Se acerca en <b>${left}</b>… <b>Aléjate</b> si te genera desagrado; <b>quédate</b> si no.`;
+        }
+        this.setMeter((st.t / STIM_INTRO) * 100);
         if (st.t >= STIM_INTRO) {
           st.state = 'approach';
           st.t = 0;
@@ -2245,7 +2267,7 @@ export class DisgustTerritoryGame extends MinigameBase {
 
     // la decision se mide desde donde estabas: alejarse de verdad, no un paso
     const away = d - st.startDist;
-    this.dg.askMeter.style.width = `${Math.max(0, Math.min(1, away / STIM_ESCAPE)) * 100}%`;
+    this.setMeter(Math.max(0, Math.min(1, away / STIM_ESCAPE)) * 100);
     if (st.t < 0.8) return;
     if (d < 1.9) this.resolveStimulus(zone, st, false);
     else if (away >= STIM_ESCAPE && d > 5) this.resolveStimulus(zone, st, true);
@@ -2266,7 +2288,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.dg.askQ.textContent = '¿Esto me genera desagrado?';
     this.dg.askLabel.textContent = st.label;
     this.dg.askHint.innerHTML = `${this.voice?.on ? '🔊 Escucha…' : 'Lee con calma.'} <b>Aléjate</b> si te genera desagrado; <b>quédate</b> si no.`;
-    this.dg.askMeter.style.width = '0%';
+    this.setMeter(0);
     this.dg.ask.hidden = false;
     this.dg.ask.dataset.result = '';
     this.feedback.burst(st.group.position, { count: 16, color: '#cfffa0', speed: 2, life: 1, gravity: -0.4 });
@@ -2295,7 +2317,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.dg.askLabel.textContent = meaning;
     this.dg.askHint.textContent = why;
     this.dg.ask.dataset.result = yes ? 'yes' : 'no';
-    this.dg.askMeter.style.width = yes ? '100%' : '0%';
+    this.setMeter(yes ? 100 : 0);
 
     const isLast = zone.answered >= zone.stimuli.length;
     this.speak(`${did}. ${meaning} ${why}`, {
@@ -2856,7 +2878,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       if (Math.hypot(p.x - arch.x, p.z - arch.z) < 1.5) this.passArch(path, arch);
     } else if (c.mode === 'altar') {
       if (speed < 0.5) c.still += dt; else c.still = Math.max(0, c.still - dt);
-      this.setTask(`🫳 Sostenla quieto y reconoce lo que sientes · ${Math.min(3, c.still).toFixed(1)}/3 s`);
+      this.setTask(`🫳 Sostenla quieto y reconoce lo que sientes · ${Math.min(3, Math.floor(c.still))}/3 s`);
       if (c.still >= 3) {
         c.active = false;
         this.say('«ESTOY SINTIENDO DESAGRADO.»', 2600);
