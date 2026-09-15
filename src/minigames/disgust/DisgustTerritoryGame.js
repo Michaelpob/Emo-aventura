@@ -1184,13 +1184,17 @@ export class DisgustTerritoryGame extends MinigameBase {
       const items = sense.items.map((text, ii) => {
         const [icon, ...rest] = text.split(' ');
         const label = rest.join(' ');
-        const a = (si * 1.3 + ii * (Math.PI * 2 / sense.items.length)) + 0.4;
-        const r = 2.5 + ((si + ii) % 4) * 1.4;
+        // anillo alrededor del centro; los elementos de un sentido se reparten a
+        // la misma distancia angular y a dos radios alternos: nunca se pisan
+        const n = sense.items.length;
+        const a = si * 0.7 + (ii / n) * Math.PI * 2;
+        const r = 4.5 + (ii % 2) * 2;
         const ix = x + Math.cos(a) * r;
         const iz = z + Math.sin(a) * r;
         const iy = this.heightAt(ix, iz);
         const item = { icon, label, x: ix, z: iz, y: iy, found: false, dwell: 0 };
         const holder = new THREE.Group();
+        holder.visible = false;                    // solo se ve el sentido en curso
         holder.position.set(ix, iy, iz);
         group.add(holder);
         item.holder = holder;
@@ -2843,7 +2847,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       best = Math.max(best, bf.focus);
       if (bf.focus >= 1) this.butterflyFound(path, bf);
     }
-    this.setFocus(best);
+    this.setFocus(path.done ? 0 : best);
   }
 
   butterflyFound(path, bf) {
@@ -3011,7 +3015,11 @@ export class DisgustTerritoryGame extends MinigameBase {
     if (!sense) return;
     this.setTask(`${sense.icon} ${sense.count} ${sense.prompt} · 0/${sense.count}`);
     this.say(`${sense.count} ${sense.prompt}`.toUpperCase(), 2400);
-    sense.items.forEach((item) => {
+    sense.items.forEach((item, i) => {
+      // aparece con un pequeno brote, escalonado
+      item.holder.visible = true;
+      item.holder.scale.setScalar(0.001);
+      this.later(() => this.feedback.tween({ from: 0.001, to: 1, duration: 0.5, onUpdate: (v) => item.holder.scale.setScalar(v) }), i * 120);
       if (sense.kind === 'gaze' || sense.kind === 'sound') item.mesh.visible = true;
       if (sense.kind === 'sound') {
         item.loop = this.audio.playAt(item.sound, item.holder, { volume: 0.9, refDistance: 3, loop: true });
@@ -3052,7 +3060,8 @@ export class DisgustTerritoryGame extends MinigameBase {
         if (Math.hypot(p.x - item.x, p.z - item.z) < 1.6) this.presenteFound(path, item);
       }
     }
-    if (sense.kind === 'gaze') this.setFocus(best);
+    // si el ultimo destello cerro el sentido, el anillo no debe volver a mostrarse
+    if (sense.kind === 'gaze') this.setFocus(path.senses[path.senseIndex] === sense ? best : 0);
   }
 
   presenteFound(path, item) {
@@ -3070,6 +3079,12 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.setTask(`${sense.icon} ${sense.count} ${sense.prompt} · ${sense.found}/${sense.count}`);
     if (sense.found >= sense.count) {
       this.setFocus(0);
+      // el sentido completado se retira: menos letreros, mas claridad
+      sense.items.forEach((it, i) => this.later(() => this.feedback.tween({
+        from: 1, to: 0.001, duration: 0.45,
+        onUpdate: (v) => it.holder.scale.setScalar(v),
+        onDone: () => { it.holder.visible = false; }
+      }), 500 + i * 90));
       path.senseIndex += 1;
       const done = path.senseIndex / path.senses.length;
       this.feedback.tweenValue(path.fogDome.material, 'opacity', 0.42 * (1 - done), 1.5);
@@ -3520,8 +3535,8 @@ export class DisgustTerritoryGame extends MinigameBase {
             this.setTask(`👀 Elementos del entorno · ${found}/3`);
           }
         }
+        if (found >= 3) { b.task.update = null; this.setFocus(0); done(); return; }
         this.setFocus(best);
-        if (found >= 3) { b.task.update = null; this.setFocus(0); done(); }
       };
     } else if (altar.id === 'acepta') {
       if (!this.altarOrb) {
