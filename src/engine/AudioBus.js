@@ -70,7 +70,18 @@ const RECIPES = {
   tick:      (ctx) => toneBuffer(ctx, 0.1, 1040, 1040, decay, 2),
   stone:     (ctx) => toneBuffer(ctx, 0.3, 150, 110, soft, 3),
   spit:      (ctx) => noiseBuffer(ctx, 0.5, 220, (p) => Math.min(1, p * 6) * Math.pow(1 - p, 1.8) * 0.8),
-  erupt:     (ctx) => noiseBuffer(ctx, 1.8, 80, (p) => Math.min(1, p * 5) * Math.pow(1 - p, 0.9))
+  erupt:     (ctx) => noiseBuffer(ctx, 1.8, 80, (p) => Math.min(1, p * 5) * Math.pow(1 - p, 0.9)),
+  // Isla del Miedo: linterna, bosque de noche, sustos y respiracion larga
+  click:     (ctx) => noiseBuffer(ctx, 0.05, 5200, (p) => Math.pow(1 - p, 8)),            // interruptor: encender
+  clickOff:  (ctx) => noiseBuffer(ctx, 0.07, 2400, (p) => Math.pow(1 - p, 5) * 0.8),      // interruptor: apagar
+  ignite:    (ctx) => noiseBuffer(ctx, 0.6, 1500, (p) => Math.min(1, p * 6) * Math.pow(1 - p, 1.2) * 0.7),
+  whoosh:    (ctx) => noiseBuffer(ctx, 1.0, 900, (p) => Math.pow(Math.sin(Math.PI * p), 1.6) * 0.8),
+  rustle:    (ctx) => noiseBuffer(ctx, 0.7, 2600, (p) => bell(p) * (0.5 + 0.5 * Math.abs(Math.sin(p * 40))) * 0.5),
+  heartbeat: (ctx) => toneBuffer(ctx, 0.55, 72, 48, (p) => (p < 0.45 ? decay(p / 0.45) : decay((p - 0.45) / 0.55) * 0.7), 1),
+  owl:       (ctx) => toneBuffer(ctx, 1.3, 430, 370, (p) => (p < 0.35 ? bell(p / 0.35) : p > 0.45 ? bell((p - 0.45) / 0.55) : 0) * 0.7, 2),
+  crickets:  (ctx) => toneBuffer(ctx, 1.4, 4300, 4300, (p) => (Math.sin(p * Math.PI * 2 * 16) > 0.35 ? 1 : 0) * bell(p) * 0.3, 1),
+  inhale:    (ctx) => noiseBuffer(ctx, 2.2, 620, (p) => Math.pow(Math.sin(Math.PI * p), 1.3) * 0.6),
+  exhale:    (ctx) => noiseBuffer(ctx, 2.6, 380, (p) => Math.min(1, p * 4) * Math.pow(1 - p, 1.4) * 0.6)
 };
 
 export class AudioBus {

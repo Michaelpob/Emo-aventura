@@ -9,6 +9,7 @@
 
 import * as THREE from 'three';
 import { MinigameBase } from '../../engine/MinigameBase.js';
+import { MysteryMusic } from '../../engine/MysteryMusic.js';
 import { createGround, createSky, createLights, GEO, scatterInstanced, makeTree } from '../../engine/worldkit.js';
 import { addReward, completeActivity, recordReevaluation, setInitialIntensity } from '../../data/gameState.js';
 
@@ -322,8 +323,33 @@ export class FearNightGame extends MinigameBase {
       keys: [['W A S D', 'moverte'], ['Ratón', 'mirar'], ['Shift', 'correr'], ['E', 'encender'], ['Mantener', 'respirar']],
       touch: [['Joystick', 'moverte'], ['A fondo', 'correr'], ['Arrastra', 'mirar'], ['E', 'encender'], ['Mantener E', 'respirar']]
     });
-    this.ambientWind = this.audio.ambient('wind', { volume: 0.3, rate: 0.8 });
+    this.ambientWind = this.audio.ambient('wind', { volume: 0.26, rate: 0.8 });
+    // musica generativa: misterio con intriga; sube de tension con la linterna baja y los sustos
+    this.music = new MysteryMusic(this.audio);
+    this.music.start();
+    this.nextForestSound = 4 + Math.random() * 4;
+    this.breathPhaseUp = true;
+    this.nextHeartbeat = 0;
+    // clic de la linterna al encenderla
+    this.later(() => this.audio.play('click', { volume: 0.7 }), 300);
     this.say('ENCIENDE LOS FAROLES', 2600);
+  }
+
+  /** Buhos y grillos a lo lejos, de vez en cuando y desde un punto del bosque */
+  updateForestSounds(dt) {
+    this.nextForestSound -= dt;
+    if (this.nextForestSound > 0) return;
+    this.nextForestSound = 7 + Math.random() * 9;
+    const p = this.controller.position;
+    const a = Math.random() * Math.PI * 2;
+    const d = 10 + Math.random() * 12;
+    if (!this.forestSpot) {
+      this.forestSpot = new THREE.Object3D();
+      this.scene.add(this.forestSpot);
+    }
+    this.forestSpot.position.set(p.x + Math.cos(a) * d, p.y + 2, p.z + Math.sin(a) * d);
+    const name = Math.random() < 0.45 ? 'owl' : 'crickets';
+    this.audio.playAt(name, this.forestSpot, { volume: name === 'owl' ? 0.5 : 0.35, refDistance: 6 });
   }
 
   /* ============================================================== faroles */
@@ -339,6 +365,7 @@ export class FearNightGame extends MinigameBase {
     this.feedback.burst(lantern.position.clone().add(new THREE.Vector3(0, 2.3, 0)), {
       count: 22, color: '#ffcf7a', speed: 2.6, life: 1.2, gravity: -1.4
     });
+    this.audio.playAt('ignite', lantern.group, { volume: 0.7, refDistance: 5 });
     this.audio.playAt('light', lantern.group, { volume: 0.8, refDistance: 5 });
 
     // cada farol aclara un poco la noche y devuelve algo de bateria
@@ -371,6 +398,9 @@ export class FearNightGame extends MinigameBase {
     this.feedback.tweenValue(this.moonHalo.material, 'opacity', 0, 3);
     this.feedback.tweenValue(this.moonGlow, 'intensity', 0, 3);
     this.ambientWind?.setVolume(0.12, 2);
+    this.music?.setIntensity(0);
+    this.music?.setVolume(0.35, 4);
+    this.audio.play('success', { volume: 0.5 });
 
     this.later(() => {
       const p = new THREE.Vector3(0, this.ground.userData.heightAt(0, 8), 8);
@@ -395,8 +425,11 @@ export class FearNightGame extends MinigameBase {
     this.shadowFigure.material.opacity = 0;
     this.scare = { t: 0, dir: -side, speed: 5.5 + Math.random() * 2 };
 
-    this.audio.play('soften', { volume: 0.3, rate: 0.7 });
+    this.audio.play('whoosh', { volume: 0.45 });
+    this.audio.play('rustle', { volume: 0.35 });
+    this.later(() => this.audio.play('heartbeat', { volume: 0.5 }), 350);
     this.feedback.shakeCamera(0.08);
+    this.scareTension = 1;
   }
 
   updateScare(dt) {
@@ -433,8 +466,9 @@ export class FearNightGame extends MinigameBase {
       this.breathBar.show(canBreathe);
       if (canBreathe) {
         this.audio.duck(0.3);
-        this.audio.play('breathIn', { volume: 0.3 });
-        this.say('RESPIRA', 0);
+        this.breathPhaseUp = Math.cos(this.time * 1.2) > 0;
+        this.audio.play(this.breathPhaseUp ? 'inhale' : 'exhale', { volume: 0.55 });
+        this.say(this.breathPhaseUp ? 'INHALA' : 'EXHALA', 0);
       } else {
         this.audio.unduck();
         this.clearSay();
@@ -444,6 +478,13 @@ export class FearNightGame extends MinigameBase {
     if (this.breathing) {
       this.battery = Math.min(1, this.battery + RECHARGE * dt);
       this.breathBar.set((Math.sin(this.time * 1.2) * 0.5 + 0.5));
+      // la barra sube al inhalar y baja al exhalar: el sonido acompana cada fase
+      const up = Math.cos(this.time * 1.2) > 0;
+      if (up !== this.breathPhaseUp) {
+        this.breathPhaseUp = up;
+        this.audio.play(up ? 'inhale' : 'exhale', { volume: 0.55 });
+        this.say(up ? 'INHALA' : 'EXHALA', 0);
+      }
       this.controller.cfg.headBob = 0;
       if (this.dark && this.battery > 0.18) this.setDark(false);
     } else {
@@ -460,6 +501,19 @@ export class FearNightGame extends MinigameBase {
     this.flashlight.intensity = this.dark ? 0 : (2.5 + this.battery * 7) * flicker;
     this.flashlight.angle = Math.PI / 7 * (0.75 + this.battery * 0.35);
     this.halo.intensity = this.dark ? 0.22 : 0.6 + this.battery * 0.5;
+
+    // musica: mas tension cuanto menos linterna, y un pico con cada sombra
+    this.scareTension = Math.max(0, (this.scareTension ?? 0) - dt * 0.25);
+    const tension = Math.max(this.dark ? 0.85 : (1 - this.battery) * 0.7, this.scareTension * 0.9);
+    this.music?.setIntensity(this.breathing ? tension * 0.4 : tension);
+    if (low && !this.breathing) {
+      this.nextHeartbeat -= dt;
+      if (this.nextHeartbeat <= 0) {
+        this.nextHeartbeat = 1.15 - (0.25 - this.battery);
+        this.audio.play('heartbeat', { volume: 0.35 + (0.25 - this.battery) });
+      }
+    }
+    if (this.objective.done < this.objective.total) this.updateForestSounds(dt);
 
     // sustos suaves espaciados
     this.nextScare -= dt;
@@ -483,12 +537,14 @@ export class FearNightGame extends MinigameBase {
     this.dark = dark;
     if (dark) {
       this.say('PÁRATE Y RESPIRA', 2600);
-      this.audio.play('soften', { volume: 0.35 });
+      this.audio.play('clickOff', { volume: 0.7 });
+      this.later(() => this.audio.play('soften', { volume: 0.35 }), 200);
       this.feedback.shakeCamera(0.12);
       this.controller.speedScale = 0.6;
     } else {
       this.clearSay();
-      this.audio.play('light', { volume: 0.4 });
+      this.audio.play('click', { volume: 0.7 });
+      this.later(() => this.audio.play('light', { volume: 0.4 }), 120);
       this.controller.speedScale = 1;
     }
   }
@@ -561,6 +617,7 @@ export class FearNightGame extends MinigameBase {
 
   onDispose() {
     this.ambientWind?.stop();
+    this.music?.stop();
     this.lanterns.length = 0;
   }
 }
