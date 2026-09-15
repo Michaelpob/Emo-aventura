@@ -58,7 +58,7 @@ src/
 │   └── activities.js         actividades 2D reutilizables
 ├── minigames/
 │   ├── anger/AngerLavaGame.js         fear/FearNightGame.js
-│   ├── sadness/SadnessRestoreGame.js  joy/JoyOrbsGame.js
+│   ├── sadness/SadnessHouseGame.js  joy/JoyOrbsGame.js
 │   ├── disgust/DisgustSortGame.js     surprise/SurpriseObserveGame.js
 │   └── index.js                        registro de minijuegos
 ├── data/       islands · gameState · tools · player

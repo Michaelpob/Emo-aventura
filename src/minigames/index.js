@@ -9,6 +9,7 @@ import { AngerLavaGame } from './anger/AngerLavaGame.js';
 import { FearNightGame } from './fear/FearNightGame.js';
 import { SadnessRestoreGame } from './sadness/SadnessRestoreGame.js';
 import { SadnessDaysGame } from './sadness/SadnessDaysGame.js';
+import { SadnessHouseGame } from './sadness/SadnessHouseGame.js';
 import { JoyOrbsGame } from './joy/JoyOrbsGame.js';
 import { DisgustSortGame } from './disgust/DisgustSortGame.js';
 import { DisgustTerritoryGame } from './disgust/DisgustTerritoryGame.js';
@@ -19,6 +20,7 @@ export const minigameRegistry = {
   'anger-lava': AngerLavaGame,
   'anger-volcano': AngerVolcanoGame,
   'fear-night': FearNightGame,
+  'sadness-house': SadnessHouseGame,
   'sadness-days': SadnessDaysGame,
   'sadness-restore': SadnessRestoreGame,
   'joy-orbs': JoyOrbsGame,

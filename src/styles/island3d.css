@@ -391,6 +391,92 @@
 .i3d-day__sleep[hidden] { display: none; }
 
 /* transicion de noche entre dias */
+/* ------------------------------------------------------ tristeza: la casa */
+
+.i3d-tasks {
+  position: absolute;
+  right: 16px;
+  top: 64px;
+  min-width: 190px;
+  padding: 10px 12px 8px;
+  border-radius: 14px;
+  background: rgba(8, 16, 22, 0.5);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  pointer-events: none;
+}
+.i3d-tasks__title {
+  margin: 0 0 4px;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.i3d-tasks ul { list-style: none; margin: 0; padding: 0; }
+.i3d-tasks li {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 0.82rem;
+  transition: opacity 300ms ease;
+}
+.i3d-tasks li i { font-style: normal; font-size: 0.95rem; text-align: center; }
+.i3d-tasks li b { color: #ffd166; font-variant-numeric: tabular-nums; }
+.i3d-tasks li.is-done { opacity: 0.45; }
+.i3d-tasks li.is-done span { text-decoration: line-through; }
+.i3d-tasks li.is-done b { color: #9be28c; }
+
+/* dial de la radio: la aguja barre y hay que soltar dentro de la senal */
+.i3d-dial {
+  position: absolute;
+  left: 50%;
+  bottom: 30%;
+  width: min(300px, 70vw);
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(8, 16, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+  pointer-events: none;
+  --x: 0%;
+  --band: 50%;
+  --band-w: 17%;
+}
+.i3d-dial[hidden] { display: none; }
+.i3d-dial__band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--band) - var(--band-w) / 2);
+  width: var(--band-w);
+  background: rgba(255, 209, 102, 0.35);
+  border-left: 1px solid rgba(255, 209, 102, 0.7);
+  border-right: 1px solid rgba(255, 209, 102, 0.7);
+}
+.i3d-dial__needle {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: var(--x);
+  width: 3px;
+  margin-left: -1.5px;
+  background: #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+.i3d-dial.is-on .i3d-dial__needle { background: #ffd166; box-shadow: 0 0 12px #ffd166; }
+.i3d-dial.is-hit { border-color: #9be28c; }
+.i3d-dial.is-hit .i3d-dial__band { background: rgba(155, 226, 140, 0.55); }
+.i3d-dial.is-miss { border-color: #ff9d8a; }
+
+@media (max-height: 520px), (max-width: 720px) {
+  .i3d-tasks { top: 54px; min-width: 150px; padding: 6px 10px; }
+  .i3d-tasks__title { display: none; }
+  .i3d-tasks li { font-size: 0.72rem; padding: 1px 0; gap: 6px; grid-template-columns: 18px 1fr auto; }
+}
+
 .i3d-night {
   position: absolute;
   inset: 0;

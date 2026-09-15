@@ -276,41 +276,60 @@ forma de fallar propios. Tres de las seis dejan de ser juegos de caminar.
 |---|---|---|---|---|
 | Miedo | Tensión continua | Administrar tu ritmo al acercarte | Retrocedes unos metros | ⏳ |
 | **Ira** | **Reflejos + inhibición** | **Distinguir y contenerte** | **El volcán sube** | **✅** |
-| **Tristeza** | **Economía por turnos** | **Elegir en qué gastas la energía** | **Mañana sigues igual** | **✅** |
+| **Tristeza** | **Tareas con impulso** | **Hacer cosas pequeñas con tus manos** | **El impulso baja al suelo ganado** | **✅** |
 | Alegría | Ritmo | Precisión temporal | Esa capa no entra | ⏳ |
 | Asco | Deducción | Buscar información antes de decidir | Descartas algo bueno | ⏳ |
 | Sorpresa | Memoria | Retener y comparar | Otra ronda | ⏳ |
 
-## Tristeza · «Un día a la vez» (implementada)
+## Tristeza · «La casa en marcha» (implementada)
 
-`src/minigames/sadness/SadnessDaysGame.js` · **cámara fija, no se camina**.
+`src/minigames/sadness/SadnessHouseGame.js` · **tercera persona, control directo**.
 
-- Cámara de sobremesa sobre una casa y su jardín, con arrastre para girar la
-  vista. El jugador **no controla al personaje**: hace clic sobre las cosas y el
-  personaje va solo hasta ellas.
-- **Fichas de energía**: 3 el primer día. Cada acción cuesta 1 o 2 y cambia algo
-  visible (entra luz por la ventana, la planta crece una etapa, suena la radio,
-  humea la chimenea, el camino recupera color, alguien contesta al día
-  siguiente).
-- **La regla del juego:** al dormir, `energía de mañana = 2 + fichas gastadas
-  hoy` (mínimo 3, máximo 5). Quedarte quieto **no castiga** —te quedas con las
-  mismas 3—, pero la energía solo sube cuando actúas. Eso es activación
-  conductual: no esperar a tener ganas, hacer algo pequeño y dejar que las ganas
-  lleguen después.
-- Cuatro días. El escenario entero se va templando con lo que hiciste (cielo,
-  niebla, sol, hierba, colinas y el color del propio personaje). Al terminar, la
-  puerta de la casa se abre y se sale por ella.
-- Las esperas del juego van **por frames**, no por `setTimeout`: siguen siendo
-  exactas aunque el navegador frene los temporizadores.
+Sustituye a «Un día a la vez» (cámara fija, clic y el personaje iba solo), que
+el jugador sentía como *mirar sin hacer nada*. Ahora todo se hace con las
+manos.
 
-**Verificado:** clic real sobre un objeto (tooltip, realce y cursor), el
-personaje camina hasta el sitio, se gasta la ficha, el mundo cambia, el ciclo de
-los 4 días con la energía subiendo 3 → 5, la respuesta al mensaje llegando al
-día siguiente, la planta en sus 3 etapas, la puerta abriéndose y el cierre con
-insignia y herramienta. 31 draw calls, ~8.200 triángulos, sin errores de consola.
+- **El peso**: empiezas con `speedScale = 0.5`, el mundo gris y con niebla.
+  Hay una barra de **impulso** (♥) con dos partes: un **suelo** que sube con
+  cada cosa hecha y no baja nunca, y un **empujón** reciente que se apaga si te
+  quedas parado más de 1,2 s. `velocidad = 0.5 + 0.7·impulso` (× 0,85 si llevas
+  leña). Esa es la activación conductual hecha cuerpo: moverse cuesta menos
+  cuanto más haces, y pararte te devuelve al suelo ganado, nunca por debajo.
+- **Seis tareas, seis mecánicas distintas**, sin orden:
+  - *Abrir las ventanas* (×3) — pulsar E: la más pequeña posible, entra luz.
+  - *Recoger las cartas* (×6) — repartidas por el jardín; se cogen al pasar
+    por encima.
+  - *Leña para la chimenea* (×4) — coger un tronco con E, **llevarlo a
+    cuestas** (se ve sobre la cabeza y frena un poco) y dejarlo en la pila. Con
+    los cuatro, la chimenea humea y la casa se calienta por dentro.
+  - *Regar la planta* (×3) — **mantener E**: la barra de agua sube 0,42/s; al
+    llenarse la planta crece una etapa. Soltar antes **no pierde el progreso**.
+  - *Sintonizar la radio* — **mantener y soltar a tiempo**: una aguja barre un
+    dial y hay que soltar dentro de la señal (17 % del ancho). Fallar mueve la
+    señal y suena estática; acertar mete la capa musical.
+  - *Escribir a alguien* — en el buzón se **elige** qué decir entre tres
+    mensajes (todos válidos). La respuesta llega al terminar la siguiente
+    tarea (o sola a los 3 s si ya no queda ninguna): bandera en el buzón, y
+    hay que volver a leerla.
+- Cada tarea completada deja una **reflexión** de 8 s (no interrumpe: se sigue
+  jugando mientras se lee). El escenario entero se templa con el suelo del
+  impulso (cielo, niebla, sol, hierba, árboles, camino y el color del
+  personaje).
+- Final físico: con las seis tareas y la respuesta leída, la **puerta se abre**
+  y se sale por ella. Cierre con insignia y herramienta.
+- Lista de tareas en el HUD (`.i3d-tasks`), compacta en móvil; dial de la
+  radio (`.i3d-dial`) con banda y aguja.
 
-El minijuego 3D anterior de Tristeza (`sadness-restore`, «El mundo que vuelve»)
-queda registrado pero fuera de la isla.
+**Verificado** en el motor real, paso a paso: las tres ventanas, las seis
+cartas, los cuatro viajes con la leña (el chip cambia a «Dejar la leña» solo
+cuando cargas), el riego conservando el agua al soltar, la radio fallando y
+acertando, la elección del mensaje, la respuesta llegando y leyéndose, la
+puerta abriéndose y la tarjeta de cierre. `reset()` deja 12 interactuables y
+las mismas geometrías; dos montajes seguidos sin crecimiento. 15 draw calls,
+~9.700 triángulos, consola limpia.
+
+`sadness-days` («Un día a la vez») y `sadness-restore` («El mundo que vuelve»)
+quedan registrados pero fuera de la isla.
 
 ## Ira · «Al rojo vivo» (implementada)
 

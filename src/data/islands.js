@@ -23,9 +23,9 @@ export const islands = [
   {
     id: 'sadness',
     name: 'Tristeza',
-    displayName: 'Un dia a la vez',
+    displayName: 'La casa en marcha',
     emoji: '💧',
-    subtitle: 'Poca energia cada dia. Elige que haces con ella.',
+    subtitle: 'Empiezas sin fuerzas. Cada cosa pequena que haces te devuelve impulso.',
     badge: 'Guardian de la Tristeza',
     reward: 'Cristal del Recuerdo Positivo',
     palette: {
@@ -38,7 +38,7 @@ export const islands = [
     position: [0, 0, -4.5],
     radius: 1.25,
     height: 0.34,
-    minigame: 'sadness-days'
+    minigame: 'sadness-house'
   },
   {
     id: 'anger',
@@ -129,6 +129,7 @@ export const minigameLabels = {
   'anger-lava': 'Al rojo vivo',
   'anger-volcano': 'Volcan de las Emociones',
   'fear-night': 'Bosque de la Noche',
+  'sadness-house': 'La casa en marcha',
   'sadness-days': 'Un dia a la vez',
   'sadness-restore': 'El mundo que vuelve',
   'joy-orbs': 'Valle de la Luz',
