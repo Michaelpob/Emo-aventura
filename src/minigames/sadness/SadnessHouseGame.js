@@ -201,25 +201,27 @@ export class SadnessHouseGame extends MinigameBase {
     roof.castShadow = true;
     house.add(roof);
 
-    // tres ventanas cerradas: frente, izquierda y derecha
+    // tres ventanas cerradas: frente, izquierda y derecha. Una sola luz para
+    // las tres (cada luz puntual se paga en todos los pixeles de la escena)
     const shutterDefs = [
-      { pos: [-1.5, 2.1, 2.55], rot: 0, light: [-1.5, 2.1, 3.5] },
-      { pos: [-3.05, 2.0, -0.4], rot: Math.PI / 2, light: [-4, 2.0, -0.4] },
-      { pos: [3.05, 2.0, -0.4], rot: Math.PI / 2, light: [4, 2.0, -0.4] }
+      { pos: [-1.5, 2.1, 2.55], rot: 0 },
+      { pos: [-3.05, 2.0, -0.4], rot: Math.PI / 2 },
+      { pos: [3.05, 2.0, -0.4], rot: Math.PI / 2 }
     ];
+    const shutterGeo = new THREE.BoxGeometry(1.5, 1.4, 0.16);
     shutterDefs.forEach((def) => {
       const mat = new THREE.MeshStandardMaterial({
         color: '#3f4a52', emissive: '#000000', emissiveIntensity: 0, roughness: 0.4, flatShading: true
       });
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.4, 0.16), mat);
+      const mesh = new THREE.Mesh(shutterGeo, mat);
       mesh.position.set(...def.pos);
       mesh.rotation.y = def.rot;
       house.add(mesh);
-      const light = new THREE.PointLight('#ffcf87', 0, 9, 2);
-      light.position.set(...def.light);
-      house.add(light);
-      this.shutters.push({ mesh, mat, light, open: false });
+      this.shutters.push({ mesh, mat, open: false });
     });
+    this.houseGlow = new THREE.PointLight('#ffcf87', 0, 14, 2);
+    this.houseGlow.position.set(0, 2.4, 3.2);
+    house.add(this.houseGlow);
 
     // puerta: se abre cuando la casa esta en marcha
     this.doorMat = new THREE.MeshStandardMaterial({ color: '#6d5c52', roughness: 0.9, flatShading: true });
@@ -656,9 +658,11 @@ export class SadnessHouseGame extends MinigameBase {
     s.mat.color.set('#cfe4ef');
     s.mat.emissive.set('#ffcf87');
     this.feedback.tweenValue(s.mat, 'emissiveIntensity', 1.2, 1.2);
-    this.feedback.tweenValue(s.light, 'intensity', 2.4, 1.2);
+    const open = this.shutters.filter((x) => x.open).length;
+    this.feedback.tweenValue(this.houseGlow, 'intensity', 1.1 * open, 1.2);
     this.feedback.burst(s.mesh.getWorldPosition(new THREE.Vector3()), { count: 10, color: '#ffe9a8', speed: 1.6, life: 0.9, gravity: -0.5 });
-    this.audio.play('light', { volume: 0.4 });
+    this.audio.play('creak', { volume: 0.45, rate: 0.9 + i * 0.1 });
+    this.later(() => this.audio.play('light', { volume: 0.35 }), 220);
     this.say('ENTRA LUZ', 1400);
     this.gain('ventanas');
   }
@@ -667,7 +671,8 @@ export class SadnessHouseGame extends MinigameBase {
     letter.taken = true;
     this.scene.remove(letter.mesh);
     this.feedback.burst(letter.mesh.position.clone().add(new THREE.Vector3(0, 0.4, 0)), { count: 8, color: '#ffffff', speed: 1.8, life: 0.8 });
-    this.audio.play('collect', { volume: 0.35, rate: 1 + this.progress.cartas * 0.06 });
+    this.audio.play('paper', { volume: 0.5 });
+    this.later(() => this.audio.play('collect', { volume: 0.3, rate: 1 + this.progress.cartas * 0.06 }), 90);
     const left = TASKS[1].total - this.progress.cartas - 1;
     this.say(left > 0 ? `UNA CARTA · FALTAN ${left}` : 'LEÍSTE TODAS LAS CARTAS', 1300);
     this.gain('cartas');
@@ -716,7 +721,7 @@ export class SadnessHouseGame extends MinigameBase {
   lightFire() {
     this.fireLit = true;
     this.feedback.tweenValue(this.fireLight, 'intensity', 3.2, 1.5);
-    this.addLayer('water', 0.18);
+    this.addLayer('crackle', 0.26);
     this.audio.play('sizzle', { volume: 0.3 });
   }
 
@@ -850,7 +855,8 @@ export class SadnessHouseGame extends MinigameBase {
     this.doorMat.emissiveIntensity = 0.6;
     this.doorItem.enabled = true;
     this.feedback.flash(new THREE.Vector3(1.4, 1.5, -0.5), { color: '#ffe9a8', intensity: 4, duration: 1.6 });
-    this.audio.play('success', { volume: 0.55 });
+    this.audio.play('creak', { volume: 0.5, rate: 0.7 });
+    this.later(() => this.audio.play('success', { volume: 0.55 }), 350);
     this.say('LA PUERTA ESTÁ ABIERTA', 2600);
   }
 
@@ -944,7 +950,13 @@ export class SadnessHouseGame extends MinigameBase {
     const active = this.interactables.active;
 
     // regar: mantener; el progreso no se pierde al soltar
-    if (this.holding && active?.kind === 'planta' && this.plantStage < 3) {
+    const pouring = this.holding && active?.kind === 'planta' && this.plantStage < 3;
+    if (pouring !== this.pouring) {
+      this.pouring = pouring;
+      this.pourNode ??= this.audio.ambient('water', { volume: 0, rate: 1.35 });
+      this.pourNode.setVolume(pouring ? 0.28 : 0, pouring ? 0.15 : 0.25);
+    }
+    if (pouring) {
       this.water = Math.min(1, this.water + dt * WATER_RATE);
       this.waterBar.set(this.water);
       if (Math.random() < 0.5) {
@@ -970,6 +982,15 @@ export class SadnessHouseGame extends MinigameBase {
       this.dialNoise?.setVolume(inBand ? 0.03 : 0.12, 0.08);
     } else if (this.dial.active) {
       this.cancelDial();
+    }
+
+    // el jardin despierta: pajaros sueltos cuando el impulso ganado pasa de la mitad
+    if (this.floor > 0.45) {
+      this.birdTimer = (this.birdTimer ?? 4) - dt;
+      if (this.birdTimer <= 0) {
+        this.birdTimer = 3.5 + Math.random() * 6;
+        this.audio.play('bird', { volume: 0.12 + Math.random() * 0.1, rate: 0.9 + Math.random() * 0.35 });
+      }
     }
 
     if (this.fireLit && Math.random() < 0.3) {
@@ -1014,8 +1035,10 @@ export class SadnessHouseGame extends MinigameBase {
       s.open = false;
       s.mat.color.set('#3f4a52');
       s.mat.emissiveIntensity = 0;
-      s.light.intensity = 0;
     });
+    this.houseGlow.intensity = 0;
+    this.pourNode?.setVolume(0, 0.1);
+    this.birdTimer = 4;
     this.plantParts.forEach((leaf) => leaf.scale.setScalar(0.001));
     this.plantMat.color.set('#6f8a63');
     this.radioMat.emissiveIntensity = 0;
@@ -1115,6 +1138,7 @@ export class SadnessHouseGame extends MinigameBase {
 
   onDispose() {
     this.cancelDial();
+    this.pourNode?.stop();
     Object.values(this.geo ?? {}).forEach((geo) => geo.dispose());
     this.layers.forEach((l) => l.stop());
     this.layers.clear();

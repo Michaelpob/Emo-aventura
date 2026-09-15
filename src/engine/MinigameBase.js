@@ -52,6 +52,7 @@ export class MinigameBase {
       <div class="i3d__canvas" data-canvas></div>
       <div class="i3d__hud" data-hud>
         <button class="i3d__btn i3d__btn--back" type="button" data-pause aria-label="Pausa">❚❚</button>
+        <button class="i3d__btn i3d__btn--sound" type="button" data-sound aria-label="Activar o desactivar sonido">${gameState.settings.sound ? '🔊' : '🔇'}</button>
         <div class="i3d__objective" data-objective aria-live="polite"></div>
         <div class="i3d__bars" data-bars></div>
       </div>
@@ -171,6 +172,15 @@ export class MinigameBase {
     this.listeners.push(() => this.renderer.domElement.removeEventListener('click', onCanvasClick));
 
     this.root.querySelector('[data-pause]').addEventListener('click', () => this.togglePause(true));
+
+    const soundBtn = this.root.querySelector('[data-sound]');
+    soundBtn.addEventListener('click', () => {
+      const on = !gameState.settings.sound;
+      setSetting('sound', on);
+      this.audio?.setEnabled(on);
+      soundBtn.textContent = on ? '🔊' : '🔇';
+      if (on) this.audio?.play('interact', { volume: 0.3 });
+    });
   }
 
   _initTouch() {
@@ -449,8 +459,17 @@ export class MinigameBase {
     const prev = this.qualityScale;
     if (fps < 34 && this.qualityScale > 0.5) {
       this.qualityScale = Math.max(0.5, this.qualityScale - 0.18);
+      this._qGood = 0;
     } else if (fps > 55 && this.qualityScale < 1) {
-      this.qualityScale = Math.min(1, this.qualityScale + 0.08);
+      // recuperar solo con margen sostenido: cada cambio de resolucion
+      // reasigna el canvas (un salto visible) y no debe oscilar
+      this._qGood = (this._qGood ?? 0) + 1;
+      if (this._qGood >= 3) {
+        this.qualityScale = Math.min(1, this.qualityScale + 0.08);
+        this._qGood = 0;
+      }
+    } else {
+      this._qGood = 0;
     }
     if (this.qualityScale !== prev) {
       this.renderer.setPixelRatio(this.basePixelRatio * this.qualityScale);
@@ -554,9 +573,17 @@ export class MinigameBase {
     el.innerHTML = `<span class="i3d-bar__icon" aria-hidden="true">${icon}</span><span class="i3d-bar__track"><i></i></span>`;
     this.el.bars.appendChild(el);
     const fill = el.querySelector('i');
+    let last = -1;
     const bar = {
       el,
-      set(v) { fill.style.width = `${Math.max(0, Math.min(1, v)) * 100}%`; },
+      // escribir style.width cada frame fuerza layout sobre el canvas; solo
+      // se toca el DOM cuando el cambio se veria
+      set(v) {
+        const w = Math.round(Math.max(0, Math.min(1, v)) * 200) / 2;
+        if (w === last) return;
+        last = w;
+        fill.style.width = `${w}%`;
+      },
       show(on) { el.hidden = !on; },
       remove() { el.remove(); }
     };

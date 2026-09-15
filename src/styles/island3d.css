@@ -39,6 +39,7 @@
   left: 14px;
   width: 42px;
   height: 42px;
+  -webkit-tap-highlight-color: transparent;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
   background: rgba(8, 16, 22, 0.55);
@@ -179,6 +180,8 @@
   background: rgba(255, 255, 255, 0.55);
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
 }
+
+.i3d__btn--sound { left: 64px; font-size: 1rem; }
 
 /* ------------------------------------------------------------- tactiles */
 
@@ -451,7 +454,7 @@
 .i3d-thought[hidden] { display: none; }
 .i3d-thought.is-out { animation: i3d-thought-out 500ms ease forwards; }
 @keyframes i3d-thought-in { from { opacity: 0; transform: translate(-50%, 8px) scale(0.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
-@keyframes i3d-thought-out { to { opacity: 0; transform: translate(-50%, -14px) scale(0.98); filter: blur(3px); } }
+@keyframes i3d-thought-out { to { opacity: 0; transform: translate(-50%, -14px) scale(0.98); } }
 
 .i3d-note__text b { color: #ffd166; font-weight: 700; }
 
@@ -871,4 +874,14 @@
   .i3d__notes { top: 58px; }
   .i3d-note { padding: 11px 14px 13px; }
   .i3d-note__text { font-size: 0.82rem; line-height: 1.45; }
+}
+
+/* En movil, desenfocar lo que hay detras de cada panel obliga al navegador a
+   releer y difuminar el canvas 3D en cada frame: fuera. Los fondos ya son
+   opacos de sobra. */
+@media (pointer: coarse) {
+  .i3d__btn, .i3d-bar, .i3d-tasks, .i3d-note, .i3d__stick, .i3d-panel, .i3d-intro__card, .i3d-pick, .i3d-day {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }

@@ -33,7 +33,7 @@ function baseState() {
     progress: 0,
     reevaluations: [],
     plans: [],
-    settings: { sound: false, reduceMotion: false }
+    settings: { sound: true, reduceMotion: false }
   };
 }
 
@@ -71,7 +71,10 @@ export function loadProgress() {
       ALL_ISLANDS.forEach((id) => {
         if (!gameState.unlockedIslands.includes(id)) gameState.unlockedIslands.push(id);
       });
-      if (!gameState.settings) gameState.settings = { sound: false, reduceMotion: false };
+      if (!gameState.settings) gameState.settings = { sound: true, reduceMotion: false };
+      // El sonido venia apagado por defecto y los guardados antiguos lo
+      // conservan: se enciende salvo que el jugador lo haya apagado a mano.
+      if (!gameState.settings.soundChosen) gameState.settings.sound = true;
     }
   } catch (err) {
     console.warn('[emo-aventura] no se pudo leer el progreso, se inicia limpio', err);
@@ -259,6 +262,7 @@ export function getPlans() {
 
 export function setSetting(key, value) {
   gameState.settings[key] = value;
+  if (key === 'sound') gameState.settings.soundChosen = true;
   saveProgress();
   return value;
 }

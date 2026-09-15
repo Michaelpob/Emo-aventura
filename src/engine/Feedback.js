@@ -104,8 +104,10 @@ export class Feedback {
   /* ------------------------------------------------------------- destello */
 
   _initFlash() {
+    // Siempre presente con intensidad 0: si entrara y saliera de la escena
+    // cambiaria el numero de luces y three recompilaria los shaders de todos
+    // los materiales en mitad del juego (un tiron de cientos de ms en movil).
     this.flashLight = new THREE.PointLight(0xffffff, 0, 14, 2);
-    this.flashLight.visible = false;
     this.scene.add(this.flashLight);
   }
 
@@ -114,13 +116,12 @@ export class Feedback {
     this.flashLight.position.set(position.x, position.y, position.z);
     this.flashLight.distance = distance;
     this.flashLight.intensity = intensity;
-    this.flashLight.visible = true;
     this.tween({
       from: intensity,
       to: 0,
       duration,
       onUpdate: (v) => { this.flashLight.intensity = v; },
-      onDone: () => { this.flashLight.visible = false; }
+      onDone: () => { this.flashLight.intensity = 0; }
     });
   }
 

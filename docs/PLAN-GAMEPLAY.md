@@ -354,6 +354,32 @@ manos.
    (distancia de los pensamientos). Antes la isla regalaba un cristal de
    Alegría.
 
+**Sonido.** El ajuste `sound` venía apagado por defecto y las islas 3D no
+tenían botón para encenderlo (solo el HUD 2D antiguo). Ahora viene encendido,
+los guardados antiguos se migran salvo que el jugador lo apagara a mano
+(`settings.soundChosen`), y hay un 🔊 junto a la pausa en todas las islas.
+Sonidos propios de la casa (procedurales, en `AudioBus`): `creak` (ventana y
+puerta), `paper` (carta), `crackle` (fuego en bucle), `bird` (pájaros sueltos
+cuando el impulso ganado pasa de 0,45), chorro de agua en bucle mientras se
+riega, estática y *tick* en la radio, capa musical al sintonizar.
+
+**Rendimiento en móvil** (cosas que daban tirones o «saltos»):
+- La luz del destello de `Feedback` entraba y salía de la escena: cambiar el
+  número de luces obliga a three a recompilar los shaders de todos los
+  materiales. Ahora está siempre con intensidad 0.
+- Tres luces puntuales de ventana → una sola de resplandor de la casa
+  (cada luz puntual se paga en todos los píxeles). 5 → 3 puntuales.
+- Las barras del HUD escribían `style.width` cada frame (layout sobre el
+  canvas); ahora solo cuando el valor cambia.
+- `backdrop-filter` desactivado en punteros táctiles: difuminar el canvas 3D
+  detrás de cada panel se recalcula cada frame.
+- La resolución adaptativa recupera solo con 3 ventanas seguidas de margen,
+  para no oscilar (cada cambio reasigna el canvas).
+- **Esquinas de la casa**: el collider de caja empujaba al jugador hasta la
+  cara lateral entera al rozar una esquina (un salto de medio metro). Ahora
+  las esquinas se rodean como si fueran redondas. Verificado: desplazamiento
+  máximo por frame 0,045 contra la esquina, sin saltos.
+
 **Verificado** en el motor real, paso a paso: las tres ventanas, las seis
 cartas, los cuatro viajes con la leña (el chip cambia a «Dejar la leña» solo
 cuando cargas), el riego conservando el agua al soltar, la radio fallando y

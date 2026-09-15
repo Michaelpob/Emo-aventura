@@ -81,7 +81,24 @@ const RECIPES = {
   owl:       (ctx) => toneBuffer(ctx, 1.3, 430, 370, (p) => (p < 0.35 ? bell(p / 0.35) : p > 0.45 ? bell((p - 0.45) / 0.55) : 0) * 0.7, 2),
   crickets:  (ctx) => toneBuffer(ctx, 1.4, 4300, 4300, (p) => (Math.sin(p * Math.PI * 2 * 16) > 0.35 ? 1 : 0) * bell(p) * 0.3, 1),
   inhale:    (ctx) => noiseBuffer(ctx, 2.2, 620, (p) => Math.pow(Math.sin(Math.PI * p), 1.3) * 0.6),
-  exhale:    (ctx) => noiseBuffer(ctx, 2.6, 380, (p) => Math.min(1, p * 4) * Math.pow(1 - p, 1.4) * 0.6)
+  exhale:    (ctx) => noiseBuffer(ctx, 2.6, 380, (p) => Math.min(1, p * 4) * Math.pow(1 - p, 1.4) * 0.6),
+  // la casa en marcha
+  creak:     (ctx) => toneBuffer(ctx, 0.38, 190, 120, soft, 4),                 // ventana que se abre
+  paper:     (ctx) => noiseBuffer(ctx, 0.2, 2600, (p) => Math.sin(Math.PI * p) * 0.55),  // carta recogida
+  crackle:   (ctx) => {                                                          // fuego en bucle
+    const b = noiseBuffer(ctx, 3.2, 900, () => 0.16);
+    const d = b.getChannelData(0);
+    for (let k = 0; k < 46; k += 1) {                                            // chasquidos sueltos
+      const at = Math.floor(Math.random() * (d.length - 500));
+      for (let j = 0; j < 500; j += 1) d[at + j] *= 1 + 3.5 * Math.pow(1 - j / 500, 3);
+    }
+    return b;
+  },
+  bird:      (ctx) => toneBuffer(ctx, 0.34, 2500, 3400, (p) => {                 // dos silbidos
+    if (p < 0.42) return Math.sin(Math.PI * p / 0.42) * 0.5;
+    if (p > 0.55) return Math.sin(Math.PI * (p - 0.55) / 0.45) * 0.45;
+    return 0;
+  }, 1)
 };
 
 export class AudioBus {

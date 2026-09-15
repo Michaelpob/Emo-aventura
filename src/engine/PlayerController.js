@@ -375,12 +375,32 @@ export class PlayerController {
         const dz = this.position.z - cz;
         const distSq = dx * dx + dz * dz;
         if (distSq >= r * r) continue;
-        if (axis === 'x') {
-          this.position.x = this.position.x < (b.min.x + b.max.x) / 2 ? b.min.x - r : b.max.x + r;
+        const insideX = this.position.x > b.min.x && this.position.x < b.max.x;
+        const insideZ = this.position.z > b.min.z && this.position.z < b.max.z;
+        if (insideX && insideZ) {
+          // el centro se ha metido en la caja: se sale por el eje que toca
+          if (axis === 'x') {
+            this.position.x = this.position.x < (b.min.x + b.max.x) / 2 ? b.min.x - r : b.max.x + r;
+            this.velocity.x = 0;
+          } else {
+            this.position.z = this.position.z < (b.min.z + b.max.z) / 2 ? b.min.z - r : b.max.z + r;
+            this.velocity.z = 0;
+          }
+        } else if (axis === 'x' && insideZ) {
+          this.position.x = dx < 0 ? b.min.x - r : b.max.x + r;   // cara lateral
           this.velocity.x = 0;
-        } else {
-          this.position.z = this.position.z < (b.min.z + b.max.z) / 2 ? b.min.z - r : b.max.z + r;
+        } else if (axis === 'z' && insideX) {
+          this.position.z = dz < 0 ? b.min.z - r : b.max.z + r;   // cara frontal
           this.velocity.z = 0;
+        } else {
+          // esquina: antes se empujaba al jugador hasta la cara entera (un
+          // salto de medio metro); ahora se rodea como si fuera redonda
+          const dist = Math.sqrt(distSq) || 1e-6;
+          const push = r - dist;
+          this.position.x += (dx / dist) * push;
+          this.position.z += (dz / dist) * push;
+          if (axis === 'x' && Math.sign(this.velocity.x) === -Math.sign(dx)) this.velocity.x *= 0.5;
+          if (axis === 'z' && Math.sign(this.velocity.z) === -Math.sign(dz)) this.velocity.z *= 0.5;
         }
       } else if (c.type === 'sphere') {
         if (Math.abs(c.center.y - py) > (c.radius + this.cfg.height)) continue;
