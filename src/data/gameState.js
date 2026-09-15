@@ -32,6 +32,7 @@ function baseState() {
     completedActivities: [],
     progress: 0,
     reevaluations: [],
+    plans: [],
     settings: { sound: false, reduceMotion: false }
   };
 }
@@ -62,7 +63,7 @@ export function loadProgress() {
       const saved = JSON.parse(raw);
       Object.assign(gameState, baseState(), saved);
       // Normaliza colecciones por si el guardado viene de una version previa
-      ['unlockedIslands', 'completedIslands', 'rewards', 'badges', 'tools', 'completedActivities', 'reevaluations']
+      ['unlockedIslands', 'completedIslands', 'rewards', 'badges', 'tools', 'completedActivities', 'reevaluations', 'plans']
         .forEach((key) => {
           if (!Array.isArray(gameState[key])) gameState[key] = [];
         });
@@ -239,6 +240,21 @@ export function getReevaluations() {
   return [...gameState.reevaluations];
 }
 
+/**
+ * Compromiso pequeno que el jugador se lleva de una isla a la vida real
+ * ("manana: abrir la ventana cinco minutos"). Uno por isla: el ultimo manda.
+ */
+export function setPlan(islandId, { strategy, action }) {
+  gameState.plans = gameState.plans.filter((p) => p.island !== islandId);
+  gameState.plans.push({ island: islandId, strategy, action, at: Date.now() });
+  saveProgress();
+  return gameState.plans[gameState.plans.length - 1];
+}
+
+export function getPlans() {
+  return [...gameState.plans];
+}
+
 /* --------------------------------------------------------------- ajustes */
 
 export function setSetting(key, value) {
@@ -267,7 +283,8 @@ export function getProgressSummary() {
     tools: getTools(),
     badges: getBadges(),
     strategies: [...new Set(getTools().map((t) => t.strategy))],
-    reevaluations: getReevaluations()
+    reevaluations: getReevaluations(),
+    plans: getPlans()
   };
 }
 

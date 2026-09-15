@@ -320,6 +320,40 @@ manos.
 - Lista de tareas en el HUD (`.i3d-tasks`), compacta en móvil; dial de la
   radio (`.i3d-dial`) con banda y aguja.
 
+**Lo que enseña, dicho en voz alta** (no solo con la mecánica):
+
+1. **Reconocer y nombrar.** Al entrar: «¿Cuánto pesa hoy tu tristeza?» (poco /
+   bastante / mucho). La respuesta fija el arranque del personaje (0,62 /
+   0,5 / 0,4 de velocidad) y queda registrada como intensidad inicial.
+2. **Para qué sirve.** La intro explica que la tristeza no es un fallo: frena
+   para asimilar una pérdida y pedir compañía; el problema es pararse del
+   todo. «No se trata de dejar de estar triste, sino de moverte un poco
+   *aunque* lo estés.»
+3. **Pensamientos de la tristeza** (distancia de los pensamientos). Si el
+   jugador se queda quieto 5 s aparece una frase gris sobre la escena («¿Para
+   qué?», «Mañana», «No va a servir de nada»…). No castiga: se va sola al
+   moverse 1,6 m o al hacer cualquier cosa. La primera vez una nota lo
+   explica; se cuentan los pensamientos atravesados para el cierre.
+4. **Cada tarea es una estrategia real** con su versión de un minuto: al
+   completarla aparece la tarjeta «🪟 Cambiar el entorno … **Hoy:** abre la
+   ventana de tu cuarto cinco minutos». Las seis: cambiar el entorno, lo
+   pendiente en trozos, mover el cuerpo, cuidar algo, volver a lo que te
+   gustaba, decírselo a alguien; y una séptima al leer la respuesta: dejarte
+   ayudar.
+5. **Reevaluar y comprometerse.** Al salir por la puerta: «¿Y ahora, cuánto
+   pesa?» → `recordReevaluation('sadness', antes, 'Activacion conductual',
+   después)`. Luego «Elige UNA cosa pequeña para mañana» entre las seis
+   estrategias → `setPlan('sadness', …)`, visible en **Mi progreso → Mi plan
+   para mañana**. La tarjeta de cierre se adapta a si bajó, sigue igual o
+   subió (subir no es fracaso: «a veces hacer cosas remueve»), resume las
+   estrategias y los pensamientos atravesados, repite el plan y cierra con
+   la señal de alarma: si dura más de dos semanas o afecta a dormir, comer o
+   ir a clase, decírselo a un adulto, orientación o un médico.
+6. **Herramientas propias de la tristeza**: 🧭 *Brújula de los Pasos
+   Pequeños* (activación conductual) y 🌫️ *Nube de los Pensamientos*
+   (distancia de los pensamientos). Antes la isla regalaba un cristal de
+   Alegría.
+
 **Verificado** en el motor real, paso a paso: las tres ventanas, las seis
 cartas, los cuatro viajes con la leña (el chip cambia a «Dejar la leña» solo
 cuando cargas), el riego conservando el agua al soltar, la radio fallando y

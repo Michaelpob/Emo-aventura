@@ -146,6 +146,15 @@ export function openProgress(host) {
           : '<p class="progress__empty">Aun no has aprendido estrategias. Empieza por la Isla del Miedo.</p>'}
       </section>
 
+      ${p.plans.length ? `
+        <section class="progress__section">
+          <h3>Mi plan para manana</h3>
+          <ul class="progress__strategies">
+            ${p.plans.map((pl) => `<li><strong>${pl.strategy}</strong> · ${pl.action}</li>`).join('')}
+          </ul>
+        </section>
+      ` : ''}
+
       ${p.reevaluations.length ? `
         <section class="progress__section">
           <h3>Tus reevaluaciones</h3>

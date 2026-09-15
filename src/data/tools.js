@@ -163,6 +163,24 @@ export const TOOLS = {
     strategy: 'Identificacion emocional',
     description: 'Ayuda a reconocer la ira cuando aparece y a entender que la encendio.',
     order: 18
+  },
+  'brujula-pasos': {
+    id: 'brujula-pasos',
+    icon: '🧭',
+    name: 'Brujula de los Pasos Pequenos',
+    emotion: 'Tristeza',
+    strategy: 'Activacion conductual',
+    description: 'Cuando no hay ganas, una cosa pequena primero. Las ganas no vienen antes de actuar: vienen despues.',
+    order: 19
+  },
+  'nube-pensamientos': {
+    id: 'nube-pensamientos',
+    icon: '🌫️',
+    name: 'Nube de los Pensamientos',
+    emotion: 'Tristeza',
+    strategy: 'Distancia de los pensamientos',
+    description: 'La tristeza suelta frases («para que», «manana», «no sirve»). No son hechos ni ordenes: puedes moverte con ellas puestas.',
+    order: 20
   }
 };
 
@@ -173,6 +191,6 @@ export const BADGES = {
   joy: { id: 'joy', icon: '🌻', name: 'Guardian de la Alegria', island: 'Valle de la Luz' },
   anger: { id: 'anger', icon: '🌋', name: 'Guardian de la Ira', island: 'Al rojo vivo' },
   disgust: { id: 'disgust', icon: '🍃', name: 'Guardian del Desagrado', island: 'Guardianes del Desagrado' },
-  sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'Un dia a la vez' },
+  sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'La casa en marcha' },
   surprise: { id: 'surprise', icon: '✨', name: 'Guardian de la Sorpresa', island: 'Isla de la Sorpresa' }
 };

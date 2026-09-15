@@ -10,11 +10,25 @@
 // (cartas), cargar y traer (lena), mantener (regar), soltar a tiempo (radio)
 // y elegir que decir (mensaje). Con la casa en marcha la puerta se abre y se
 // sale por ella.
+//
+// Lo que se ensena (y se dice en voz alta, no solo con la mecanica):
+// 1. Reconocer: al entrar se pregunta cuanto pesa hoy la tristeza, y el
+//    personaje empieza mas o menos lento segun la respuesta.
+// 2. Para que sirve: la tristeza frena para asimilar una perdida y pedir
+//    compania; el problema es pararse del todo.
+// 3. Pensamientos de la tristeza: si te quedas quieto aparecen frases
+//    («para que», «manana»). No castigan: se van solas al moverte. Eso es
+//    distancia de los pensamientos.
+// 4. Cada tarea es una estrategia real con una version de un minuto para
+//    hoy (cambiar el entorno, lo pendiente en trozos, mover el cuerpo,
+//    cuidar algo, volver a lo que gustaba, decirselo a alguien).
+// 5. Reevaluar al final y elegir UNA cosa pequena para manana, que se guarda
+//    en el perfil.
 
 import * as THREE from 'three';
 import { MinigameBase } from '../../engine/MinigameBase.js';
 import { createGround, createSky, createLights, GEO, scatterInstanced, makeAvatar, animateAvatar } from '../../engine/worldkit.js';
-import { addReward, completeActivity, recordReevaluation } from '../../data/gameState.js';
+import { addReward, completeActivity, recordReevaluation, setInitialIntensity, setPlan } from '../../data/gameState.js';
 
 const TASKS = [
   { id: 'ventanas', icon: '🪟', label: 'Abrir las ventanas', total: 3 },
@@ -26,15 +40,48 @@ const TASKS = [
 ];
 const ITEMS_TOTAL = TASKS.reduce((n, t) => n + t.total, 0) + 1; // +1: leer la respuesta
 
-const REFLECTIONS = {
-  ventanas: 'La luz no cambia lo que sientes. Cambia lo que puedes ver.',
-  cartas: 'Lo que dejas para luego pesa más que hacerlo.',
-  lena: 'El calor no llega de golpe: son varios viajes pequeños.',
-  planta: 'Cuidar algo, aunque sea poco, te recuerda que sigues aquí.',
-  radio: 'A veces la señal está ahí. Solo hay que quedarse un poco más.',
-  mensaje: 'Decir «no estoy bien» es de las cosas más valientes que existen.',
-  respuesta: 'De la tristeza no se sale solo. Y no hace falta.'
+/** Cuanto pesa hoy: decide el arranque del personaje y la reevaluacion */
+const LEVELS = [
+  { n: 1, id: 'baja', label: 'Pesa poco', color: '#7fd1a8', weight: 0.62,
+    text: 'Estoy algo apagado, pero hay cosas que me apetecen.',
+    intro: 'Has dicho que hoy pesa poco. Bien: aprovecha el impulso que ya traes.' },
+  { n: 2, id: 'media', label: 'Pesa bastante', color: '#ffd166', weight: 0.5,
+    text: 'Me cuesta arrancar. Hago menos de lo que quiero.',
+    intro: 'Has dicho que te cuesta arrancar. Empieza por lo más pequeño que veas.' },
+  { n: 3, id: 'alta', label: 'Pesa mucho', color: '#ff9d8a', weight: 0.4,
+    text: 'No tengo ganas de nada. Todo pesa.',
+    intro: 'Has dicho que hoy todo pesa. Vale, no vamos a fingir que no: por eso el personaje va lento. Una sola cosa, y ya.' }
+];
+
+/** Cada tarea es una estrategia real, con una version de un minuto para hoy */
+const STRATEGIES = {
+  ventanas: { name: 'Cambiar el entorno', icon: '🪟',
+    text: 'Luz, aire, otra habitación. No arregla nada, pero cambia lo que ves y lo que sientes en el cuerpo.',
+    today: 'Abre la ventana de tu cuarto cinco minutos.' },
+  cartas: { name: 'Lo pendiente, en trozos', icon: '✉️',
+    text: 'Lo que dejas para luego pesa más que hacerlo. La tristeza acumula cosas sin abrir.',
+    today: 'Una sola cosa pendiente, la más pequeña, y ya.' },
+  lena: { name: 'Mover el cuerpo', icon: '🪵',
+    text: 'La tristeza baja el ritmo del cuerpo, y el cuerpo quieto la mantiene. No hace falta deporte: hacen falta viajes cortos.',
+    today: 'Diez minutos andando, sin destino.' },
+  planta: { name: 'Cuidar algo', icon: '🌱',
+    text: 'Regar, dar de comer, ducharte. Cuidar algo te recuerda que sigues aquí y que lo que haces importa.',
+    today: 'Una rutina de cuidado, aunque no apetezca.' },
+  radio: { name: 'Volver a lo que te gustaba', icon: '📻',
+    text: 'Cuando estás triste dejas lo que disfrutabas, y sin eso hay menos motivos. La señal sigue ahí.',
+    today: 'Cinco minutos de algo que te gustaba antes.' },
+  mensaje: { name: 'Decírselo a alguien', icon: '💌',
+    text: 'La tristeza pide compañía; por eso pesa tanto a solas. Decir «no estoy bien» es de lo más valiente que hay.',
+    today: 'Un mensaje a una persona. No hace falta saber qué decir.' },
+  respuesta: { name: 'Dejarte ayudar', icon: '❤️‍🩹',
+    text: 'Recibir es la otra mitad de pedir. De la tristeza no se sale solo, y no hace falta.',
+    today: 'Cuando alguien te conteste, no lo dejes en visto.' }
 };
+
+/** Frases que suelta la tristeza cuando te paras. No son ordenes. */
+const THOUGHTS = ['¿Para qué?', 'Mañana', 'No va a servir de nada', 'Ya lo haré', 'Nadie se daría cuenta', 'Qué más da'];
+const THOUGHT_IDLE = 5;        // segundos quieto antes de que aparezca una
+const THOUGHT_GAP = 14;        // segundos minimos entre dos
 
 const MESSAGES = [
   { label: 'Hoy no estoy muy bien', text: '¿Hablamos un rato?', reply: 'Claro que sí. Estoy aquí. Cuéntame cuando quieras, sin prisa.' },
@@ -75,6 +122,12 @@ export class SadnessHouseGame extends MinigameBase {
     this.fireLit = false;
     this.doorOpen = false;
     this.layers = new Map();
+    this.level = LEVELS[1];
+    this.weight0 = this.level.weight;
+    this.thought = null;
+    this.thoughtsCrossed = 0;
+    this.thoughtCooldown = 0;
+    this.thoughtExplained = false;
   }
 
   get momentum() {
@@ -493,6 +546,11 @@ export class SadnessHouseGame extends MinigameBase {
     `;
     this.el.hud.appendChild(this.tasksBox);
 
+    this.thoughtBox = document.createElement('div');
+    this.thoughtBox.className = 'i3d-thought';
+    this.thoughtBox.hidden = true;
+    this.el.hud.appendChild(this.thoughtBox);
+
     this.dialBox = document.createElement('div');
     this.dialBox.className = 'i3d-dial';
     this.dialBox.hidden = true;
@@ -512,10 +570,23 @@ export class SadnessHouseGame extends MinigameBase {
   }
 
   async onStart() {
+    // 1. Reconocer y nombrar: cuanto pesa hoy
+    const n = await this.showChoice({
+      eyebrow: 'La casa en marcha',
+      title: '¿Cuánto pesa hoy tu tristeza?',
+      options: LEVELS.map((l) => ({ label: l.label, text: l.text, value: l.n, color: l.color }))
+    });
+    this.level = LEVELS.find((l) => l.n === n) ?? LEVELS[1];
+    this.weight0 = this.level.weight;
+    this.controller.speedScale = this.weight0;
+    setInitialIntensity(this.level.id);
+    completeActivity(`sadness-nivel-${this.level.n}`, 2);
+
+    // 2. Para que sirve la tristeza, y de que va esto
     await this.showIntro({
       eyebrow: 'La casa en marcha',
       goal: 'Pon la casa en marcha con tus propias manos',
-      hint: 'Empiezas pesado: andas despacio y todo está gris. Cada cosa pequeña que hagas te devuelve impulso, y con impulso moverse cuesta menos. No hay orden ni prisa.',
+      hint: `La tristeza no es un fallo: aparece cuando pierdes algo que importaba y te frena para que lo asimiles y busques compañía. El problema es que, si te paras del todo, crece. Aquí no se trata de dejar de estar triste, sino de moverte un poco <em>aunque</em> lo estés. ${this.level.intro}`,
       keys: [['W A S D', 'moverte'], ['Arrastra', 'mirar'], ['E', 'usar'], ['Mantener E', 'regar / sintonizar']],
       touch: [['Joystick', 'moverte'], ['Arrastra', 'mirar'], ['E', 'usar'], ['Mantener E', 'regar / sintonizar']]
     });
@@ -530,6 +601,7 @@ export class SadnessHouseGame extends MinigameBase {
     this.floor = Math.min(1, this.floor + 1 / ITEMS_TOTAL);
     this.bonus = Math.min(0.3, this.bonus + 0.1);
     this.idleTime = 0;
+    if (this.thought) this.dismissThought();
     this.applyWarmth();
     if (taskId) {
       this.progress[taskId] += 1;
@@ -543,7 +615,7 @@ export class SadnessHouseGame extends MinigameBase {
     this.groupsDone += 1;
     this.advanceObjective();
     this.audio.play('success', { volume: 0.4 });
-    this.later(() => this.showNote({ title: 'Reflexión', text: REFLECTIONS[taskId], seconds: 8 }), 700);
+    this.later(() => this.showStrategy(taskId), 700);
     completeActivity(`sadness-casa-${taskId}`, 4);
     if (this.replyWaiting) this.deliverReply();
     this.checkDoor();
@@ -761,8 +833,8 @@ export class SadnessHouseGame extends MinigameBase {
     this.mailboxMat.emissiveIntensity = 0;
     if (this.replyFlag) { this.mailbox.remove(this.replyFlag); this.replyFlag = null; }
     this.audio.play('success', { volume: 0.45 });
-    this.showNote({ title: 'Te contestaron', text: `«${this.message.reply}»`, seconds: 10 });
-    this.later(() => this.showNote({ title: 'Reflexión', text: REFLECTIONS.respuesta, seconds: 8 }), 10500);
+    this.showNote({ title: 'Te contestaron', text: `«${this.message.reply}»`, seconds: 9 });
+    this.later(() => this.showStrategy('respuesta'), 9500);
     this.say('ALGUIEN TE CONTESTÓ', 2200);
     this.floor = Math.min(1, this.floor + 0.08);
     this.gain(null);
@@ -780,6 +852,45 @@ export class SadnessHouseGame extends MinigameBase {
     this.feedback.flash(new THREE.Vector3(1.4, 1.5, -0.5), { color: '#ffe9a8', intensity: 4, duration: 1.6 });
     this.audio.play('success', { volume: 0.55 });
     this.say('LA PUERTA ESTÁ ABIERTA', 2600);
+  }
+
+  /** La estrategia que acabas de practicar, con su version de hoy */
+  showStrategy(id) {
+    const st = STRATEGIES[id];
+    this.showNote({
+      title: `${st.icon} ${st.name}`,
+      text: `${st.text}<br><b>Hoy:</b> ${st.today}`,
+      seconds: 11
+    });
+  }
+
+  /* ========================================================= pensamientos */
+
+  showThought() {
+    const text = THOUGHTS[(this.thoughtsCrossed + Math.floor(this.time) % 3) % THOUGHTS.length];
+    this.thought = { text, at: this.controller.position.clone() };
+    this.thoughtBox.textContent = text;
+    this.thoughtBox.hidden = false;
+    this.thoughtBox.classList.remove('is-out');
+    this.audio.play('soften', { volume: 0.18, rate: 0.7 });
+    if (!this.thoughtExplained) {
+      this.thoughtExplained = true;
+      this.showNote({
+        title: '🌫️ Pensamientos de la tristeza',
+        text: 'Cuando estás triste, la cabeza suelta frases así. No son hechos ni órdenes: puedes moverte con ellas puestas. Fíjate: se van solas cuando haces algo.',
+        seconds: 11
+      });
+    }
+  }
+
+  dismissThought() {
+    if (!this.thought) return;
+    this.thought = null;
+    this.thoughtsCrossed += 1;
+    this.thoughtCooldown = THOUGHT_GAP;
+    this.thoughtBox.classList.add('is-out');
+    this.later(() => { if (!this.thought) this.thoughtBox.hidden = true; }, 500);
+    if (this.thoughtsCrossed === 1) this.say('SE FUE AL MOVERTE', 1600);
   }
 
   addLayer(name, volume) {
@@ -812,8 +923,16 @@ export class SadnessHouseGame extends MinigameBase {
       this.idleTime = 0;
     }
     const m = this.momentum;
-    this.controller.speedScale = (0.5 + 0.7 * m) * (this.carrying ? 0.85 : 1);
+    this.controller.speedScale = (this.weight0 + (1.2 - this.weight0) * m) * (this.carrying ? 0.85 : 1);
     this.momentumBar.set(m);
+
+    // pensamientos de la tristeza: aparecen si te paras, se van al moverte
+    if (this.thoughtCooldown > 0) this.thoughtCooldown -= dt;
+    if (this.thought) {
+      if (this.thought.at.distanceTo(p) > 1.6) this.dismissThought();
+    } else if (this.idleTime > THOUGHT_IDLE && this.thoughtCooldown <= 0 && !this.holding && !this.doorOpen) {
+      this.showThought();
+    }
 
     // cartas: se recogen al pasar por encima
     for (const letter of this.letters) {
@@ -865,6 +984,11 @@ export class SadnessHouseGame extends MinigameBase {
   onReset() {
     this.cancelDial();
     this.holding = false;
+    this.thought = null;
+    this.thoughtsCrossed = 0;
+    this.thoughtCooldown = 0;
+    this.thoughtBox.hidden = true;
+    this.idleTime = 0;
     this.progress = Object.fromEntries(TASKS.map((t) => [t.id, 0]));
     this.groupsDone = 0;
     this.floor = 0;
@@ -914,7 +1038,7 @@ export class SadnessHouseGame extends MinigameBase {
     this.pathMat.color.set('#8b8f86');
     this.avatar.userData.body.material.color.set('#8d949a');
     this.controller.setPosition(1.4, 1, 5);
-    this.controller.speedScale = 0.5;
+    this.controller.speedScale = this.weight0;
     this.momentumBar.set(0);
     this.waterBar.set(0);
     this.waterBar.show(false);
@@ -934,19 +1058,56 @@ export class SadnessHouseGame extends MinigameBase {
     };
   }
 
-  finish() {
+  async finish() {
     if (this.finished || this.closing) return;
     this.closing = true;
     this.cancelDial();
-    addReward('cristal-recuerdo');
+    if (this.thought) this.dismissThought();
+    this.controller.frozen = true;
+
+    // 1. Reevaluar: cuanto pesa ahora
+    const n = await this.showChoice({
+      eyebrow: 'La casa en marcha',
+      title: '¿Y ahora? ¿Cuánto pesa tu tristeza?',
+      options: LEVELS.map((l) => ({ label: l.label, text: l.text, value: l.n, color: l.color }))
+    });
+    const after = LEVELS.find((l) => l.n === n) ?? this.level;
+    recordReevaluation('sadness', this.level.id, 'Activacion conductual', after.id);
+
+    // 2. Una sola cosa pequena para manana: se guarda en el perfil
+    const planId = await this.showChoice({
+      eyebrow: 'Para mañana',
+      title: 'Elige UNA cosa pequeña para mañana',
+      options: Object.entries(STRATEGIES).filter(([id]) => id !== 'respuesta').map(([id, st]) => ({
+        label: `${st.icon} ${st.name}`, text: st.today, value: id, color: '#ffb36b'
+      }))
+    });
+    const plan = STRATEGIES[planId];
+    setPlan('sadness', { strategy: plan.name, action: plan.today });
+    completeActivity(`sadness-plan-${planId}`, 3);
+
+    addReward('brujula-pasos');
+    addReward('nube-pensamientos');
     completeActivity('sadness-casa-3d', 20);
-    recordReevaluation('sadness', 'alta', 'Activacion conductual', 'media');
+
+    const delta = after.n - this.level.n;
+    const cambio = delta < 0
+      ? `Entraste con «${this.level.label.toLowerCase()}» y sales con «${after.label.toLowerCase()}». No porque la tristeza se fuera: porque te moviste con ella.`
+      : delta === 0
+        ? 'Pesa igual que al entrar, y aun así hiciste seis cosas. Esa es exactamente la idea: no esperar a que baje para actuar.'
+        : 'Pesa más que al entrar. Puede pasar: a veces hacer cosas remueve. Cuenta igual, y si sigue así unos días, díselo a alguien.';
+    const pensamientos = this.thoughtsCrossed
+      ? `Atravesaste ${this.thoughtsCrossed} ${this.thoughtsCrossed === 1 ? 'pensamiento' : 'pensamientos'} de la tristeza («para qué», «mañana»). Se fueron solos en cuanto hiciste algo. Fuera funcionan igual.`
+      : 'Nunca te quedaste quieto lo bastante para que la tristeza soltara sus frases («para qué», «mañana»). Cuando aparezcan, ya sabes: se van solas al moverte.';
+
     this.showClosingCard({
       title: 'La casa en marcha',
       lines: [
-        'Empezaste pesado. Cada paso costaba y nada apetecía. No esperaste a tener ganas: abriste una ventana, recogiste una carta, trajiste un tronco.',
-        'Y con cada cosa hecha, moverte costaba un poco menos. Eso es la activación conductual: las ganas no vienen antes de actuar, vienen después.',
-        'Cuando te paraste, el impulso bajó un poco, pero nunca por debajo de lo que ya habías ganado. Con la tristeza pasa igual: lo hecho, hecho está.'
+        cambio,
+        'Cada tarea era una estrategia real: cambiar el entorno, lo pendiente en trozos, mover el cuerpo, cuidar algo, volver a lo que te gustaba, decírselo a alguien. Y con cada una, moverte costaba menos. Eso es la activación conductual: las ganas no vienen antes de actuar, vienen después.',
+        pensamientos,
+        `<b>Tu plan para mañana:</b> ${plan.icon} ${plan.today} Lo tienes guardado en tu perfil.`,
+        '<small>Si la tristeza dura más de dos semanas casi todos los días, o te cuesta dormir, comer o ir a clase, no es para llevarla solo: díselo a un adulto de confianza, a orientación o a un médico.</small>'
       ],
       onDone: () => super.finish()
     });

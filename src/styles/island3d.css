@@ -290,6 +290,8 @@
 }
 .i3d-panel h3 { margin: 0 0 12px; font-size: 1.25rem; }
 .i3d-panel p { margin: 0 0 10px; line-height: 1.55; color: rgba(255, 255, 255, 0.86); }
+.i3d-panel p b { color: #ffd166; }
+.i3d-panel p small { display: block; font-size: 0.8rem; line-height: 1.45; color: rgba(255, 255, 255, 0.6); }
 .i3d-panel__actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
 .i3d-panel__hint { margin-top: 14px; font-size: 0.78rem; color: rgba(255, 255, 255, 0.55); }
 .i3d-panel--card { max-height: 80vh; max-height: 80dvh; overflow-y: auto; text-align: left; }
@@ -427,6 +429,31 @@
 .i3d-tasks li.is-done { opacity: 0.45; }
 .i3d-tasks li.is-done span { text-decoration: line-through; }
 .i3d-tasks li.is-done b { color: #9be28c; }
+
+/* pensamiento de la tristeza: aparece si te paras, se va al moverte */
+.i3d-thought {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(120, 130, 140, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.98rem;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: i3d-thought-in 700ms ease both;
+}
+.i3d-thought[hidden] { display: none; }
+.i3d-thought.is-out { animation: i3d-thought-out 500ms ease forwards; }
+@keyframes i3d-thought-in { from { opacity: 0; transform: translate(-50%, 8px) scale(0.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes i3d-thought-out { to { opacity: 0; transform: translate(-50%, -14px) scale(0.98); filter: blur(3px); } }
+
+.i3d-note__text b { color: #ffd166; font-weight: 700; }
 
 /* dial de la radio: la aguja barre y hay que soltar dentro de la senal */
 .i3d-dial {
