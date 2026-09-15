@@ -132,8 +132,6 @@ const STAGES = [
   { id: 'thermo', icon: '🌡️', label: 'Termómetro' },
   { id: 'explore', icon: '🗺️', label: 'Explora' },
   { id: 'mirror', icon: '🪞', label: 'Espejo' },
-  { id: 'paths', icon: '🧰', label: 'Herramientas' },
-  { id: 'reeval', icon: '🔁', label: 'Reevalúa' },
   { id: 'boss', icon: '🛡️', label: 'Protege la isla' }
 ];
 
@@ -2142,6 +2140,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const fin = this.finalLevel;
     const trend = !ini || !fin ? '' : fin < ini ? 'disminuyó' : fin === ini ? 'se mantuvo' : 'aumentó';
     const learned = [...this.learned].map((id) => `${PATHS[id].name} (${PATHS[id].technique})`);
+    recordReevaluation('disgust', INTENSITY[ini] ?? 'media', learned.join(' + ') || 'Sin estrategia', INTENSITY[fin] ?? INTENSITY[ini] ?? 'media');
     const altars = [...new Set(this.diary.altars)];
     const rewards = this.rewards.map((id) => TOOLS[id]?.name ?? id);
     const entry = {
@@ -2164,7 +2163,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const items = [
       `<strong>Me generó desagrado:</strong> ${yes.length ? yes.map(escapeHtml).join(' · ') : 'nada de lo que apareció'} <em>(${yes.length} de ${this.answers.length})</em>`,
       no.length ? `<strong>Dejé que se acercara:</strong> ${no.map(escapeHtml).join(' · ')}` : '',
-      ini ? `<strong>Termómetro:</strong> empecé en <em>${lvl(ini)}</em> y terminé en <em>${lvl(fin)}</em> (${trend})` : '',
+      ini ? (fin ? `<strong>Termómetro:</strong> empecé en <em>${lvl(ini)}</em> y terminé en <em>${lvl(fin)}</em> (${trend})` : `<strong>Termómetro:</strong> mi desagrado estaba en <em>${lvl(ini)}</em>`) : '',
       learned.length ? `<strong>Herramientas que practiqué:</strong> ${learned.map(escapeHtml).join(' · ')}` : '',
       `<strong>La Reacción Impulsiva</strong> creció ${this.diary.grows} ${this.diary.grows === 1 ? 'vez' : 'veces'}${altars.length ? ` y la encogí con: ${altars.map(escapeHtml).join(' · ')}` : ''}`
     ].filter(Boolean);
@@ -2173,7 +2172,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       `DIARIO DEL GUARDIÁN · ${name} · ${new Date().toLocaleDateString('es')}`,
       `Me generó desagrado (${yes.length}/${this.answers.length}): ${yes.join(' · ') || 'nada'}`,
       no.length ? `Dejé que se acercara: ${no.join(' · ')}` : '',
-      ini ? `Termómetro: ${lvl(ini)} → ${lvl(fin)} (${trend})` : '',
+      ini ? (fin ? `Termómetro: ${lvl(ini)} → ${lvl(fin)} (${trend})` : `Termómetro: ${lvl(ini)}`) : '',
       learned.length ? `Herramientas: ${learned.join(' · ')}` : '',
       `La Reacción Impulsiva creció ${this.diary.grows} veces${altars.length ? `; la encogí con: ${altars.join(' · ')}` : ''}`,
       rewards.length ? `Recompensas: ${rewards.join(' · ')}` : ''
@@ -2569,7 +2568,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       icon: '🪞',
       title: '¡Bien hecho!',
       text: 'Ahora sabes que las emociones también pueden aparecer en nuestro cuerpo, pensamientos y comportamientos.',
-      onEnd: () => this.later(() => this.startPathsStage(), 900)
+      onEnd: () => this.later(() => this.startBoss(), 900)
     });
   }
 
@@ -3392,8 +3391,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.feedback.tweenColor(this.scene.fog.color, FOG.high, 2.5);
     this.feedback.tweenValue(this.scene.fog, 'density', 0.045, 2.5);
     this.sky.userData.setColors('#2a3a26', '#5a7a4a');
-    // solo emergen los altares de las herramientas aprendidas (se pueden volver a usar)
-    this.altars.filter((al) => this.learned.has(al.id)).forEach((al, i) => {
+    // emergen los seis altares: cada uno ensena su tecnica y da su recompensa al usarlo
+    this.altars.forEach((al, i) => {
+      this.lightAltar(al);
       al.stone.visible = true;
       al.icon.visible = true;
       al.label.visible = true;
@@ -3406,16 +3406,16 @@ export class DisgustTerritoryGame extends MinigameBase {
     });
     // balizas sobre todos los altares con herramienta aprendida: se ve a donde ir
     this.altars.forEach((al) => { if (!al.beacon) al.beacon = this.makeBeacon(al.x, al.z, '#ffd166'); });
-    this.setBeacons(this.altars.filter((al) => this.learned.has(al.id)).map((al) => al.beacon));
+    this.setBeacons(this.altars.map((al) => al.beacon));
     this.later(() => this.enterEnvironment('arena', { x: ARENA.x, z: ARENA.z + 11 }, ARENA, 'LLEGAS A LA ARENA'), 2400);
     this.showStageBanner({
       icon: '🛡️', title: 'Desafío final: protege la isla',
-      text: 'En el centro aparece La Reacción Impulsiva. No se vence con fuerza: se vence con tus herramientas.',
+      text: 'En el centro aparece La Reacción Impulsiva. No se vence con fuerza: se vence con herramientas. Cada altar te enseña una.',
       seconds: 7
     });
     this.showNote({
       queue: true, icon: '🧭', title: '¿Cómo se derrota? Paso a paso',
-      text: '1) Camina (sin correr) hasta un altar con columna de luz dorada. 2) Al llegar, pulsa E y completa la herramienta que te pide. 3) Cada uso la encoge un tamaño; tiene tamaño 3. Un altar se vuelve a encender a los pocos segundos: puedes repetirlo.'
+      text: '1) Camina (sin correr) hasta un altar con columna de luz dorada. 2) Al llegar, pulsa E y completa la técnica que te enseña (respirar, mirar, sostener, atravesar una puerta, pedir apoyo). 3) Cada técnica la encoge un tamaño; tiene tamaño 3. Cada altar te da su recompensa la primera vez.'
     });
     this.showNote({
       queue: true, icon: '⚠️', title: 'Lo que la hace crecer',
@@ -3499,7 +3499,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.altars.forEach((al) => {
       if (al.cooldown > 0) {
         al.cooldown -= dt;
-        if (al.cooldown <= 0 && this.learned.has(al.id) && !al.busy) { al.interact.enabled = true; al.stone.material.emissiveIntensity = 0.6; if (al.beacon && this.boss.active) al.beacon.visible = true; }
+        if (al.cooldown <= 0 && !al.busy) { al.interact.enabled = true; al.stone.material.emissiveIntensity = 0.6; if (al.beacon && this.boss.active) al.beacon.visible = true; }
       }
     });
     if (b.task?.update) b.task.update(dt);
@@ -3537,7 +3537,6 @@ export class DisgustTerritoryGame extends MinigameBase {
   useAltar(altar) {
     const b = this.boss;
     if (!b.active || altar.busy) return;
-    if (!this.learned.has(altar.id)) { this.say('APRENDE ESTA HERRAMIENTA EN SU CAMINO', 2400); return; }
     altar.busy = true;
     altar.interact.enabled = false;
     this.altars.forEach((al) => { if (al !== altar) al.interact.enabled = false; });
@@ -3743,9 +3742,17 @@ export class DisgustTerritoryGame extends MinigameBase {
     altar.busy = false;
     altar.cooldown = 4;
     this.diary.altars.push(altar.def.technique);
+    if (!this.learned.has(altar.id)) {
+      this.learned.add(altar.id);
+      setStrategy(altar.def.name);
+      completeActivity(`disgust-${altar.id}`, 10);
+      const tool = addReward(altar.def.tool);
+      if (tool && !this.rewards.includes(altar.def.tool)) this.rewards.push(altar.def.tool);
+      this.later(() => this.toast(`${altar.def.icon} ¡Genial! Recompensa: ${tool?.name ?? altar.def.tool}`), 600);
+    }
     altar.stone.material.emissiveIntensity = 0.15;
     b.task = null;
-    this.altars.forEach((al) => { if (this.learned.has(al.id) && al.cooldown <= 0 && !al.busy) al.interact.enabled = true; });
+    this.altars.forEach((al) => { if (al.cooldown <= 0 && !al.busy) al.interact.enabled = true; });
     if (altar.beacon) altar.beacon.visible = false;
     b.size -= 1;
     this.audio.play('success', { volume: 0.5 });
