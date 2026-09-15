@@ -211,6 +211,12 @@ export class PlayerController {
   addLook(dx, dy) {
     this.yaw -= dx;
     this.pitch -= dy;
+    if (this.mode === 'third') {
+      // en orbita, inclinar hacia arriba bajaba la camara sin limite hasta
+      // meterla debajo del suelo: se acota entre vista rasante y vista cenital
+      this.pitch = Math.max(-1.3, Math.min(0.45, this.pitch));
+      return;
+    }
     const limit = Math.PI / 2 - 0.05;
     this.pitch = Math.max(-limit, Math.min(limit, this.pitch));
   }
@@ -413,7 +419,13 @@ export class PlayerController {
         this.position.y + this.orbit.height - Math.sin(this.pitch * 0.6) * d,
         this.position.z + Math.cos(this.yaw) * d * cosP
       );
+      // la camara nunca se hunde en el terreno (cuestas, bordes): el suelo se
+      // dibuja solo por arriba y desde abajo el mundo se ve transparente
+      const floor = this.groundHeightAt(_v.x, _v.z) + 0.6;
+      if (_v.y < floor) _v.y = floor;
       this.camera.position.lerp(_v, Math.min(1, dt * 8));
+      const camFloor = this.groundHeightAt(this.camera.position.x, this.camera.position.z) + 0.5;
+      if (this.camera.position.y < camFloor) this.camera.position.y = camFloor;
       _v2.set(this.position.x, this.position.y + 1.1, this.position.z);
       this.camera.lookAt(_v2);
     }
