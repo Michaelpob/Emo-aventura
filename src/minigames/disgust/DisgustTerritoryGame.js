@@ -166,6 +166,23 @@ const STAGES = [
   { id: 'boss', icon: '🛡️', label: 'Protege la isla' }
 ];
 
+// Cada entorno tiene su propio aire: color de niebla y cielo al entrar.
+const ENV_TINTS = {
+  plaza: { fog: '#5d7a4a', sky: ['#3f6b58', '#b6d88c'] },
+  olores: { fog: '#5f7a3e', sky: ['#3d5f3a', '#9fb86a'] },
+  sabores: { fog: '#55684a', sky: ['#3a4a3a', '#a0a878'] },
+  imagenes: { fog: '#4f7a52', sky: ['#2f5a44', '#8fc48a'] },
+  rechazo: { fog: '#6f7a4a', sky: ['#4a5a3a', '#b8b078'] },
+  mirror: { fog: '#4a6f7a', sky: ['#2b4a58', '#9ac8c8'] },
+  respira: { fog: '#5f8a8a', sky: ['#2f5a6a', '#a8d8e0'] },
+  atencion: { fog: '#7a8a3a', sky: ['#4a6a2a', '#e0d878'] },
+  acepta: { fog: '#7a6a6a', sky: ['#4a3a4a', '#e0b0c8'] },
+  presente: { fog: '#3b6a3a', sky: ['#1f3a2a', '#6f9a5a'] },
+  reevalua: { fog: '#6a5a7a', sky: ['#3a2a4a', '#c0a8e0'] },
+  apoyo: { fog: '#6a4a6a', sky: ['#3a2a3a', '#e0a8c8'] },
+  arena: { fog: '#4a3a3a', sky: ['#2a1a1a', '#7a5a4a'] }
+};
+
 const ZONE_INTROS = {
   olores: 'En el pantano el aire trae olores fuertes. Acércate y responde con el cuerpo a lo que aparezca.',
   sabores: 'En la cueva hay comidas y sabores. Algunos pueden estar en mal estado: tu cuerpo lo notará.',
@@ -432,6 +449,8 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.noteQueue = [];
     this.noteStack = [];
     this.bannerUntil = 0;
+    this.envs = {};
+    this.currentEnv = null;
   }
 
   /* ============================================================ escenario */
@@ -456,6 +475,9 @@ export class DisgustTerritoryGame extends MinigameBase {
 
     this.buildVegetation();
     this.buildAmbience();
+    this.plazaGroup = new THREE.Group();
+    this.plazaGroup.userData.revealed = true;
+    this.scene.add(this.plazaGroup);
     this.buildZones();
     this.buildMirror();
     this.buildThermometer();
@@ -465,6 +487,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.initVoice();
     this.applyCustomStimuli();
     this.hookInput();
+    this.registerEnvs();
     this.renderStages();
   }
 
@@ -575,19 +598,18 @@ export class DisgustTerritoryGame extends MinigameBase {
     const lampMat = new THREE.MeshBasicMaterial({ color: '#ffd166' });
     this.lamps = [];
     for (let i = 0; i < 10; i += 1) {
-      const a = (i / 10) * Math.PI * 2 + 0.3;
+      const a = (i / 10) * Math.PI * 2;      // ninguno en el eje sur: no tapa el termometro al llegar
       const x = CENTER.x + Math.cos(a) * 9.6;
       const z = CENTER.z + Math.sin(a) * 9.6;
       const y = this.heightAt(x, z);
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.4, 6), postMat);
       post.position.set(x, y + 1.2, z);
-      this.scene.add(post);
       const lamp = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), lampMat);
       lamp.position.set(x, y + 2.55, z);
-      this.scene.add(lamp);
       const glow = makeEmoji('✨', 0.7);
       glow.position.set(x, y + 2.55, z);
-      this.scene.add(glow);
+      this.lampParts = this.lampParts || [];
+      this.lampParts.push(post, lamp, glow);
       this.lamps.push({ lamp, glow, seed: i });
     }
 
@@ -882,20 +904,18 @@ export class DisgustTerritoryGame extends MinigameBase {
     const title = makeText('¿QUÉ TAN INTENSO ES TU DESAGRADO?', { size: 0.7, maxChars: 22 });
     title.position.y = 8.9;
     g.add(title);
-    this.scene.add(g);
+    this.plazaGroup.add(g);
     this.thermoGroup = g;
     this.controller.addCollider({ type: 'sphere', center: new THREE.Vector3(CENTER.x, y0, CENTER.z), radius: 0.9 });
+    (this.lampParts || []).forEach((part) => this.plazaGroup.add(part));
 
-    // bordes de las terrazas
-    [[7, '#7fd17f', 'NIVEL 1 · LEVE'], [4.6, '#f2c14e', 'NIVEL 2 · MODERADO'], [2.4, '#e0453a', 'NIVEL 3 · INTENSO']].forEach(([r, c, txt], i) => {
+    // bordes de las terrazas (el color ya dice el nivel; sin carteles que se crucen)
+    [[7, '#7fd17f'], [4.6, '#f2c14e'], [2.4, '#e0453a']].forEach(([r, c]) => {
       const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.09, 6, 48), new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.5 }));
       rim.rotation.x = Math.PI / 2;
       const h = this.heightAt(CENTER.x + r - 0.3, CENTER.z);
       rim.position.set(CENTER.x, h + 0.05, CENTER.z);
-      this.scene.add(rim);
-      const sign = makeText(txt, { size: 0.5, maxChars: 20, color: c });
-      sign.position.set(CENTER.x + (i === 2 ? 1.5 : 0), h + 1.3, CENTER.z + r - 1.1);
-      this.scene.add(sign);
+      this.plazaGroup.add(rim);
     });
 
     this.thermo = { enabled: false };
@@ -920,7 +940,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       const path = {
         id, ...def, y, group, open: false, done: false,
         beacon: this.makeBeacon(def.x, def.z, '#ffd166'),
-        sign: makeText(`${def.icon} ${def.name}\n${def.technique}`, { size: 0.9, maxChars: 26 })
+        sign: makeText(`${def.icon} ${def.name}\n${def.technique}`, { size: 0.7, maxChars: 26 })
       };
       path.sign.position.set(def.x, y + 4.2, def.z);
       group.add(path.sign);
@@ -1306,20 +1326,23 @@ export class DisgustTerritoryGame extends MinigameBase {
     creature.add(label);
     creature.position.set(ARENA.x, ay - 6, ARENA.z);
     creature.visible = false;
-    this.scene.add(creature);
+    this.arenaGroup = new THREE.Group();
+    this.arenaGroup.visible = false;
+    this.scene.add(this.arenaGroup);
+    this.arenaGroup.add(creature);
 
     const wave = new THREE.Mesh(new THREE.TorusGeometry(1, 0.14, 6, 40), new THREE.MeshBasicMaterial({ color: '#ff5c5c', transparent: true, opacity: 0.7 }));
     wave.rotation.x = Math.PI / 2;
     wave.position.set(ARENA.x, ay + 0.4, ARENA.z);
     wave.visible = false;
-    this.scene.add(wave);
+    this.arenaGroup.add(wave);
 
     const beam = new THREE.Mesh(
       new THREE.CylinderGeometry(1.2, 2.2, 40, 12, 1, true),
       new THREE.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })
     );
     beam.position.set(ARENA.x, ay + 20, ARENA.z);
-    this.scene.add(beam);
+    this.arenaGroup.add(beam);
 
     this.altars = PATH_ORDER.filter((id) => id !== 'atencion').map((id, i, arr) => {
       const def = PATHS[id];
@@ -1333,15 +1356,15 @@ export class DisgustTerritoryGame extends MinigameBase {
       );
       stone.position.set(x, y + 0.55, z);
       stone.visible = false;                       // los altares emergen con el desafio
-      this.scene.add(stone);
+      this.arenaGroup.add(stone);
       const icon = makeEmoji(def.icon, 1);
       icon.position.set(x, y + 1.9, z);
       icon.visible = false;
-      this.scene.add(icon);
+      this.arenaGroup.add(icon);
       const lb = makeText(`${def.technique}\n(aprende esta herramienta en su camino)`, { size: 0.62, maxChars: 24, color: '#cfd8c4' });
       lb.position.set(x, y + 3.1, z);
       lb.visible = false;
-      this.scene.add(lb);
+      this.arenaGroup.add(lb);
       const altar = { id, def, x, z, y, stone, icon, label: lb, busy: false, cooldown: 0, task: null };
       altar.interact = this.interactable({
         object: stone, radius: 2.6, icon: def.icon, label: `Usar: ${def.technique}`,
@@ -1585,6 +1608,36 @@ export class DisgustTerritoryGame extends MinigameBase {
     }, 520);
   }
 
+  /* ============================================== entornos por actividad */
+
+  /**
+   * Cada actividad es un entorno propio: solo se ve lo suyo, el jugador no
+   * puede salir de su area (limites invisibles) y el aire cambia de color.
+   */
+  registerEnvs() {
+    const env = (id, group, x, z, rx, rz) => { this.envs[id] = { id, group, x, z, rx, rz }; };
+    env('plaza', this.plazaGroup, CENTER.x, CENTER.z, 13, 13);
+    this.zones.forEach((zone) => env(zone.id, zone.group, zone.x, zone.z, 13, 13));
+    env('mirror', this.mirrorRoot, MIRROR.x, MIRROR.z + 6, 13, 14);
+    PATH_ORDER.forEach((id) => { const p = this.paths[id]; env(id, p.group, p.x, p.z, 15, 15); });
+    env('arena', this.arenaGroup, ARENA.x, ARENA.z, 15, 16);
+  }
+
+  enterEnvironment(id, entrance, look, label) {
+    const env = this.envs[id];
+    if (!env) return;
+    this.currentEnv = id;
+    Object.values(this.envs).forEach((e) => { if (e.group) e.group.visible = e === env; });
+    if (this.guardian && id !== 'apoyo' && id !== 'arena') this.guardian.visible = false;
+    this.controller.bounds = { minX: env.x - env.rx, maxX: env.x + env.rx, minZ: env.z - env.rz, maxZ: env.z + env.rz };
+    const tint = ENV_TINTS[id] ?? ENV_TINTS.plaza;
+    this.feedback.tweenColor(this.scene.fog.color, tint.fog, 2);
+    this.sky.userData.setColors(tint.sky[0], tint.sky[1]);
+    // la niebla cierra el horizonte: no se ve el resto de la isla
+    if (this.scene.fog.density < 0.024) this.feedback.tweenValue(this.scene.fog, 'density', 0.024, 2);
+    if (entrance) this.travelTo(entrance.x, entrance.z, look, label);
+  }
+
   clearNotes() {
     this.noteQueue.length = 0;
   }
@@ -1609,6 +1662,7 @@ export class DisgustTerritoryGame extends MinigameBase {
 
   startThermoStage() {
     this.setStage('thermo');
+    this.enterEnvironment('plaza');
     this.thermo.enabled = true;
     this.thermoInteract.enabled = true;
     this.standLevel = 0;
@@ -1643,7 +1697,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.setBeacons([zone.beacon]);
     this.say(`ZONA ${i + 1}/4 · ${zone.name.toUpperCase()}`, 3200, { speak: false });
     const e = this.entranceOf(zone.x, zone.z, 10.5);
-    this.later(() => this.travelTo(e.x, e.z, zone, `LLEGAS A: ${zone.name.toUpperCase()}`), 1900);
+    this.later(() => this.enterEnvironment(zone.id, e, zone, `LLEGAS A: ${zone.name.toUpperCase()}`), 1900);
     let text = ZONE_INTROS[zone.id];
     if (zone.id === 'rechazo' && this.customTexts?.length) text += ' También te esperan las cosas que tú escribiste.';
     this.showNote({ queue: true, icon: zone.icon, title: `Aparece: ${zone.name}`, text: `${text} Sigue la columna de luz.` });
@@ -1682,7 +1736,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     const n = 6 - this.pathQueue.length;
     this.say(`CAMINO ${n}/6 · ${path.name.toUpperCase()}`, 3200, { speak: false });
     const e = this.entranceOf(path.x, path.z, 12.5);
-    this.later(() => this.travelTo(e.x, e.z, path, `LLEGAS A: ${path.name.toUpperCase()}`), 1900);
+    this.later(() => this.enterEnvironment(id, e, path, `LLEGAS A: ${path.name.toUpperCase()}`), 1900);
     const forLevel = path.levels.includes(this.level) ? ' Es el camino que el documento sugiere para tu nivel.' : '';
     this.showNote({ queue: true, icon: path.icon, title: `Aparece el camino «${path.name}»`, text: `Técnica: ${path.technique}.${forLevel} Sigue la columna de luz dorada.` });
   }
@@ -1693,7 +1747,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.thermoInteract.enabled = true;
     this.standLevel = 0;
     this.setBeacons([this.thermoBeacon]);
-    this.later(() => this.travelTo(CENTER.x, CENTER.z + 11, CENTER, 'VUELVES AL TERMÓMETRO'), 900);
+    this.later(() => this.enterEnvironment('plaza', { x: CENTER.x, z: CENTER.z + 11 }, CENTER, 'VUELVES AL TERMÓMETRO'), 900);
     this.showStageBanner({
       icon: '🔁', title: 'Reevaluación',
       text: 'Ya practicaste las seis herramientas. Vuelve al termómetro: ¿cómo está ahora tu desagrado? Sube a tu nivel y confirma con E.'
@@ -2246,7 +2300,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     mr.active = true;
     mr.order = shuffle(SIGNALS.filter((s) => s.disgust));
     this.reveal(this.mirrorRoot, { x: MIRROR.x, z: MIRROR.z + 2, y: this.heightAt(MIRROR.x, MIRROR.z), colliders: [this.mirrorCollider], color: '#7fd1ff' });
-    this.later(() => this.travelTo(MIRROR.x, MIRROR.z + 15, MIRROR, 'LLEGAS AL ESPEJO DE LAS REACCIONES'), 1900);
+    this.later(() => this.enterEnvironment('mirror', { x: MIRROR.x, z: MIRROR.z + 15 }, MIRROR, 'LLEGAS AL ESPEJO DE LAS REACCIONES'), 1900);
     this.mirrorAvatar.visible = true;
     this.mirrorGlass.material.emissive.set('#3b6b7a');
     this.mirrorGlass.material.emissiveIntensity = 0.5;
@@ -3131,6 +3185,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.controller.speedScale = 1;
     const c = b.creature;
     c.visible = true;
+    this.arenaGroup.visible = true;
     const ay = this.heightAt(ARENA.x, ARENA.z);
     this.audio.play('rumble', { volume: 0.6 });
     this.feedback.shakeCamera(0.35, 1.6);
@@ -3151,7 +3206,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     // balizas sobre todos los altares con herramienta aprendida: se ve a donde ir
     this.altars.forEach((al) => { if (!al.beacon) al.beacon = this.makeBeacon(al.x, al.z, '#ffd166'); });
     this.setBeacons(this.altars.filter((al) => this.learned.has(al.id)).map((al) => al.beacon));
-    this.later(() => this.travelTo(ARENA.x, ARENA.z + 11, ARENA, 'LLEGAS A LA ARENA'), 2400);
+    this.later(() => this.enterEnvironment('arena', { x: ARENA.x, z: ARENA.z + 11 }, ARENA, 'LLEGAS A LA ARENA'), 2400);
     this.showStageBanner({
       icon: '🛡️', title: 'Desafío final: protege la isla',
       text: 'En el centro aparece La Reacción Impulsiva. No se vence con fuerza: se vence con tus herramientas.',
@@ -3491,6 +3546,9 @@ export class DisgustTerritoryGame extends MinigameBase {
     // la niebla desaparece, la isla recupera su color, aparece la luz
     this.feedback.tweenColor(this.scene.fog.color, FOG.clear, 4);
     this.feedback.tweenValue(this.scene.fog, 'density', 0.006, 4);
+    Object.values(this.envs).forEach((e) => { if (e.group && e.group.userData.revealed) e.group.visible = true; });
+    this.plazaGroup.visible = true;
+    this.controller.bounds = { minX: -BOUND, maxX: BOUND, minZ: -BOUND, maxZ: BOUND };
     this.sky.userData.setColors('#4a8fbf', '#d8efc8');
     this.feedback.tweenValue(this.sun, 'intensity', 2.4, 4);
     this.feedback.tweenValue(b.beam.material, 'opacity', 0.35, 2.5);

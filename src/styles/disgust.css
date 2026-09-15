@@ -320,7 +320,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: max(22%, 150px);
+  bottom: max(calc(20% + 56px), 176px);   /* por encima del chip [E] y de los botones tactiles */
   display: flex;
   flex-direction: column;
   align-items: center;
