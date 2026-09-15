@@ -933,7 +933,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       const label = makeText(`${item.icon} ${item.label}`, { size: 0.42, maxChars: 18 });
       label.position.set(px, py + (i % 2 ? 1.75 : 1.15), pz);
       this.mirrorRoot.add(label);
-      return { item, mesh, label, x: px, z: pz, solved: false };
+      return { item, mesh, label, labelScale: label.scale.clone(), x: px, z: pz, solved: false };
     });
 
     this.mirror = { active: false, order: [], current: null, solved: 0, dwell: 0, onPlate: null, judged: false };
@@ -2524,9 +2524,17 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.audio.play('collect', { volume: 0.5 });
     this.feedback.burst(_v.set(plate.x, this.heightAt(plate.x, plate.z) + 0.6, plate.z), { count: 16, color: '#a8e06a', speed: 2.4, life: 0.9 });
     mr.solved += 1;
-    this.say(`✓ ${plate.item.label.toUpperCase()}`, 1600);
+    this.say(`✓ ${plate.item.label.toUpperCase()}`, 2400);
     mr.current = null;
     this.mirrorGesture.visible = false;
+    // la baldosa acertada se retira con su letrero: solo quedan las que faltan
+    this.later(() => {
+      this.feedback.tween({
+        from: 1, to: 0.001, duration: 0.5,
+        onUpdate: (v) => { plate.mesh.scale.setScalar(v); plate.label.scale.set(plate.labelScale.x * v, plate.labelScale.y * v, 1); },
+        onDone: () => { plate.mesh.visible = false; plate.label.visible = false; }
+      });
+    }, 1400);
     if (mr.solved >= 7) this.later(() => this.finishMirror(), 900);
     else this.later(() => this.nextReaction(), 900);
   }
@@ -2577,6 +2585,11 @@ export class DisgustTerritoryGame extends MinigameBase {
     const mr = this.mirror;
     mr.current = null;
     this.mirrorGesture.visible = false;
+    this.plates.filter((pl) => !pl.solved).forEach((pl, i) => this.later(() => this.feedback.tween({
+      from: 1, to: 0.001, duration: 0.5,
+      onUpdate: (v) => { pl.mesh.scale.setScalar(v); pl.label.scale.set(pl.labelScale.x * v, pl.labelScale.y * v, 1); },
+      onDone: () => { pl.mesh.visible = false; pl.label.visible = false; }
+    }), 400 + i * 120));
     this.setTask('');
     this.stageDone.add('mirror');
     this.renderStages();
