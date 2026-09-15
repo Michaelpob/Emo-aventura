@@ -11,6 +11,14 @@ import { gameState } from '../data/gameState.js';
 
 const CACHE = new Map();
 
+// WAV silencioso: un <audio> en reproduccion pone la sesion de iOS en modo
+// "playback", que suena aunque el interruptor lateral este en silencio.
+const SILENT_WAV = 'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+
+// Volumen general (todas las islas). El compresor evita que la mezcla
+// recorte al subirla: en el altavoz de un celular se necesita ese empuje.
+const MASTER_GAIN = 1.25;
+
 function noiseBuffer(ctx, seconds, filterHz, gainCurve) {
   const rate = ctx.sampleRate;
   const len = Math.floor(rate * seconds);
@@ -128,13 +136,26 @@ export class AudioBus {
       this.listener = new THREE.AudioListener();
       this.camera.add(this.listener);
       this.ctx = this.listener.context;
+      this.compressor = this.ctx.createDynamicsCompressor();
+      this.compressor.threshold.value = -14;
+      this.compressor.knee.value = 18;
+      this.compressor.ratio.value = 4;
+      this.compressor.attack.value = 0.004;
+      this.compressor.release.value = 0.18;
+      this.compressor.connect(this.ctx.destination);
       this.master = this.ctx.createGain();
-      this.master.gain.value = this.enabled ? 0.9 : 0;
-      this.master.connect(this.ctx.destination);
+      this.master.gain.value = this.enabled ? MASTER_GAIN : 0;
+      this.master.connect(this.compressor);
       this.ambientGain = this.ctx.createGain();
-      this.ambientGain.gain.value = 0.5;
+      this.ambientGain.gain.value = 0.55;
       this.ambientGain.connect(this.master);
       this.ready = true;
+      // Movil: el contexto nace suspendido y solo un gesto del usuario lo
+      // arranca. Se desbloquea en el primer toque y se reintenta en cada gesto
+      // por si el navegador lo volvio a suspender (llamada, cambio de pestana).
+      this._unlock = () => this.unlock();
+      ['pointerdown', 'touchend', 'keydown', 'click'].forEach((ev) => document.addEventListener(ev, this._unlock, { passive: true }));
+      document.addEventListener('visibilitychange', this._unlock);
     } catch (err) {
       console.warn('[audio] no disponible', err);
       this.ready = false;
@@ -143,8 +164,39 @@ export class AudioBus {
 
   setEnabled(on) {
     this.enabled = on;
-    if (this.ready) this.master.gain.setTargetAtTime(on ? 0.9 : 0, this.ctx.currentTime, 0.08);
-    if (on) this.ctx?.resume?.();
+    if (this.ready) this.master.gain.setTargetAtTime(on ? MASTER_GAIN : 0, this.ctx.currentTime, 0.08);
+    if (on) this.unlock();
+  }
+
+  /**
+   * Arranca el audio dentro de un gesto del usuario (obligatorio en movil):
+   * reanuda el contexto, dispara un buffer vacio (desbloqueo de iOS/Android)
+   * y deja un <audio> silencioso sonando para que iOS ignore el interruptor
+   * de silencio.
+   */
+  unlock() {
+    if (!this.ready || !this.ctx) return;
+    try { if (this.ctx.state !== 'running') this.ctx.resume(); } catch { /* sin permiso aun */ }
+    if (!this._primed) {
+      try {
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.ctx.createBuffer(1, 1, 22050);
+        src.connect(this.ctx.destination);
+        src.start(0);
+        this._primed = true;
+      } catch { /* se reintenta en el siguiente gesto */ }
+    }
+    if (!this._silentTag && this.enabled) {
+      const tag = document.createElement('audio');
+      tag.setAttribute('playsinline', '');
+      tag.setAttribute('webkit-playsinline', '');
+      tag.loop = true;
+      tag.volume = 0.01;
+      tag.src = SILENT_WAV;
+      const p = tag.play();
+      if (p && p.then) p.then(() => { this._silentTag = tag; }).catch(() => { /* sin gesto valido todavia */ });
+      else this._silentTag = tag;
+    }
   }
 
   buffer(name) {
@@ -221,20 +273,26 @@ export class AudioBus {
   duck(amount = 0.25, time = 0.5) {
     if (!this.ready) return;
     this.duckAmount = amount;
-    this.ambientGain.gain.setTargetAtTime(0.5 * amount, this.ctx.currentTime, time);
+    this.ambientGain.gain.setTargetAtTime(0.55 * amount, this.ctx.currentTime, time);
   }
 
   unduck(time = 0.8) {
     if (!this.ready) return;
     this.duckAmount = 1;
-    this.ambientGain.gain.setTargetAtTime(0.5, this.ctx.currentTime, time);
+    this.ambientGain.gain.setTargetAtTime(0.55, this.ctx.currentTime, time);
   }
 
   dispose() {
     this.ambientNodes.forEach((n) => n.stop());
     this.ambientNodes.length = 0;
+    if (this._unlock) {
+      ['pointerdown', 'touchend', 'keydown', 'click'].forEach((ev) => document.removeEventListener(ev, this._unlock));
+      document.removeEventListener('visibilitychange', this._unlock);
+      this._unlock = null;
+    }
+    if (this._silentTag) { try { this._silentTag.pause(); this._silentTag.src = ''; } catch {} this._silentTag = null; }
     if (this.listener && this.camera) this.camera.remove(this.listener);
-    try { this.master?.disconnect(); this.ambientGain?.disconnect(); } catch {}
+    try { this.master?.disconnect(); this.ambientGain?.disconnect(); this.compressor?.disconnect(); } catch {}
     this.ready = false;
   }
 }
