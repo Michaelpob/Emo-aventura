@@ -427,7 +427,7 @@
   border: 1px solid rgba(168, 224, 106, 0.5);
   color: #fff;
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -452,7 +452,7 @@
 .dg-note__icon { font-size: 1.7rem; line-height: 1.1; }
 .dg-note__body { min-width: 0; }
 .i3d.dg .dg-note .i3d-note__title { margin: 0 0 4px; }
-.i3d.dg .dg-note .i3d-note__text { margin: 0; font-size: 0.98rem; line-height: 1.55; }
+.i3d.dg .dg-note .i3d-note__text { margin: 0; font-size: 0.9rem; line-height: 1.5; }
 
 /* ---- banner de etapa ---- */
 .dg-banner {
@@ -487,8 +487,8 @@
 }
 .dg-stage__body { min-width: 0; text-align: left; }
 .dg-stage__eyebrow { margin: 0 0 4px; font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: #ffd166; }
-.dg-stage h3 { margin: 0 0 6px; font-size: 1.35rem; line-height: 1.2; color: #fff; }
-.dg-stage p { margin: 0; line-height: 1.5; color: rgba(255, 255, 255, 0.9); }
+.dg-stage h3 { margin: 0 0 6px; font-size: 1.2rem; line-height: 1.2; color: #fff; }
+.dg-stage p { margin: 0; font-size: 0.92rem; line-height: 1.5; color: rgba(255, 255, 255, 0.9); }
 @keyframes dg-stage-in {
   0% { opacity: 0; transform: translateY(24px) scale(0.92); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -530,8 +530,8 @@
   text-transform: uppercase;
   color: #a8e06a;
 }
-.dg-ask__label { margin: 3px 0; font-weight: 800; font-size: 1rem; line-height: 1.3; color: #fff; }
-.dg-ask__hint { margin: 0; font-size: 0.8rem; color: rgba(255, 255, 255, 0.78); }
+.dg-ask__label { margin: 3px 0; font-weight: 800; font-size: 0.94rem; line-height: 1.3; color: #fff; }
+.dg-ask__hint { margin: 0; font-size: 0.76rem; color: rgba(255, 255, 255, 0.78); }
 .dg-ask__hint b { color: #ffd166; }
 .dg-ask__meter {
   position: absolute;
@@ -592,6 +592,7 @@
   border: 1px solid #ffd166;
   color: #fff;
   font-weight: 800;
+  font-size: 0.88rem;
   white-space: nowrap;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), 0 0 22px rgba(255, 209, 102, 0.3);
   animation: dg-toast 4.2s ease forwards;
@@ -711,3 +712,6 @@
 /* en pausa, los avisos y el HUD de la isla no compiten con el menu */
 .i3d.dg.is-paused .dg-hud,
 .i3d.dg.is-paused .i3d__notes { visibility: hidden; }
+
+/* texto breve del centro: un poco mas contenido en esta isla */
+.i3d.dg .i3d-flash { font-size: clamp(0.9rem, 2.6vw, 1.25rem); letter-spacing: 0.1em; }

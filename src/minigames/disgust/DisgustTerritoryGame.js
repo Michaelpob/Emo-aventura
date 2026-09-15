@@ -775,7 +775,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       this.scene.add(group);
       const zone = { ...def, y, group, colliders: [], answered: 0, done: false, unlocked: false, current: null, cooldown: 0, entered: false };
       this.decorateZone(zone);
-      zone.label = makeText(`${def.icon} ${def.name}`, { size: 0.9, maxChars: 30 });
+      zone.label = makeText(`${def.icon} ${def.name}`, { size: 0.63, maxChars: 30 });
       zone.label.position.set(def.x, y + 3.6, def.z);
       group.add(zone.label);
       zone.beacon = this.makeBeacon(def.x, def.z);
@@ -889,7 +889,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     );
     this.mirrorGlass.position.set(0, 2.6, 0.27);
     g.add(this.mirrorGlass);
-    const title = makeText('El Espejo de las Reacciones', { size: 0.8, maxChars: 30 });
+    const title = makeText('El Espejo de las Reacciones', { size: 0.56, maxChars: 30 });
     title.position.set(0, 5.8, 0.4);
     g.add(title);
 
@@ -906,7 +906,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.mirrorGesture.position.set(0, 2.55, 1.2);
     this.mirrorGesture.visible = false;
     g.add(this.mirrorGesture);
-    this.mirrorSpeech = makeText('¡No me gusta!', { size: 0.55, bg: 'rgba(255,255,255,0.9)', color: '#10202c', maxChars: 16 });
+    this.mirrorSpeech = makeText('¡No me gusta!', { size: 0.39, bg: 'rgba(255,255,255,0.9)', color: '#10202c', maxChars: 16 });
     this.mirrorSpeech.position.set(1.1, 2.35, 1.3);
     this.mirrorSpeech.visible = false;
     g.add(this.mirrorSpeech);
@@ -930,7 +930,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       );
       mesh.position.set(px, py + 0.08, pz);
       this.mirrorRoot.add(mesh);
-      const label = makeText(`${item.icon} ${item.label}`, { size: 0.42, maxChars: 18 });
+      const label = makeText(`${item.icon} ${item.label}`, { size: 0.29, maxChars: 18 });
       label.position.set(px, py + (i % 2 ? 1.75 : 1.15), pz);
       this.mirrorRoot.add(label);
       return { item, mesh, label, labelScale: label.scale.clone(), x: px, z: pz, solved: false };
@@ -971,11 +971,11 @@ export class DisgustTerritoryGame extends MinigameBase {
       ring.rotation.x = Math.PI / 2;
       ring.position.y = h;
       g.add(ring);
-      const lb = makeText(txt, { size: 0.45, maxChars: 14 });
+      const lb = makeText(txt, { size: 0.32, maxChars: 14 });
       lb.position.set(1.6, h, 0);
       g.add(lb);
     });
-    const title = makeText('¿QUÉ TAN INTENSO ES TU DESAGRADO?', { size: 0.7, maxChars: 22 });
+    const title = makeText('¿QUÉ TAN INTENSO ES TU DESAGRADO?', { size: 0.49, maxChars: 22 });
     title.position.y = 8.9;
     g.add(title);
     this.plazaGroup.add(g);
@@ -1014,7 +1014,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       const path = {
         id, ...def, y, group, open: false, done: false,
         beacon: this.makeBeacon(def.x, def.z, '#ffd166'),
-        sign: makeText(`${def.icon} ${def.name}\n${def.technique}`, { size: 0.7, maxChars: 26 })
+        sign: makeText(`${def.icon} ${def.name}\n${def.technique}`, { size: 0.49, maxChars: 26 })
       };
       path.sign.position.set(def.x, y + 4.2, def.z);
       group.add(path.sign);
@@ -1151,7 +1151,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       lintel.position.y = 2.95;
       lintel.rotation.y = Math.atan2(u.x, u.z);
       arch.add(lintel);
-      const label = makeText(st.key, { size: 0.6, maxChars: 14, color: '#ffd166' });
+      const label = makeText(st.key, { size: 0.42, maxChars: 14, color: '#ffd166' });
       label.position.y = 3.9;
       arch.add(label);
       group.add(arch);
@@ -1278,7 +1278,7 @@ export class DisgustTerritoryGame extends MinigameBase {
           });
           item.interact.enabled = false;
         }
-        const tag = makeText(`${icon} ${label}`, { size: 0.45, maxChars: 20 });
+        const tag = makeText(`${icon} ${label}`, { size: 0.32, maxChars: 20 });
         tag.position.y = 2.1;
         tag.visible = false;
         holder.add(tag);
@@ -1304,7 +1304,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       const station = new THREE.Group();
       group.add(station);
       const by = this.heightAt(base.x, base.z);
-      const thought = makeText(`💭 ${th.text}`, { size: 1.1, maxChars: 22, bg: 'rgba(60,20,30,0.85)' });
+      const thought = makeText(`💭 ${th.text}`, { size: 0.77, maxChars: 22, bg: 'rgba(60,20,30,0.85)' });
       thought.position.set(base.x, by + 4.6, base.z);
       station.add(thought);
       const doorsBase = { x: base.x + u.x * 6, z: base.z + u.z * 6 };
@@ -1332,7 +1332,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         );
         panel.position.y = 1.45;
         door.add(panel);
-        const label = makeText(opt.label, { size: 1.05, maxChars: 22, px: 34 });
+        const label = makeText(opt.label, { size: 0.73, maxChars: 22, px: 34 });
         label.position.y = 4.4;
         door.add(label);
         station.add(door);
@@ -1357,7 +1357,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     this.guardian.position.set(gx, this.heightAt(gx, gz), gz);
     this.guardian.visible = false;
     this.scene.add(this.guardian);
-    this.guardianLabel = makeText('Guardián de Confianza', { size: 0.55, maxChars: 24 });
+    this.guardianLabel = makeText('Guardián de Confianza', { size: 0.39, maxChars: 24 });
     this.guardianLabel.position.set(0, 2.2, 0);
     this.guardian.add(this.guardianLabel);
     this.guardianLight = new THREE.PointLight('#ffd6ff', 0, 12, 2);
@@ -1409,7 +1409,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       spike.rotateX(Math.PI / 2);
       creature.add(spike);
     }
-    const label = makeText('La Reacción Impulsiva', { size: 0.8, maxChars: 24, bg: 'rgba(60,10,30,0.85)' });
+    const label = makeText('La Reacción Impulsiva', { size: 0.56, maxChars: 24, bg: 'rgba(60,10,30,0.85)' });
     label.position.y = 4.4;
     creature.add(label);
     creature.position.set(ARENA.x, ay - 6, ARENA.z);
@@ -1449,7 +1449,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       icon.position.set(x, y + 1.9, z);
       icon.visible = false;
       this.arenaGroup.add(icon);
-      const lb = makeText(`${def.technique}\n(aprende esta herramienta en su camino)`, { size: 0.62, maxChars: 24, color: '#cfd8c4' });
+      const lb = makeText(`${def.technique}\n(aprende esta herramienta en su camino)`, { size: 0.43, maxChars: 24, color: '#cfd8c4' });
       lb.position.set(x, y + 3.1, z);
       lb.visible = false;
       this.arenaGroup.add(lb);
@@ -3016,7 +3016,7 @@ export class DisgustTerritoryGame extends MinigameBase {
     path.step += 1;
     arch.mat.emissive.set('#a8e06a');
     arch.mat.emissiveIntensity = 0.9;
-    arch.label.userData.setText(`${arch.step.key}\n«${arch.step.phrase}»`, { color: '#ffffff', size: 1.4, maxChars: 26 });
+    arch.label.userData.setText(`${arch.step.key}\n«${arch.step.phrase}»`, { color: '#ffffff', size: 0.98, maxChars: 26 });
     this.audio.play('light', { volume: 0.45 });
     this.feedback.burst(_v.set(arch.x, this.heightAt(arch.x, arch.z) + 2.5, arch.z), { count: 18, color: '#a8e06a', speed: 2.4, life: 1 });
     this.say(arch.step.key, 2400, { speak: false });
@@ -3403,7 +3403,7 @@ export class DisgustTerritoryGame extends MinigameBase {
   lightAltar(altar) {
     altar.interact.enabled = this.boss?.active ?? false;
     altar.stone.material.emissiveIntensity = 0.6;
-    altar.label.userData.setText(`${altar.def.technique}\n✓ pulsa E aquí`, { color: '#a8e06a', size: 0.62 });
+    altar.label.userData.setText(`${altar.def.technique}\n✓ pulsa E aquí`, { color: '#a8e06a', size: 0.43 });
   }
 
   startBoss() {
@@ -3535,7 +3535,7 @@ export class DisgustTerritoryGame extends MinigameBase {
 
   spawnProvocation() {
     const text = PROVOCATIONS[Math.floor(Math.random() * PROVOCATIONS.length)];
-    const sprite = makeText(text, { size: 0.9, maxChars: 24, bg: 'rgba(120,20,40,0.85)', color: '#ffd6d6' });
+    const sprite = makeText(text, { size: 0.63, maxChars: 24, bg: 'rgba(120,20,40,0.85)', color: '#ffd6d6' });
     const c = this.boss.creature.position;
     sprite.position.set(c.x + (Math.random() - 0.5) * 3, c.y + 3.5, c.z + (Math.random() - 0.5) * 3);
     this.scene.add(sprite);
@@ -3653,7 +3653,7 @@ export class DisgustTerritoryGame extends MinigameBase {
       const right = { x: -u.z, z: u.x };
       const station = new THREE.Group();
       this.scene.add(station);
-      const thought = makeText(`💭 ${th.text}`, { size: 1.1, maxChars: 22, bg: 'rgba(60,20,30,0.85)' });
+      const thought = makeText(`💭 ${th.text}`, { size: 0.77, maxChars: 22, bg: 'rgba(60,20,30,0.85)' });
       thought.position.set(altar.x, y + 3.6, altar.z);
       station.add(thought);
       const opts = shuffle(th.options).slice(0, 3);
@@ -3675,7 +3675,7 @@ export class DisgustTerritoryGame extends MinigameBase {
         const panel = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.9), new THREE.MeshStandardMaterial({ color: '#8fb28a', emissive: '#4f8a5b', emissiveIntensity: 0.25, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }));
         panel.position.y = 1.45;
         door.add(panel);
-        const label = makeText(opt.label, { size: 1.05, maxChars: 22, px: 34 });
+        const label = makeText(opt.label, { size: 0.73, maxChars: 22, px: 34 });
         label.position.y = 4.2;
         door.add(label);
         station.add(door);
