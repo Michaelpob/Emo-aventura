@@ -533,7 +533,7 @@ export class AngerLavaGame extends MinigameBase {
   catchRock(r) {
     r.state = 'caught';
     r.timer = 0;
-    r.slot = this.caught;
+    r.slot = Math.min(this.caught, this.blocks.length - 1);   // las rocas de mas caen sobre el ultimo bloque
     r.start.copy(r.pos);
     r.ring.visible = false;
     r.light.visible = false;
@@ -547,14 +547,16 @@ export class AngerLavaGame extends MinigameBase {
 
   placeBlock(slotIndex) {
     const block = this.blocks[slotIndex];
-    if (!block) return;
-    this.feedback.tween({
-      from: 0.001, to: 1, duration: 0.32,
-      onUpdate: (v) => block.mesh.scale.setScalar(v)
-    });
-    this.feedback.burst(block.pos, { count: 8, color: '#8a7a70', speed: 1.6, life: 0.6 });
-    this.audio.play('stone', { volume: 0.5, rate: 0.9 + (slotIndex % 3) * 0.08 });
-    this.renderer.shadowMap.needsUpdate = true;
+    if (block) {
+      this.feedback.tween({
+        from: 0.001, to: 1, duration: 0.32,
+        onUpdate: (v) => block.mesh.scale.setScalar(v)
+      });
+      this.feedback.burst(block.pos, { count: 8, color: '#8a7a70', speed: 1.6, life: 0.6 });
+      this.audio.play('stone', { volume: 0.5, rate: 0.9 + (slotIndex % 3) * 0.08 });
+      this.renderer.shadowMap.needsUpdate = true;
+    }
+    // cuenta siempre: una roca atrapada de mas no puede dejar la oleada colgada
     this.placed += 1;
     this.placedInWave += 1;
     if (this.phase === 'play') this.checkWave();
@@ -644,8 +646,13 @@ export class AngerLavaGame extends MinigameBase {
 
   checkWave() {
     const wave = this.current;
-    if (!wave || this.placedInWave < wave.rocks) return;
-    if (this.placed >= TOTAL_ROCKS) this.calm();
+    if (!wave || this.phase !== 'play') return;
+    // la oleada esta hecha cuando sus rocas ya estan puestas (o atrapadas y sin
+    // ninguna en vuelo hacia el puente)
+    const inFlight = this.rocks.some((r) => r.state === 'caught');
+    const done = this.placedInWave >= wave.rocks || (this.caughtInWave >= wave.rocks && !inFlight);
+    if (!done) return;
+    if (this.wave >= WAVES.length - 1) this.calm();
     else this.endWave();
   }
 
@@ -1028,6 +1035,7 @@ export class AngerLavaGame extends MinigameBase {
     const wave = this.current;
 
     if (this.phase === 'play' && wave) {
+      if (this.caughtInWave >= wave.rocks && this.liveRocks() === 0) this.checkWave();
       if (this.heat > 0) {
         this.heat = Math.max(0, this.heat + HEAT.perSecond * dt);
         this.heatBar.set(this.heat);
