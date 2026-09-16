@@ -560,3 +560,12 @@ entregando), pero ya no hay pantalla que las liste. El Valle de la Luz
 (`public/valle-luz/`) conserva su propia caja porque forma parte de su
 especificación.
 
+
+## Ajuste · Mapa sin personaje
+
+Se retira el personaje que caminaba por el archipiélago (y con él el WASD, el
+joystick táctil, el botón E y el aviso de proximidad). El mapa se recorre con
+la cámara —que orbita despacio sobre el centro y se puede arrastrar— y a cada
+isla se entra tocándola. `README` y los apartados históricos de este plan
+siguen describiendo el mapa antiguo con jugador; esta nota manda.
+

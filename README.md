@@ -23,10 +23,11 @@ pnpm preview    # compila y sirve el build
 Si en alguna maquina no hay Node, `python scripts/build-docs.py` genera un
 `/docs` equivalente (importmap + three copiado de `node_modules`), sin minificar.
 
-Controles: **WASD** moverse · **SHIFT** correr · **SPACE** saltar · **E**
-interactuar (mantener pulsado donde toque) · **ESC** pausa · **F3** medidor de
-rendimiento. En táctil: joystick izquierdo, arrastre derecho para la cámara y
-botones de saltar/interactuar.
+En el mapa se entra a cada isla **tocándola** (arrastra para girar la vista).
+Dentro de las islas que se caminan: **WASD** moverse · **SHIFT** correr ·
+**SPACE** saltar · **E** interactuar (mantener pulsado donde toque) · **ESC**
+pausa · **F3** medidor de rendimiento. En táctil: joystick izquierdo, arrastre
+derecho para la cámara y botones de saltar/interactuar.
 
 ## Las seis islas
 

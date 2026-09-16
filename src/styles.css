@@ -558,36 +558,6 @@ p {
 }
 
 /* Proximity prompt */
-.proximity-prompt {
-  position: absolute;
-  left: 50%;
-  bottom: clamp(80px, 14vw, 140px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 20px;
-  border: 1px solid color-mix(in srgb, var(--accent, #1f9d82), #fff 50%);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(16, 44, 54, 0.15);
-  transform: translateX(-50%);
-  animation: prompt-pop 0.25s ease;
-  pointer-events: auto;
-}
-
-.proximity-prompt strong {
-  color: #102c36;
-  font-size: 1rem;
-}
-
-.proximity-prompt span {
-  color: var(--accent, #1f9d82);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
 @keyframes prompt-pop {
   0% { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.95); }
   100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
@@ -1097,88 +1067,6 @@ p {
 
 @keyframes box-pop { 0% { transform: scale(0) rotate(-10deg); } 100% { transform: scale(1) rotate(0deg); } }
 @keyframes star-glow { 0% { box-shadow: 0 0 14px rgba(255, 255, 100, 0.4); } 100% { box-shadow: 0 0 24px rgba(255, 255, 100, 0.7); } }
-
-/* Touch controls */
-.touch-controls {
-  display: none;
-}
-
-.joystick-zone {
-  position: absolute;
-  left: 20px;
-  bottom: 20px;
-  width: 120px;
-  height: 120px;
-  pointer-events: auto;
-  touch-action: none;
-  z-index: 20;
-}
-
-.joystick-base {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(4px);
-}
-
-.joystick-stick {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: transform 0.05s ease;
-}
-
-.action-button {
-  position: absolute;
-  right: 24px;
-  bottom: 40px;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  background: rgba(31, 157, 130, 0.5);
-  color: #ffffff;
-  font-size: 1.4rem;
-  font-weight: 900;
-  cursor: pointer;
-  pointer-events: auto;
-  touch-action: none;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  z-index: 20;
-  transition: transform 0.1s ease, background 0.15s ease;
-}
-
-.action-button:active {
-  transform: scale(0.9);
-  background: rgba(31, 157, 130, 0.8);
-}
-
-@media (pointer: coarse), (max-width: 720px) {
-  .touch-controls {
-    display: block;
-  }
-
-  .controls-hint {
-    display: none;
-  }
-}
-
-@media (pointer: fine) and (min-width: 721px) {
-  .touch-controls {
-    display: none;
-  }
-}
 
 /* Volcano control game */
 .volcano-hud {

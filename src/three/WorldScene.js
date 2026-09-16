@@ -46,11 +46,8 @@ export class WorldScene {
     this.clouds = [];
     this.completed = new Set();
     this.keys = {};
-    this.playerSpeed = 3.8;
-    this.nearIsland = null;
-    this.playerColor = '#f59f00';
-    this.playerPos = new THREE.Vector3(0, 0.15, 0);
-    this.playerTargetRot = 0;
+    // el mapa se recorre con la camara: no hay personaje, se entra tocando la isla
+    this.center = new THREE.Vector3(0, 0.35, 0);
     this.drag = {
       active: false,
       moved: false,
@@ -68,16 +65,6 @@ export class WorldScene {
     this.focusMode = 'map';
     this.focusIsland = null;
     this.hoveredId = null;
-  }
-
-  setPlayerAppearance(color) {
-    this.playerColor = color ?? this.playerColor;
-    if (this.playerGroup) {
-      const body = this.playerGroup.getObjectByName('player-body');
-      if (body) body.material.color.set(this.playerColor);
-      const ring = this.playerGroup.getObjectByName('player-ring');
-      if (ring) ring.material.color.set(this.playerColor);
-    }
   }
 
   mount() {
@@ -108,7 +95,6 @@ export class WorldScene {
     this.addSky();
     this.addOcean();
     this.addIslands();
-    this.addPlayer();
     this.addAmbientMotion();
     this.addDustParticles();
     this.setupPostProcessing();
@@ -226,8 +212,8 @@ export class WorldScene {
   focusMap() {
     this.focusMode = 'map';
     this.focusIsland = null;
-    this.drag.targetDistance = 9.8;
-    this.cameraTarget.set(this.playerPos.x, 0.35, this.playerPos.z);
+    this.drag.targetDistance = 11.2;
+    this.cameraTarget.copy(this.center);
   }
 
   focusOnIsland(islandId) {
@@ -397,49 +383,6 @@ export class WorldScene {
     }
   }
 
-  addPlayer() {
-    this.playerGroup = new THREE.Group();
-    this.playerGroup.name = 'player';
-
-    const body = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.18, 0.35, 6, 10),
-      new THREE.MeshStandardMaterial({ color: this.playerColor, roughness: 0.6, metalness: 0.04, flatShading: true })
-    );
-    body.name = 'player-body';
-    body.position.y = 0.35;
-    body.castShadow = true;
-    this.playerGroup.add(body);
-
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.14, 8, 6),
-      new THREE.MeshStandardMaterial({ color: '#ffe4c4', roughness: 0.7, flatShading: true })
-    );
-    head.name = 'player-head';
-    head.position.y = 0.72;
-    head.castShadow = true;
-    this.playerGroup.add(head);
-
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(0.28, 0.015, 8, 24),
-      new THREE.MeshBasicMaterial({ color: this.playerColor, transparent: true, opacity: 0.4 })
-    );
-    ring.name = 'player-ring';
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.02;
-    this.playerGroup.add(ring);
-
-    const shadow = new THREE.Mesh(
-      new THREE.CircleGeometry(0.22, 12),
-      new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.12 })
-    );
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = 0.01;
-    this.playerGroup.add(shadow);
-
-    this.playerGroup.position.copy(this.playerPos);
-    this.scene.add(this.playerGroup);
-  }
-
   addIslands() {
     this.islands.forEach((island) => {
       const group = createIslandMesh(island);
@@ -507,74 +450,9 @@ export class WorldScene {
     this.scene.add(this.dustParticles);
   }
 
-  updatePlayer(delta, elapsed) {
-    if (this.focusMode !== 'map') return;
-
-    let dx = 0;
-    let dz = 0;
-    if (this.keys['w'] || this.keys['arrowup']) dz -= 1;
-    if (this.keys['s'] || this.keys['arrowdown']) dz += 1;
-    if (this.keys['a'] || this.keys['arrowleft']) dx -= 1;
-    if (this.keys['d'] || this.keys['arrowright']) dx += 1;
-
-    if (dx !== 0 || dz !== 0) {
-      const len = Math.sqrt(dx * dx + dz * dz);
-      dx /= len;
-      dz /= len;
-      this.playerPos.x += dx * this.playerSpeed * delta;
-      this.playerPos.z += dz * this.playerSpeed * delta;
-      this.playerTargetRot = Math.atan2(dx, dz);
-    }
-
-    const clamp = 7.5;
-    this.playerPos.x = THREE.MathUtils.clamp(this.playerPos.x, -clamp, clamp);
-    this.playerPos.z = THREE.MathUtils.clamp(this.playerPos.z, -clamp, clamp);
-
-    this.playerGroup.position.x = this.playerPos.x;
-    this.playerGroup.position.z = this.playerPos.z;
-    this.playerGroup.position.y = 0.15 + Math.sin(elapsed * 2.2) * 0.03;
-
-    const angleDiff = this.playerTargetRot - this.playerGroup.rotation.y;
-    const wrapped = ((angleDiff + Math.PI) % (Math.PI * 2)) - Math.PI;
-    this.playerGroup.rotation.y += wrapped * Math.min(1, delta * 10);
-
-    const bob = this.playerGroup.getObjectByName('player-body');
-    if (bob) bob.position.y = 0.35 + Math.sin(elapsed * 3.5) * 0.02;
-
-    const ring = this.playerGroup.getObjectByName('player-ring');
-    if (ring) {
-      ring.rotation.z += delta * 0.6;
-      ring.material.opacity = 0.3 + Math.sin(elapsed * 2.5) * 0.15;
-    }
-
-    let closest = null;
-    let closestDist = Infinity;
-    for (const island of this.islands) {
-      const ip = new THREE.Vector3(...island.position);
-      const dist = this.playerPos.distanceTo(ip);
-      if (dist < island.radius + 1.2 && dist < closestDist) {
-        closest = island;
-        closestDist = dist;
-      }
-    }
-
-    if (closest !== this.nearIsland) {
-      this.nearIsland = closest;
-      if (this.callbacks.onProximityChange) {
-        this.callbacks.onProximityChange(closest);
-      }
-    }
-
-    if (closest) {
-      this.setHoveredId(closest.id);
-    } else if (this.hoveredId && !this.nearIsland) {
-      this.setHoveredId(null);
-    }
-  }
-
   updateCamera(delta) {
     if (this.focusMode === 'map') {
-      this.cameraTarget.set(this.playerPos.x, 0.35, this.playerPos.z);
+      this.cameraTarget.copy(this.center);
       this.drag.targetYaw += delta * 0.035;
     }
 
@@ -608,13 +486,7 @@ export class WorldScene {
   }
 
   onKeyDown = (event) => {
-    const key = event.key.toLowerCase();
-    this.keys[key] = true;
-
-    if ((key === 'e' || key === ' ') && this.nearIsland && this.focusMode === 'map') {
-      event.preventDefault();
-      this.callbacks.onIslandSelected(this.nearIsland.id);
-    }
+    this.keys[event.key.toLowerCase()] = true;
   };
 
   onKeyUp = (event) => {
@@ -697,7 +569,6 @@ export class WorldScene {
     const elapsed = this.clock.elapsedTime;
     const soft = 1 - Math.exp(-delta * 9);
 
-    this.updatePlayer(delta, elapsed);
     this.updateCamera(delta);
 
     if (this.oceanMat) {

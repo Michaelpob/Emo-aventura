@@ -42,15 +42,11 @@ export class EmotionIslandApp {
     this.sceneHost = this.root.querySelector('[data-scene-host]');
     this.overlayRoot = this.root.querySelector('[data-overlay-root]');
     this.world = new WorldScene(this.sceneHost, islands, {
-      onIslandSelected: (id) => this.selectIsland(id),
-      onProximityChange: (island) => this.onProximityChange(island)
+      onIslandSelected: (id) => this.selectIsland(id)
     });
     this.world.mount();
     this.syncWorldState();
     this.setupRotateHint();
-    if (this.player?.favoriteColor) {
-      this.world.setPlayerAppearance(this.player.favoriteColor);
-    }
     this.showStart();
   }
 
@@ -199,7 +195,6 @@ export class EmotionIslandApp {
       const color = colorGrid.querySelector('.color-option.selected')?.dataset.color ?? favoriteColors[0].value;
       this.player = { name, avatar, favoriteColor: color };
       savePlayer(this.player);
-      if (this.world) this.world.setPlayerAppearance(color);
       this.showMap();
     });
 
@@ -238,16 +233,8 @@ export class EmotionIslandApp {
           <button class="hud-icon" type="button" data-progress aria-label="Mi progreso">📊</button>
         </div>
       </section>
-      <div class="touch-controls" data-touch-controls>
-        <div class="joystick-zone" data-joystick-zone>
-          <div class="joystick-base" data-joystick-base>
-            <div class="joystick-stick" data-joystick-stick></div>
-          </div>
-        </div>
-        <button class="action-button" data-action-button type="button">E</button>
-      </div>
       <div class="controls-hint">
-        <span>W A S D</span> mover &middot; <span>E</span> entrar
+        Toca una isla para entrar &middot; arrastra para girar el mapa
       </div>
     `;
 
@@ -256,105 +243,6 @@ export class EmotionIslandApp {
       editBtn.addEventListener('click', () => this.showProfile(true));
     }
     this.overlayRoot.querySelector('[data-progress]')?.addEventListener('click', () => openProgress(this.root));
-
-    this.setupTouchControls();
-  }
-
-  setupTouchControls() {
-    const joystickZone = this.overlayRoot.querySelector('[data-joystick-zone]');
-    const joystickBase = this.overlayRoot.querySelector('[data-joystick-base]');
-    const joystickStick = this.overlayRoot.querySelector('[data-joystick-stick]');
-    const actionButton = this.overlayRoot.querySelector('[data-action-button]');
-
-    if (!joystickZone || !joystickBase || !joystickStick) return;
-
-    let joystickActive = false;
-    let joystickId = null;
-    const maxDist = 40;
-
-    const handleJoystickMove = (clientX, clientY) => {
-      const rect = joystickBase.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      let dx = clientX - cx;
-      let dy = clientY - cy;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist > maxDist) {
-        dx = (dx / dist) * maxDist;
-        dy = (dy / dist) * maxDist;
-      }
-      joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
-
-      const nx = dx / maxDist;
-      const ny = dy / maxDist;
-      if (this.world) {
-        this.world.keys['d'] = nx > 0.2;
-        this.world.keys['a'] = nx < -0.2;
-        this.world.keys['s'] = ny > 0.2;
-        this.world.keys['w'] = ny < -0.2;
-      }
-    };
-
-    const resetJoystick = () => {
-      joystickActive = false;
-      joystickId = null;
-      joystickStick.style.transform = 'translate(0, 0)';
-      if (this.world) {
-        this.world.keys['w'] = false;
-        this.world.keys['a'] = false;
-        this.world.keys['s'] = false;
-        this.world.keys['d'] = false;
-      }
-    };
-
-    joystickZone.addEventListener('pointerdown', (e) => {
-      joystickActive = true;
-      joystickId = e.pointerId;
-      joystickZone.setPointerCapture(e.pointerId);
-      handleJoystickMove(e.clientX, e.clientY);
-    });
-
-    joystickZone.addEventListener('pointermove', (e) => {
-      if (!joystickActive || e.pointerId !== joystickId) return;
-      handleJoystickMove(e.clientX, e.clientY);
-    });
-
-    joystickZone.addEventListener('pointerup', (e) => {
-      if (e.pointerId === joystickId) resetJoystick();
-    });
-
-    joystickZone.addEventListener('pointercancel', (e) => {
-      if (e.pointerId === joystickId) resetJoystick();
-    });
-
-    if (actionButton) {
-      actionButton.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        if (this.world && this.world.nearIsland) {
-          this.selectIsland(this.world.nearIsland.id);
-        }
-      });
-    }
-  }
-
-  onProximityChange(island) {
-    if (this.state !== 'map') return;
-    let prompt = this.overlayRoot.querySelector('.proximity-prompt');
-    if (!island) {
-      if (prompt) prompt.remove();
-      return;
-    }
-    if (!prompt) {
-      prompt = document.createElement('div');
-      prompt.className = 'proximity-prompt';
-      this.overlayRoot.appendChild(prompt);
-    }
-    const completed = this.completed.has(island.id);
-    prompt.innerHTML = `
-      <strong>${island.displayName}</strong>
-      <span>${completed ? 'Volver a jugar' : 'Presiona E para entrar'}</span>
-    `;
-    prompt.style.setProperty('--accent', island.palette.ui);
   }
 
   renderIslandButton(island) {
