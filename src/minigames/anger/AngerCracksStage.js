@@ -24,8 +24,11 @@ const CRACKS = [
   { source: 'Que te dijeran que no', start: [3.9, 1.6], end: [4.3, -3.3], seed: 5.2 }
 ];
 const POINTS = 9;                 // puntos de cada grieta
-const REACH = 0.72;               // distancia (m) para dar por alcanzado un punto
-const STRAY = 1.35;               // distancia (m) al tramo a partir de la cual "te sales"
+const REACH = 0.72;               // distancia minima (m) para dar por alcanzado un punto
+const STRAY = 1.35;               // distancia minima (m) al tramo a partir de la cual "te sales"
+// En pantalla, la tolerancia nunca baja de estos pixeles (mas con dedo que con raton)
+const REACH_PX = { mouse: 22, touch: 34 };
+const STRAY_PX = { mouse: 48, touch: 70 };
 const OPEN_SECONDS = 1.6;         // lo que tardan las grietas en abrirse
 
 const _p = new THREE.Vector3();
@@ -168,6 +171,7 @@ export class AngerCracksStage {
       if (e.button !== undefined && e.button > 0) return;
       const p = toPlane(e);
       if (!p) return;
+      this.updateTolerance(e.pointerType, r());
       const crack = this.pick(p);
       if (!crack) return;
       pointerId = e.pointerId;
@@ -180,6 +184,7 @@ export class AngerCracksStage {
       const p = toPlane(e);
       if (p) this.follow(this.active, p);
     };
+    const r = () => dom.getBoundingClientRect();
     const up = (e) => {
       if (e && e.pointerId !== undefined && e.pointerId !== pointerId) return;
       pointerId = null;
@@ -200,39 +205,63 @@ export class AngerCracksStage {
     this.game.listeners.push(this.unbind);
   }
 
+  /**
+   * Tolerancias en metros a partir de lo que mide un pixel sobre la cornisa:
+   * en un celular la misma grieta ocupa menos pantalla y el dedo tapa mas.
+   */
+  updateTolerance(pointerType, rect) {
+    const cam = this.game.camera;
+    const dist = cam.position.distanceTo(_a.set(0, 0, -1.5));
+    const worldPerPx = (2 * dist * Math.tan((cam.fov * Math.PI) / 360)) / Math.max(1, rect.height);
+    const kind = pointerType === 'mouse' ? 'mouse' : 'touch';
+    this.reach = Math.max(REACH, REACH_PX[kind] * worldPerPx);
+    this.stray = Math.max(STRAY, STRAY_PX[kind] * worldPerPx);
+  }
+
   /** La grieta cuyo siguiente punto (o su arranque) esta bajo el dedo */
   pick(p) {
     let best = null;
     let bestD = Infinity;
+    const radius = Math.max(1.2, (this.reach ?? REACH) * 1.6);
     for (const c of this.cracks) {
       if (c.sealed) continue;
       const q = c.pts[c.idx];
       const d = Math.hypot(p.x - q[0], p.z - q[1]);
-      if (d < 1.2 && d < bestD) { best = c; bestD = d; }
+      if (d < radius && d < bestD) { best = c; bestD = d; }
     }
     return best;
   }
 
+  /** Sella el tramo que lleva al punto `idx` (ya alcanzado) */
+  sealSegment(c, idx) {
+    if (idx < 1) return;
+    const sd = c.segments[idx - 1];
+    this.place(this.hot, sd, 0.001);
+    this.place(this.cool, sd, sd.len);
+    this.game.feedback.burst(_a.set(sd.x, 0.1, sd.z), { count: 5, color: '#9fe3ff', speed: 1.4, life: 0.5, gravity: -1 });
+    if (idx % 2 === 0) this.game.audio.play('tick', { volume: 0.22, rate: 1 + idx * 0.04 });
+  }
+
   /** Avanza por los puntos de la grieta mientras el dedo los va alcanzando */
   follow(c, p) {
-    const next = c.pts[c.idx];
-    if (Math.hypot(p.x - next[0], p.z - next[1]) < REACH) {
-      c.idx += 1;
-      if (c.idx > 1) {
-        const sd = c.segments[c.idx - 2];
-        this.place(this.hot, sd, 0.001);
-        this.place(this.cool, sd, sd.len);
-        this.game.feedback.burst(_a.set(sd.x, 0.1, sd.z), { count: 5, color: '#9fe3ff', speed: 1.4, life: 0.5, gravity: -1 });
-        if (c.idx % 2 === 0) this.game.audio.play('tick', { volume: 0.22, rate: 1 + c.idx * 0.04 });
+    const reach = this.reach ?? REACH;
+    const stray = this.stray ?? STRAY;
+    // el punto mas avanzado al alcance (hasta dos por delante, si el dedo iba rapido)
+    for (let skip = 2; skip >= 0; skip -= 1) {
+      const target = c.pts[c.idx + skip];
+      if (!target) continue;
+      if (Math.hypot(p.x - target[0], p.z - target[1]) < reach) {
+        for (let k = 0; k <= skip; k += 1) { c.idx += 1; this.sealSegment(c, c.idx - 1); }
+        if (c.idx >= c.pts.length) this.seal(c);
+        return;
       }
-      if (c.idx >= c.pts.length) this.seal(c);
-      return;
     }
     // ¿se ha salido del tramo actual? solo avisa: no se pierde nada
     if (c.idx > 0) {
+      const next = c.pts[c.idx];
       const a = c.pts[c.idx - 1];
       const d = this.distToSegment(p, a, next);
-      if (d > STRAY && this.time - this.strayAt > 1.5) {
+      if (d > stray && this.time - this.strayAt > 1.5) {
         this.strayAt = this.time;
         this.game.say('SIGUE LA GRIETA', 1200);
         this.game.audio.play('soften', { volume: 0.25 });

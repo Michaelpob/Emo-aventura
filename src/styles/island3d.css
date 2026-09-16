@@ -741,6 +741,8 @@
 .i3d-breath__cycles i.is-on { color: var(--lung); text-shadow: 0 0 10px var(--lung); }
 
 @media (max-height: 520px) {
+  /* con poco alto, el aviso central baja para no montarse sobre la nota de arriba */
+  .i3d__center { top: auto; bottom: 21%; }
   .i3d-breath { width: min(340px, calc(100% - 24px)); padding: 8px 14px 10px; }
   .i3d-breath__eyebrow { display: none; }
   .i3d-breath__pad { width: clamp(110px, 42vh, 150px); }

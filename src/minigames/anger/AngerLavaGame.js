@@ -405,6 +405,7 @@ export class AngerLavaGame extends MinigameBase {
   placeCamera() {
     this.camBase = new THREE.Vector3(0.8, 5.6, 10.8);
     this.camTarget = new THREE.Vector3(1.6, 1.6, -5);
+    this.camHome = { base: this.camBase.clone(), target: this.camTarget.clone() };
     this.camera.fov = 64;
     this.camera.updateProjectionMatrix();
     this.camera.position.copy(this.camBase);
@@ -1128,6 +1129,22 @@ export class AngerLavaGame extends MinigameBase {
     this.cracks.start();
     this.crackDeco.visible = false;      // las grietas decorativas no se confunden con las jugables
     this.waveEl.innerHTML = `Grietas <b>0</b> de 4 <small>· ${this.level.label}</small>`;
+    // la camara se acerca y se inclina sobre la cornisa: en el celular las
+    // grietas tienen que ocupar pantalla para poder seguirlas con el dedo
+    this.moveCamera(new THREE.Vector3(0.4, 7.6, 4.9), new THREE.Vector3(0.3, 0.2, -1.3), 1.4);
+  }
+
+  /** Lleva la camara (base y objetivo) a otro sitio con suavidad */
+  moveCamera(base, target, seconds = 1.2) {
+    const b0 = this.camBase.clone();
+    const t0 = this.camTarget.clone();
+    this.feedback.tween({
+      from: 0, to: 1, duration: seconds,
+      onUpdate: (v) => {
+        this.camBase.lerpVectors(b0, base, v);
+        this.camTarget.lerpVectors(t0, target, v);
+      }
+    });
   }
 
   onCrackSealed(n, total) {
@@ -1150,6 +1167,7 @@ export class AngerLavaGame extends MinigameBase {
     completeActivity(`anger-chispa-${idx + 1}`, 4);
     this.cracks?.dispose();
     this.cracks = null;
+    this.moveCamera(this.camHome.base, this.camHome.target, 1.4);
     // ahora si: la respiracion, de ultimas
     this.calmBase = CALM_BASE + 0.15;
     this.calmTarget = this.calmBase;
@@ -1435,6 +1453,8 @@ export class AngerLavaGame extends MinigameBase {
     this.cracks?.dispose();
     this.cracks = null;
     this.crackDeco.visible = true;
+    this.camBase.copy(this.camHome.base);
+    this.camTarget.copy(this.camHome.target);
     this.trigger = null;
     this.calmBase = CALM_BASE;
     this.breath = null;

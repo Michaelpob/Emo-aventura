@@ -436,6 +436,11 @@ impulso y la acción.
   pregunta sin respuesta correcta —«¿qué es lo que más te enciende a ti?»— que
   queda registrada. Herramienta: Chispa de Comprensión. Los 44 tramos van en
   tres `InstancedMesh` (al rojo, sellados, ramas): la fase cuesta 13 draw calls.
+  **En celular**: la cámara se acerca y se inclina sobre la cornisa mientras
+  duran las grietas (y vuelve después), la tolerancia se mide en píxeles de
+  pantalla (≥ 34 px con dedo, ≥ 22 px con ratón; ≥ 70 / 48 px antes de avisar)
+  y un trazo rápido puede saltarse hasta dos puntos: el juego toma siempre el
+  punto más avanzado que esté al alcance.
 - **Respiración 4-4-4-4 para enfriarlo del todo, de últimas.** Aparecen unos pulmones que
   son el botón: *mantener pulsado* para inhalar (4 s) y sostener (4 s), *soltar*
   para exhalar (4 s) y esperar (4 s). Los pulmones se llenan y vacían, un anillo
