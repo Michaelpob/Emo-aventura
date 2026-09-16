@@ -156,6 +156,8 @@
 }
 .i3d-flash {
   margin: 0;
+  max-width: none;
+  color: #fff;               /* el p{} global del mapa lo pintaba oscuro */
   padding: 8px 18px;
   border-radius: 14px;
   background: rgba(8, 16, 22, 0.45);
@@ -345,7 +347,6 @@
   .i3d-bar__track { width: 74px; }
   .i3d-prompt { bottom: 27%; font-size: 0.8rem; }
   .i3d__btn { top: 10px; left: 10px; }
-  .i3d__btn--sound { left: 58px; }        /* no debe caer encima del de pausa */
   .i3d-flash { font-size: 1.05rem; }
 }
 
