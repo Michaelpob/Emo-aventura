@@ -51,6 +51,24 @@ function toneBuffer(ctx, seconds, freqFrom, freqTo, gainCurve, harmonics = 1) {
   return buffer;
 }
 
+/** Varias notas a la vez (acorde): suma de senos con sus dos primeros armonicos */
+function chordBuffer(ctx, seconds, freqs, gainCurve) {
+  const rate = ctx.sampleRate;
+  const len = Math.floor(rate * seconds);
+  const buffer = ctx.createBuffer(1, len, rate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < len; i += 1) {
+    const t = i / rate;
+    let sample = 0;
+    for (let f = 0; f < freqs.length; f += 1) {
+      const w = 2 * Math.PI * freqs[f] * t;
+      sample += Math.sin(w) + Math.sin(w * 2) * 0.25 + Math.sin(w * 3) * 0.1;
+    }
+    data[i] = (sample / freqs.length) * (gainCurve ? gainCurve(i / len) : 1) * 0.5;
+  }
+  return buffer;
+}
+
 const decay = (p) => Math.pow(1 - p, 2.4);
 const bell = (p) => Math.sin(Math.PI * p);
 const soft = (p) => Math.min(1, p * 8) * Math.pow(1 - p, 1.6);
@@ -116,7 +134,20 @@ const RECIPES = {
   flutter:   (ctx) => noiseBuffer(ctx, 0.5, 1800, (p) => bell(p) * (Math.sin(p * Math.PI * 2 * 22) > 0 ? 1 : 0.2) * 0.35),
   glass:     (ctx) => toneBuffer(ctx, 1.2, 1568, 1568, (p) => Math.pow(1 - p, 2.2) * 0.6, 3),
   growl:     (ctx) => toneBuffer(ctx, 0.9, 95, 70, (p) => bell(p) * (0.7 + 0.3 * Math.sin(p * 90)) * 0.8, 6),
-  bloom:     (ctx) => toneBuffer(ctx, 1.1, 520, 1040, (p) => bell(p) * 0.6, 3)
+  bloom:     (ctx) => toneBuffer(ctx, 1.1, 520, 1040, (p) => bell(p) * 0.6, 3),
+  // La casa (Isla del Miedo, nivel 2). Todo con techo de volumen: son
+  // movimientos y roces, nunca golpes.
+  scratch:   (ctx) => noiseBuffer(ctx, 0.5, 3200, (p) => bell(p) * (Math.sin(p * 90) > 0.2 ? 0.45 : 0.1)),   // aranazo bajo la cama
+  rub:       (ctx) => noiseBuffer(ctx, 0.7, 700, (p) => bell(p) * 0.45),                                    // roce de tela en el armario
+  glassTap:  (ctx) => toneBuffer(ctx, 0.16, 1500, 900, (p) => decay(p) * 0.55, 3),                          // rama contra el cristal
+  metal:     (ctx) => toneBuffer(ctx, 0.9, 150, 95, (p) => decay(p) * 0.6, 5),                              // ruido metalico y profundo
+  hum:       (ctx) => noiseBuffer(ctx, 2.0, 160, (p) => (0.28 + Math.sin(p * Math.PI * 12) * 0.08) * bell(p)), // lavadora terminando
+  purr:      (ctx) => toneBuffer(ctx, 1.3, 26, 24, (p) => bell(p) * (0.55 + 0.45 * Math.sin(p * 160)), 3),  // ronroneo
+  meow:      (ctx) => toneBuffer(ctx, 0.42, 620, 480, (p) => Math.pow(bell(p), 0.7) * 0.45, 3),             // maullido corto
+  warm:      (ctx) => chordBuffer(ctx, 1.6, [261.6, 329.6, 392, 523.3], (p) => Math.min(1, p * 12) * Math.pow(1 - p, 1.5) * 0.8), // acorde calido, revelacion
+  lowNote:   (ctx) => toneBuffer(ctx, 0.55, 130, 110, (p) => Math.min(1, p * 6) * Math.pow(1 - p, 1.6) * 0.45, 2), // fallo suave
+  clock:     (ctx) => toneBuffer(ctx, 0.07, 1500, 1500, (p) => decay(p) * 0.35, 3),                         // reloj a lo lejos
+  dawnPad:   (ctx) => chordBuffer(ctx, 4.5, [196, 246.9, 293.7, 392], (p) => Math.min(1, p * 3) * Math.pow(1 - p, 0.8) * 0.5) // amanecer
 };
 
 export class AudioBus {

@@ -148,6 +148,7 @@ export class FearNightGame extends MinigameBase {
       return { x: s.x, y: this.ground.userData.heightAt(s.x, s.z) + 1.75 * s.scale, z: s.z, scale: s.scale * 1.25, scaleY: s.scale * 1.7 };
     });
     this.scene.add(trunks, crowns);
+    this.trees = { trunks, crowns };
 
     // colisiones: cilindros finos en los troncos cercanos al area jugable
     spots.forEach((s) => {
@@ -357,6 +358,7 @@ export class FearNightGame extends MinigameBase {
   lightLantern(lantern) {
     if (lantern.lit) return;
     lantern.lit = true;
+    this.lastLantern = lantern;
     lantern.interactable.done = true;
     lantern.glass.material.color.set('#ffd98a');
     lantern.glass.material.emissive.set('#ffb347');
@@ -402,11 +404,14 @@ export class FearNightGame extends MinigameBase {
     this.music?.setVolume(0.35, 4);
     this.audio.play('success', { volume: 0.5 });
 
-    this.later(() => {
-      const p = new THREE.Vector3(0, this.ground.userData.heightAt(0, 8), 8);
-      this.openPortal(p, { color: '#ffd9a8', label: 'Salir del bosque' });
-      this.say('CRUZA EL PORTAL', 2000);
-    }, 2000);
+    this.later(() => this.openExit(), 2000);
+  }
+
+  /** Salida del bosque: un portal. Otras variantes pueden abrir otra cosa. */
+  openExit() {
+    const p = new THREE.Vector3(0, this.ground.userData.heightAt(0, 8), 8);
+    this.openPortal(p, { color: '#ffd9a8', label: 'Salir del bosque' });
+    this.say('CRUZA EL PORTAL', 2000);
   }
 
   /* ============================================================== sustos */

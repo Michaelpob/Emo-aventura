@@ -7,6 +7,7 @@ import { DisgustGuardiansGame } from './disgust/DisgustGuardiansGame.js';
 import { AngerVolcanoGame } from './anger/AngerVolcanoGame.js';
 import { AngerLavaGame } from './anger/AngerLavaGame.js';
 import { FearNightGame } from './fear/FearNightGame.js';
+import { FearIslandFlow } from './fear/FearIslandFlow.js';
 import { SadnessRestoreGame } from './sadness/SadnessRestoreGame.js';
 import { SadnessDaysGame } from './sadness/SadnessDaysGame.js';
 import { SadnessHouseGame } from './sadness/SadnessHouseGame.js';
@@ -19,7 +20,8 @@ export const minigameRegistry = {
   // Islas 3D jugables
   'anger-lava': AngerLavaGame,
   'anger-volcano': AngerVolcanoGame,
-  'fear-night': FearNightGame,
+  'fear-night-house': FearIslandFlow,   // bosque (nivel 1) + casa (nivel 2)
+  'fear-night': FearNightGame,          // solo el bosque
   'sadness-house': SadnessHouseGame,
   'sadness-days': SadnessDaysGame,
   'sadness-restore': SadnessRestoreGame,

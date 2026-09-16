@@ -31,10 +31,20 @@ export function createIslandMesh(island) {
   if (island.emoji) {
     const sprite = createEmojiSprite(island.emoji);
     sprite.name = `${island.id}-emoji`;
-    sprite.position.y = island.height * 0.35 + 1.6;
+    sprite.position.y = island.height * 0.35 + 1.78;
     sprite.scale.set(0.7, 0.7, 1);
     group.add(sprite);
   }
+
+  // nombre de la isla, flotando entre la tierra y el emoji
+  const label = createLabelSprite(island.name, island.palette.ui);
+  label.name = `${island.id}-label`;
+  label.position.y = island.height * 0.35 + 1.12;
+  label.scale.set(1.9, 0.475, 1);
+  // siempre legible: se dibuja por encima de arboles y cristales
+  label.material.depthTest = false;
+  label.renderOrder = 20;
+  group.add(label);
 
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(island.radius * 1.35, 0.035, 8, 48),
@@ -59,13 +69,51 @@ function createEmojiSprite(emoji) {
   canvas.width = 128;
   canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.font = '96px serif';
+  // fuentes de emoji a color: sin esto Windows cae en glifos de linea monocromos
+  ctx.font = '92px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(emoji, 64, 68);
+  ctx.fillText(emoji, 64, 70);
   const texture = new THREE.CanvasTexture(canvas);
   const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
   return new THREE.Sprite(material);
+}
+
+/** Pildora con el nombre: fondo del color de la isla, texto blanco */
+function createLabelSprite(text, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.font = '700 62px "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const w = Math.min(500, ctx.measureText(text).width + 72);
+  const x = (512 - w) / 2;
+  ctx.fillStyle = 'rgba(8, 20, 30, 0.35)';
+  roundRect(ctx, x + 3, 22, w, 92, 46);
+  ctx.fill();
+  ctx.fillStyle = color;
+  roundRect(ctx, x, 16, w, 92, 46);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+  ctx.shadowBlur = 6;
+  ctx.fillText(text, 256, 64);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 4;
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+  return new THREE.Sprite(material);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 export function setIslandHover(group, isHovered) {

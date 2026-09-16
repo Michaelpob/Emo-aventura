@@ -3,15 +3,17 @@ import { copyFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // docs/ es a la vez la carpeta publicada y la que vite vacia en cada build:
-// el plan de gameplay vive en la raiz y se copia dentro al terminar.
+// los documentos viven en la raiz y se copian dentro al terminar.
+const DOCS = ['PLAN-GAMEPLAY.md', 'FEAR-LEVEL2.md'];
+
 function copyDocs() {
   return {
-    name: 'copy-plan-gameplay',
+    name: 'copy-docs',
     closeBundle() {
-      const from = resolve(process.cwd(), 'PLAN-GAMEPLAY.md');
-      if (existsSync(from)) {
-        copyFileSync(from, resolve(process.cwd(), 'docs/PLAN-GAMEPLAY.md'));
-      }
+      DOCS.forEach((name) => {
+        const from = resolve(process.cwd(), name);
+        if (existsSync(from)) copyFileSync(from, resolve(process.cwd(), 'docs', name));
+      });
     }
   };
 }

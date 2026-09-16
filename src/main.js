@@ -5,6 +5,7 @@ import './styles/fear.css';
 import './styles/joy.css';
 import './styles/disgust.css';
 import './styles/island3d.css';
+import './styles/fear-house.css';
 import './styles/responsive.css';
 import { EmotionIslandApp } from './ui/EmotionIslandApp.js';
 

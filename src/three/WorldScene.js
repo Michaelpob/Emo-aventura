@@ -144,22 +144,54 @@ export class WorldScene {
       const badge = group.getObjectByName(`${id}-completion-badge`);
       if (badge) badge.visible = this.completed.has(id);
     });
+    this.refreshTint();
   }
 
-  /** Islas bloqueadas: menor saturacion, oscurecidas y con candado flotante */
-  setLocked(lockedIds) {
-    this.locked = new Set(lockedIds ?? []);
+  /**
+   * Color de cada isla segun su estado: apagada (gris) hasta completarla,
+   * entonces recupera su paleta completa. Bloqueada: mas oscura y con candado.
+   * Solo fija el color objetivo; animate() hace la transicion suave.
+   */
+  refreshTint() {
+    const muted = new THREE.Color('#767c85');
     const shade = new THREE.Color('#5a6472');
     this.islandGroups.forEach((group, id) => {
-      const isLocked = this.locked.has(id);
-      group.userData.locked = isLocked;
+      const isLocked = this.locked?.has(id) ?? false;
+      const isDone = this.completed?.has(id) ?? false;
       group.traverse((child) => {
         if (!child.isMesh || !child.material?.color) return;
         if (!child.userData.baseColor) child.userData.baseColor = child.material.color.clone();
         const color = child.userData.baseColor.clone();
         if (isLocked) color.lerp(shade, 0.6).multiplyScalar(0.78);
-        child.material.color.copy(color);
+        else if (!isDone) color.lerp(muted, 0.78).multiplyScalar(0.86);
+        child.userData.targetColor = color;
+        // los cristales tampoco brillan hasta completar la isla
+        if (child.material.emissive) {
+          if (!child.userData.baseEmissive) child.userData.baseEmissive = child.material.emissive.clone();
+          const glow = child.userData.baseEmissive.clone();
+          if (isLocked || !isDone) glow.lerp(muted, 0.8).multiplyScalar(0.5);
+          child.userData.targetEmissive = glow;
+        }
+        // las islas que nacen apagadas no parpadean al cargar
+        if (!child.userData.tintReady) {
+          child.material.color.copy(color);
+          if (child.userData.targetEmissive) child.material.emissive.copy(child.userData.targetEmissive);
+          child.userData.tintReady = true;
+        }
       });
+      const emoji = group.getObjectByName(`${id}-emoji`);
+      if (emoji) emoji.material.opacity = isLocked ? 0.4 : isDone ? 1 : 0.55;
+      const label = group.getObjectByName(`${id}-label`);
+      if (label) label.material.opacity = isLocked ? 0.5 : 1;
+    });
+  }
+
+  /** Islas bloqueadas: menor saturacion, oscurecidas y con candado flotante */
+  setLocked(lockedIds) {
+    this.locked = new Set(lockedIds ?? []);
+    this.islandGroups.forEach((group, id) => {
+      const isLocked = this.locked.has(id);
+      group.userData.locked = isLocked;
       let lock = group.getObjectByName(`${id}-lock`);
       if (!lock) {
         lock = this.createLockSprite();
@@ -170,9 +202,8 @@ export class WorldScene {
         group.add(lock);
       }
       lock.visible = isLocked;
-      const emoji = group.getObjectByName(`${id}-emoji`);
-      if (emoji) emoji.material.opacity = isLocked ? 0.4 : 1;
     });
+    this.refreshTint();
   }
 
   isLocked(islandId) {
@@ -700,6 +731,13 @@ export class WorldScene {
       const phase = group.userData.floatPhase;
       group.position.y = Math.sin(elapsed * 0.48 + phase) * 0.026 + Math.sin(elapsed * 0.91 + phase * 0.4) * 0.01;
       group.scale.setScalar(group.scale.x + ((group.userData.hoverTarget ?? 1) - group.scale.x) * soft);
+      // el color de la isla llega a su objetivo poco a poco (al completarla, "se enciende")
+      group.traverse((child) => {
+        const target = child.userData.targetColor;
+        if (target && !child.material.color.equals(target)) child.material.color.lerp(target, soft * 0.5);
+        const glow = child.userData.targetEmissive;
+        if (glow && !child.material.emissive.equals(glow)) child.material.emissive.lerp(glow, soft * 0.5);
+      });
       const badge = group.getObjectByName(`${id}-completion-badge`);
       if (badge) {
         badge.rotation.y += delta * 1.8;

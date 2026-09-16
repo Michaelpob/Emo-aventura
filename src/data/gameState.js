@@ -33,6 +33,9 @@ function baseState() {
     progress: 0,
     reevaluations: [],
     plans: [],
+    // Isla del Miedo en dos niveles: bosque (level1) y casa (level2). La isla
+    // cuenta como completada solo cuando el flujo termina los dos.
+    fear: { level1: false, level2: false },
     settings: { sound: true, reduceMotion: false }
   };
 }
@@ -72,6 +75,16 @@ export function loadProgress() {
         if (!gameState.unlockedIslands.includes(id)) gameState.unlockedIslands.push(id);
       });
       if (!gameState.settings) gameState.settings = { sound: true, reduceMotion: false };
+      // Guardados de cuando la Isla del Miedo era un solo nivel: el bosque ya
+      // estaba superado, la casa no existia. La insignia se conserva.
+      if (!saved.fear || typeof saved.fear !== 'object') {
+        gameState.fear = {
+          level1: gameState.completedIslands.includes('fear'),
+          level2: false
+        };
+      } else {
+        gameState.fear = { level1: !!saved.fear.level1, level2: !!saved.fear.level2 };
+      }
       // El sonido venia apagado por defecto y los guardados antiguos lo
       // conservan: se enciende salvo que el jugador lo haya apagado a mano.
       if (!gameState.settings.soundChosen) gameState.settings.sound = true;
@@ -195,6 +208,21 @@ export function completeIsland(islandId) {
   }
   addBadge(islandId);
   saveProgress();
+}
+
+/* ---------------------------------------------------- niveles del miedo */
+
+export function getFearLevels() {
+  if (!gameState.fear) gameState.fear = { level1: false, level2: false };
+  return gameState.fear;
+}
+
+/** Marca superado un nivel de la Isla del Miedo (1 bosque, 2 casa) */
+export function setFearLevel(level, done = true) {
+  const fear = getFearLevels();
+  fear[`level${level}`] = !!done;
+  saveProgress();
+  return fear;
 }
 
 export function allIslandsCompleted() {
