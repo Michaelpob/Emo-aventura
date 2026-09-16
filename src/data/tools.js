@@ -181,6 +181,33 @@ export const TOOLS = {
     strategy: 'Distancia de los pensamientos',
     description: 'La tristeza suelta frases («para que», «manana», «no sirve»). No son hechos ni ordenes: puedes moverte con ellas puestas.',
     order: 20
+  },
+  'llave-paciencia': {
+    id: 'llave-paciencia',
+    icon: '🗝️',
+    name: 'Llave de la Paciencia',
+    emotion: 'Frustracion',
+    strategy: 'Tolerar la frustracion',
+    description: 'Parar un momento cuando sube, y volver al intento con el pulso firme.',
+    order: 21
+  },
+  'escalera-pasos': {
+    id: 'escalera-pasos',
+    icon: '🪜',
+    name: 'Escalera de Pasos',
+    emotion: 'Frustracion',
+    strategy: 'Meta en pasos pequenos',
+    description: 'Dividir lo que quieres en pasos que si puedes dar, aunque se tarde un poco mas.',
+    order: 22
+  },
+  'mano-amiga': {
+    id: 'mano-amiga',
+    icon: '🤝',
+    name: 'Mano Amiga',
+    emotion: 'Frustracion',
+    strategy: 'Pedir ayuda',
+    description: 'No tienes que hacerlo todo tu: pedir ayuda tambien es avanzar.',
+    order: 23
   }
 };
 
@@ -192,5 +219,5 @@ export const BADGES = {
   anger: { id: 'anger', icon: '🌋', name: 'Guardian de la Ira', island: 'Al rojo vivo' },
   disgust: { id: 'disgust', icon: '🍃', name: 'Guardian del Desagrado', island: 'Guardianes del Desagrado' },
   sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'La casa en marcha' },
-  surprise: { id: 'surprise', icon: '✨', name: 'Guardian de la Sorpresa', island: 'Isla de la Sorpresa' }
+  frustration: { id: 'frustration', icon: '🧗', name: 'Guardian de la Frustracion', island: 'La torre' }
 };

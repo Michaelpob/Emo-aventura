@@ -12,7 +12,7 @@ const STORAGE_KEY = 'emo-aventura-state';
 export const ISLAND_CHAIN = ['fear', 'joy', 'anger', 'disgust'];
 
 // Islas del mapa que no forman parte de la aventura
-export const FREE_ISLANDS = ['sadness', 'surprise'];
+export const FREE_ISLANDS = ['sadness', 'frustration'];
 
 export const ALL_ISLANDS = [...ISLAND_CHAIN, ...FREE_ISLANDS];
 

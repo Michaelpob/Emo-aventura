@@ -15,6 +15,7 @@ import { JoyOrbsGame } from './joy/JoyOrbsGame.js';
 import { DisgustSortGame } from './disgust/DisgustSortGame.js';
 import { DisgustTerritoryGame } from './disgust/DisgustTerritoryGame.js';
 import { SurpriseObserveGame } from './surprise/SurpriseObserveGame.js';
+import { FrustrationTowerGame } from './frustration/FrustrationTowerGame.js';
 
 export const minigameRegistry = {
   // Islas 3D jugables
@@ -28,6 +29,7 @@ export const minigameRegistry = {
   'joy-orbs': JoyOrbsGame,
   'disgust-sort': DisgustSortGame,
   'disgust-territory': DisgustTerritoryGame,
+  'frustration-tower': FrustrationTowerGame,
   'surprise-observe': SurpriseObserveGame,
   // EMO-AVENTURA (2D, en migracion a 3D)
   'fear-island': FearIslandGame,

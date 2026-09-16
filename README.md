@@ -38,7 +38,7 @@ derecho para la cámara y botones de saltar/interactuar.
 | El mundo que vuelve | Tristeza | 3ª persona | **encontrar y restaurar** | 6 fragmentos de recuerdo; cada uno hace brotar vegetación, reconstruye una estructura y añade una capa de audio |
 | Valle de la Luz | Alegría | 3ª persona | **saltar y recoger** | 12 orbes entre plataformas flotantes, con combo si no tocas el suelo |
 | Guardianes del Desagrado | Asco | 1ª persona | **reconocer, medir y responder** | Cuatro etapas en orden, cada una en su propio entorno: termómetro (se sube por terrazas y cambia el mundo), dos zonas donde los estímulos se responden con el cuerpo (alejarse = sí me genera desagrado), Espejo de las Reacciones (pisar baldosas) y La Reacción Impulsiva, que crece si corres, saltas o chocas y se encoge usando los altares: cada letrero dice qué hacer y cada altar enseña una técnica (respirar, sostener la sensación, la puerta del pensamiento equilibrado, pedir apoyo al Guardián) y da su recompensa; las Mariposas de color y el sendero 5-4-3-2-1 se juegan completos en su propio claro la primera vez y luego como repaso breve junto al altar |
-| El jardín que cambia | Sorpresa | 1ª persona | **observar** | Algo cambia siempre fuera de tu campo de visión: date cuenta y acércate |
+| La torre | Frustración | cámara fija | **seguir bajo reveses** | Levanta una torre de 12 bloques soltándolos a tiempo mientras ráfagas de viento (que no dependen de ti) la tumban. La frustración sube con cada revés y hace temblar la mano; se regula parando, con pasos cortos o pidiendo ayuda |
 
 Al superar cada reto se abre un **portal físico** en la escena que el jugador
 cruza por su propia voluntad: no hay pantalla de "minijuego completado".
@@ -60,7 +60,7 @@ src/
 ├── minigames/
 │   ├── anger/AngerLavaGame.js (+ AngerCracksStage.js)   fear/FearNightGame.js
 │   ├── sadness/SadnessHouseGame.js  joy/JoyOrbsGame.js
-│   ├── disgust/DisgustSortGame.js     surprise/SurpriseObserveGame.js
+│   ├── disgust/DisgustSortGame.js     frustration/FrustrationTowerGame.js
 │   └── index.js                        registro de minijuegos
 ├── data/       islands · gameState · tools · player
 ├── three/      mapa 3D principal (hub)
@@ -111,7 +111,7 @@ insignias, actividades, intensidades, reevaluaciones y desbloqueos. Cada isla 3D
 entrega sus herramientas y su insignia al cruzar el portal. **Todas las islas
 están abiertas desde el principio**: se puede entrar a cualquiera sin haber
 jugado otra antes. El orden Miedo → Alegría → Ira → Desagrado solo numera los
-capítulos de la aventura; Tristeza y Sorpresa van aparte.
+capítulos de la aventura; Tristeza y Frustración van aparte.
 
 ## Añadir una isla
 

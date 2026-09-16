@@ -104,24 +104,24 @@ export const islands = [
     minigame: 'disgust-territory'
   },
   {
-    id: 'surprise',
-    name: 'Sorpresa',
-    displayName: 'El jardin que cambia',
-    emoji: '😲',
-    subtitle: 'Algo cambia cuando no miras. Date cuenta y acercate.',
-    badge: 'Guardian de la Sorpresa',
-    reward: 'Estrella de Atencion',
+    id: 'frustration',
+    name: 'Frustracion',
+    displayName: 'La torre',
+    emoji: '😤',
+    subtitle: 'Algo se interpone entre tu y la cima. Sigue, para, cambia de paso o pide ayuda.',
+    badge: 'Guardian de la Frustracion',
+    reward: 'Llave de la Paciencia',
     palette: {
-      land: '#e8a0d0',
-      accent: '#c060a0',
-      foliage: '#f3d45b',
-      glow: '#ff7ad9',
-      ui: '#b050a0'
+      land: '#c9925e',
+      accent: '#8a4f2a',
+      foliage: '#9aa86a',
+      glow: '#ffb070',
+      ui: '#b0602a'
     },
     position: [3.5, 0, 2],
     radius: 1.18,
-    height: 0.36,
-    minigame: 'surprise-observe'
+    height: 0.4,
+    minigame: 'frustration-tower'
   }
 ];
 
@@ -136,6 +136,7 @@ export const minigameLabels = {
   'joy-orbs': 'Valle de la Luz',
   'disgust-sort': 'Guardianes del Desagrado',
   'disgust-territory': 'Guardianes del Desagrado',
+  'frustration-tower': 'La torre',
   'surprise-observe': 'El jardin que cambia',
   'fear-island': 'Isla del Miedo',
   'joy-valley': 'Valle de la Luz',

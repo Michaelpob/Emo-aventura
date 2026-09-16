@@ -177,7 +177,7 @@ export class AngerLavaGame extends MinigameBase {
     this.el.touch.remove();
 
     scene.fog = new THREE.FogExp2('#4a1a12', 0.012);
-    this.sky = createSky({ top: '#2a0c0a', bottom: '#7a2a17' });
+    this.sky = createSky({ top: '#2a0c0a', bottom: '#7a2a17', size: 180 });   // dentro del plano lejano de la camara
     scene.add(this.sky);
 
     this.lights = createLights({

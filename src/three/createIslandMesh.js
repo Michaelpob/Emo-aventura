@@ -212,6 +212,12 @@ const decorationBlueprints = {
     { kind: 'tree', x: 0.3, y: 0.28, z: 0.28, size: 0.24 },
     { kind: 'crystal', x: 0.08, y: 0.68, z: -0.38, size: 0.18 }
   ],
+  frustration: [
+    { kind: 'rock', x: 0.05, y: 0.42, z: 0.05, size: 0.26 },
+    { kind: 'rock', x: 0.05, y: 0.72, z: 0.05, size: 0.2 },
+    { kind: 'crystal', x: 0.05, y: 1.0, z: 0.05, size: 0.14 },
+    { kind: 'tree', x: -0.46, y: 0.3, z: -0.2, size: 0.22 }
+  ],
   surprise: [
     { kind: 'crystal', x: -0.2, y: 0.63, z: 0.38, size: 0.18, ry: 0.6 },
     { kind: 'tree', x: 0.34, y: 0.29, z: -0.1, size: 0.25 },

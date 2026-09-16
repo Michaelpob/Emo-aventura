@@ -574,3 +574,39 @@ la cámara —que orbita despacio sobre el centro y se puede arrastrar— y a ca
 isla se entra tocándola. `README` y los apartados históricos de este plan
 siguen describiendo el mapa antiguo con jugador; esta nota manda.
 
+
+## Frustración · «La torre» (sustituye a la Isla de la Sorpresa)
+
+`src/minigames/frustration/FrustrationTowerGame.js` · cámara fija, se juega
+tocando · género **precisión bajo reveses**.
+
+- La frustración aparece cuando algo se interpone entre tú y lo que quieres.
+  Lo que quieres es la cima: una torre de 12 bloques. Cada bloque va y viene
+  por encima de la torre y hay que soltarlo a tiempo; lo que sobresale se cae
+  (y se ve caer). Un bloque perdido se repone: no hay game over.
+- **Ráfagas** a alturas fijas (1, 2 o 3 según el nivel que dice el jugador al
+  entrar) tumban los dos bloques de arriba. No dependen de ti: es el revés
+  diseñado.
+- **Medidor de frustración**: sube con cada bloque caído, corte grande o
+  ráfaga; baja despacio sola. Cuando sube, el bloque va más rápido y baila (la
+  mano tiembla) y el cielo se carga. Si llega arriba, la mano se bloquea: solo
+  se sale parando.
+- **Las estrategias son el juego**: *Parar* (mantener pulsado: el bloque se
+  detiene y la frustración baja rápido), *Paso corto* (bloques pequeños, más
+  fáciles de acertar, que suman medio nivel) y *Ayuda* (dos usos: alguien
+  sostiene el bloque en su sitio). Cada una trae su reflexión sin cortar la
+  partida; también la primera ráfaga, la primera vez que sube mucho y la cima.
+- Herramientas: Llave de la Paciencia (siempre), Escalera de Pasos y Mano
+  Amiga (si se usaron). Insignia Guardián de la Frustración.
+
+La Isla de la Sorpresa (`surprise-observe`) queda registrada pero fuera del
+mapa. `FREE_ISLANDS` pasa a `['sadness', 'frustration']`.
+
+**Verificado con Playwright:** mapa con la isla nueva y sin rastro de Sorpresa,
+pregunta de nivel, partida completa con bot (19 bloques, 3 ráfagas, paso corto
+y ayuda), bloqueo por frustración al 100 y salida parando, portal, tarjeta
+final, insignia y herramientas; en iPhone emulado los tres botones caben.
+También se corrigió un agujero negro en el centro de la vista de las islas de
+cámara fija: la esfera del cielo (210 m) quedaba más allá del plano lejano de
+la cámara (220) cuando la cámara está a más de 10 m del centro.
+

@@ -267,10 +267,10 @@ export class EmotionIslandApp {
 
     // todas las islas estan abiertas: nunca hay panel de "bloqueada"
     const completed = this.completed.has(id);
-    const chapter = island.chapter ? `Capitulo ${island.chapter}` : island.name;
+    const eyebrow = island.chapter ? `Capitulo ${island.chapter} · ${island.name}` : `Isla de la ${island.name}`;
     this.overlayRoot.innerHTML = `
       <section class="island-panel" style="--accent:${island.palette.ui}">
-        <p class="eyebrow">${chapter} · ${island.name}</p>
+        <p class="eyebrow">${eyebrow}</p>
         <h2>${island.displayName}</h2>
         <p>${island.subtitle}</p>
         ${island.badge ? `

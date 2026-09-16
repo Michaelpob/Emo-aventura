@@ -661,6 +661,52 @@
   .i3d-intro__hint { margin-bottom: 10px; }
 }
 
+/* ------------------------------------------ la torre (frustracion) */
+
+.i3d-tools {
+  position: absolute;
+  right: 16px;
+  bottom: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.i3d-tools[hidden] { display: none; }
+.i3d-tool {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+  min-height: 46px;
+  padding: 6px 14px 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(8, 16, 22, 0.62);
+  color: #fff;
+  font: 700 0.86rem/1.1 inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(4px);
+  transition: background 160ms ease, transform 140ms ease;
+}
+.i3d-tool b { font-size: 1.25rem; line-height: 1; }
+.i3d-tool span { display: grid; gap: 2px; }
+.i3d-tool small { font-weight: 500; font-size: 0.72rem; color: rgba(255, 255, 255, 0.65); }
+.i3d-tool:hover { background: rgba(8, 16, 22, 0.85); }
+.i3d-tool:active, .i3d-tool.is-on { background: rgba(245, 165, 36, 0.85); color: #2b1a02; transform: scale(0.98); }
+.i3d-tool.is-on small { color: rgba(43, 26, 2, 0.7); }
+.i3d-tool[disabled] { opacity: 0.4; cursor: default; }
+
+@media (max-width: 720px), (max-height: 520px) {
+  .i3d-tools { right: 10px; bottom: 52px; gap: 6px; }
+  .i3d-tool { min-width: 0; min-height: 40px; padding: 5px 12px 5px 9px; font-size: 0.78rem; }
+  .i3d-tool small { display: none; }
+}
+
 /* ------------------------------------ respiracion 4-4-4-4 (pulmones) */
 
 .i3d-breath-layer {

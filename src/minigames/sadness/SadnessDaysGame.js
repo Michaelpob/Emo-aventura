@@ -43,7 +43,7 @@ export class SadnessDaysGame extends MinigameBase {
     this.el.touch.remove();
 
     scene.fog = new THREE.FogExp2('#8a9296', 0.026);
-    this.sky = createSky({ top: '#59636a', bottom: '#9aa4a8' });
+    this.sky = createSky({ top: '#59636a', bottom: '#9aa4a8', size: 180 });   // dentro del plano lejano de la camara
     scene.add(this.sky);
 
     this.ground = createGround({
