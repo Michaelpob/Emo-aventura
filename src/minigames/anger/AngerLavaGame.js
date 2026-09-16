@@ -10,15 +10,17 @@
 // una erupcion: el juego se para tres segundos y la unica forma de que baje es
 // no tocar nada. Despues sigue la misma oleada.
 //
-// Al terminar las oleadas el volcan se apaga, pero se enfria del todo con la
-// respiracion 4-4-4-4: unos pulmones que son el boton (mantener pulsado para
-// inhalar y sostener, soltar para exhalar y esperar). Cada respiracion vira el
-// cielo, la lava y los pulmones del rojo al azul. Tres, y se abre el portal.
+// Al terminar las oleadas el volcan se apaga y la cornisa se agrieta: segundo
+// mini-juego (AngerCracksStage): seguir cada grieta con el dedo hasta lo que
+// la encendio. Despues, la respiracion 4-4-4-4 enfria el volcan del todo:
+// unos pulmones que son el boton (mantener pulsado para inhalar y sostener,
+// soltar para exhalar y esperar). Tres respiraciones, y se abre el portal.
 
 import * as THREE from 'three';
 import { MinigameBase, prefersReducedMotion } from '../../engine/MinigameBase.js';
 import { createSky, createLights, GEO, scatterInstanced } from '../../engine/worldkit.js';
 import { addReward, completeActivity, recordReevaluation, setInitialIntensity } from '../../data/gameState.js';
+import { AngerCracksStage } from './AngerCracksStage.js';
 
 // Cada oleada: rocas que hay que atrapar, ritmo, cuanto tarda en enfriarse una
 // roca, cuanto aguanta fria antes de rodar, cada cuanto sale una chispa y con
@@ -106,6 +108,11 @@ const ERUPTION_NOTE = {
   title: 'Erupción',
   text: 'Subió demasiado y el volcán estalló. No has perdido nada de lo construido: parar y no tocar nada durante unos segundos también es una decisión, y es la que baja la lava.'
 };
+const CRACKS_NOTE = {
+  title: 'Lo que lo encendió',
+  text: 'Debajo de cada grieta había algo concreto: una burla, no ser escuchado, algo que te quitaron, un no. Reconocer qué encendió el enojo es lo que te deja elegir qué hacer con él.'
+};
+const CRACKS_QUESTION = ['Que se burlen de mí', 'Que no me escuchen', 'Que me quiten algo mío', 'Que me digan que no'];
 const BREATH_NOTE = {
   title: 'Respirar 4-4-4-4',
   text: 'Inhala 4, sostén 4, exhala 4, espera 4. No apaga el enojo: le baja la temperatura lo justo para que puedas elegir qué hacer. Te lo llevas a cualquier sitio.'
@@ -140,7 +147,9 @@ export class AngerLavaGame extends MinigameBase {
     this.placed = 0;          // bloques ya puestos en el puente
     this.caughtInWave = 0;
     this.placedInWave = 0;
-    this.phase = 'idle';      // idle | play | between | venting | breathe | done
+    this.phase = 'idle';      // idle | play | between | venting | cracks | breathe | done
+    this.cracks = null;       // segundo mini-juego: las grietas
+    this.calmBase = CALM_BASE;
     this.breath = null;       // respiracion en curso { cycle, phaseIndex, elapsed, idle }
     this.holding = false;
     this.calmTarget = 0;      // hacia donde va calmness (sube con cada respiracion)
@@ -240,6 +249,7 @@ export class AngerLavaGame extends MinigameBase {
       scale: 0.7 + (i % 3) * 0.3
     }));
     this.scene.add(cracks);
+    this.crackDeco = cracks;
 
     // isla de salida, al otro lado del puente
     const far = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 4.4, 7.5, 7), mat);
@@ -475,7 +485,7 @@ export class AngerLavaGame extends MinigameBase {
   }
 
   tap() {
-    if (this.phase === 'breathe') return;
+    if (this.phase === 'breathe' || this.phase === 'cracks') return;
     if (this.phase === 'venting') {
       // tocar durante la erupcion reinicia la cuenta: la calma pide no hacer nada
       this.ventTimer = 0;
@@ -594,7 +604,7 @@ export class AngerLavaGame extends MinigameBase {
     await this.showIntro({
       eyebrow: `Al rojo vivo · ${this.level.label}`,
       goal: `Construye el puente con ${TOTAL_ROCKS} rocas frías`,
-      hint: `Las rocas llegan al rojo vivo: si las tocas así te quemas y el volcán sube. Espera a que se pongan grises y entonces atrápalas. Las chispas nunca se enfrían: déjalas pasar. Al final, tres respiraciones 4-4-4-4 enfrían el volcán del todo. ${this.level.hint}`,
+      hint: `Las rocas llegan al rojo vivo: si las tocas así te quemas y el volcán sube. Espera a que se pongan grises y entonces atrápalas. Las chispas nunca se enfrían: déjalas pasar. Después, sigue con el dedo cada grieta de la cornisa hasta lo que la encendió; y al final, tres respiraciones 4-4-4-4 enfrían el volcán del todo. ${this.level.hint}`,
       keys: [['Clic', 'atrapar una roca fría'], ['Esperar', 'si está al rojo'], ['Nada', 'con las chispas']],
       touch: [['Toca', 'atrapar una roca fría'], ['Espera', 'si está al rojo'], ['Nada', 'con las chispas']]
     });
@@ -1043,6 +1053,12 @@ export class AngerLavaGame extends MinigameBase {
         this.say('QUIETO · RESPIRA', 0);
       }
       if (this.ventTimer >= VENT_SECONDS) this.endVent();
+    } else if (this.phase === 'cracks') {
+      this.phaseTimer += dt;
+      // las grietas se abren cuando la reflexion de la ultima oleada ya no esta
+      const noteGone = !this.lastNote || !this.lastNote.isConnected;
+      if (!this.cracks && this.phaseTimer > 1.6 && (noteGone || this.phaseTimer > 8)) this.startCracks();
+      this.cracks?.update(dt);
     } else if (this.phase === 'breathe') {
       this.phaseTimer += dt;
       // los pulmones entran cuando la reflexion ya no esta en pantalla
@@ -1083,7 +1099,7 @@ export class AngerLavaGame extends MinigameBase {
   /* ============================================================== cierre */
 
   calm() {
-    this.phase = 'breathe';
+    this.phase = 'cracks';
     this.phaseTimer = 0;
     this.heat = 0;
     this.heatBar.set(0);
@@ -1093,7 +1109,46 @@ export class AngerLavaGame extends MinigameBase {
     this.say('EL VOLCÁN SE APAGA', 1600);
     this.audio.play('success', { volume: 0.5 });
     this.audio.ambient('wind', { volume: 0.22 });
-    this.noteFor(this.wave, 6);   // breve: los pulmones esperan a que se vaya
+    this.noteFor(this.wave, 6);   // breve: las grietas esperan a que se vaya
+  }
+
+  /* ============================================================= grietas */
+
+  startCracks() {
+    // en los niveles altos, algunas grietas tienen ramas que no llevan al origen
+    this.cracks = new AngerCracksStage(this, { decoys: Math.min(4, (this.level.n - 1) * 2) });
+    this.cracks.start();
+    this.crackDeco.visible = false;      // las grietas decorativas no se confunden con las jugables
+    this.waveEl.innerHTML = `Grietas <b>0</b> de 4 <small>· ${this.level.label}</small>`;
+  }
+
+  onCrackSealed(n, total) {
+    this.waveEl.querySelector('b').textContent = String(n);
+    // cada grieta sellada enfria un poco la cornisa
+    this.calmTarget = CALM_BASE + (n / total) * 0.15;
+    completeActivity(`anger-grieta-${n}`, 4);
+  }
+
+  async onCracksDone() {
+    if (this.phase !== 'cracks') return;
+    if (!this.seen.includes(CRACKS_NOTE)) this.seen.push(CRACKS_NOTE);
+    // identificar lo propio: no hay respuesta correcta, solo se registra
+    const idx = await this.showChoice({
+      eyebrow: 'Las grietas',
+      title: 'De todo esto, ¿qué es lo que más te enciende a ti?',
+      options: CRACKS_QUESTION.map((t, i) => ({ label: `Grieta ${i + 1}`, text: t, value: i, color: '#ffb347' }))
+    });
+    this.trigger = CRACKS_QUESTION[idx];
+    completeActivity(`anger-chispa-${idx + 1}`, 4);
+    this.cracks?.dispose();
+    this.cracks = null;
+    // ahora si: la respiracion, de ultimas
+    this.calmBase = CALM_BASE + 0.15;
+    this.calmTarget = this.calmBase;
+    this.lastNote = null;
+    this.phase = 'breathe';
+    this.phaseTimer = 0;
+    this.say('AHORA, RESPIRA', 1800);
   }
 
   /* ========================================================= respiracion */
@@ -1207,13 +1262,13 @@ export class AngerLavaGame extends MinigameBase {
     el.ring.style.strokeDashoffset = String(RING_LEN * (1 - progress));
     this.calmBar.set(progress);
     // el color acompana al volcan: del rojo al azul
-    _c.lerpColors(LUNG_HOT, LUNG_CALM, (this.calmTarget - CALM_BASE) / (1 - CALM_BASE));
+    _c.lerpColors(LUNG_HOT, LUNG_CALM, (this.calmTarget - this.calmBase) / (1 - this.calmBase));
     el.card.style.setProperty('--lung', `#${_c.getHexString()}`);
   }
 
   /** Del volcan apagado (CALM_BASE) al frio del todo (1), segun lo respirado */
   calmFor(x) {
-    return CALM_BASE + (1 - CALM_BASE) * Math.max(0, Math.min(1, x));
+    return this.calmBase + (1 - this.calmBase) * Math.max(0, Math.min(1, x));
   }
 
   renderCycles() {
@@ -1355,12 +1410,13 @@ export class AngerLavaGame extends MinigameBase {
     this.tooltip.hidden = true;
     addReward('gota-calma');
     addReward('escudo-autocontrol');
+    addReward('chispa-comprension');
     completeActivity('anger-rojo-vivo', 20);
     recordReevaluation('anger', this.level.id, 'Pausa antes de actuar', 'baja');
     this.showClosingCard({
       title: 'Esperar a que se enfríe',
       lines: [
-        `${this.level.closing} El puente está hecho de las mismas rocas que te quemaban, y el volcán se enfrió del todo respirando. Esto es lo que fuiste encontrando:`,
+        `${this.level.closing} El puente está hecho de las mismas rocas que te quemaban; seguiste las grietas hasta lo que las encendió${this.trigger ? ` (lo que más te enciende: ${this.trigger.toLowerCase()})` : ''} y el volcán se enfrió del todo respirando. Esto es lo que fuiste encontrando:`,
         ...this.seen.map((r) => `<strong>${r.title}.</strong> ${r.text}`)
       ],
       onDone: () => super.finish()
@@ -1368,6 +1424,11 @@ export class AngerLavaGame extends MinigameBase {
   }
 
   onReset() {
+    this.cracks?.dispose();
+    this.cracks = null;
+    this.crackDeco.visible = true;
+    this.trigger = null;
+    this.calmBase = CALM_BASE;
     this.breath = null;
     this.setHolding(false);
     this.calmTarget = 0;
@@ -1413,5 +1474,7 @@ export class AngerLavaGame extends MinigameBase {
     this.waveEl?.remove();
     this.veil?.remove();
     this.breathEl?.layer.remove();
+    this.cracks?.dispose();
+    this.cracks = null;
   }
 }

@@ -424,7 +424,19 @@ impulso y la acción.
 - **Tres oleadas** de 4 rocas, cada una más rápida, con rocas que tardan más en
   enfriarse, menos margen una vez frías y más chispas. Con 12 bloques el volcán
   se apaga.
-- **Respiración 4-4-4-4 para enfriarlo del todo.** Aparecen unos pulmones que
+- **Segundo mini-juego: las grietas** (`AngerCracksStage.js`). Con el volcán
+  apagado, la cornisa se agrieta: cuatro grietas al rojo, cada una nacida de
+  algo concreto que encendió el enojo (una burla, no ser escuchado, algo que te
+  quitaron, un no). Hay que **seguir cada grieta con el dedo** desde su anillo
+  de arranque hasta el origen: los tramos recorridos se sellan en azul; al
+  llegar, la roca salta, aparece un cristal y una nota dice qué la encendió.
+  Soltar no pierde nada (se retoma donde ibas); salirse del trazo solo avisa
+  («SIGUE LA GRIETA»). En los niveles medio y alto, algunas grietas tienen
+  ramas falsas que no llevan a ningún sitio. Con las cuatro selladas, una
+  pregunta sin respuesta correcta —«¿qué es lo que más te enciende a ti?»— que
+  queda registrada. Herramienta: Chispa de Comprensión. Los 44 tramos van en
+  tres `InstancedMesh` (al rojo, sellados, ramas): la fase cuesta 13 draw calls.
+- **Respiración 4-4-4-4 para enfriarlo del todo, de últimas.** Aparecen unos pulmones que
   son el botón: *mantener pulsado* para inhalar (4 s) y sostener (4 s), *soltar*
   para exhalar (4 s) y esperar (4 s). Los pulmones se llenan y vacían, un anillo
   marca el tiempo y hay cuenta atrás por fase. Soltar antes de tiempo solo
@@ -442,6 +454,10 @@ impulso y la acción.
 - Todo se reutiliza: 4 rocas, 4 chispas y 12 bloques creados una vez; el toque
   se resuelve con un test rayo-esfera (sin raycast contra mallas), y las rocas
   vuelan con una parábola calculada para caer exactamente en su sitio.
+
+Orden final de la isla: pregunta de nivel → «Al rojo vivo» (3 oleadas) →
+las grietas → pregunta de lo que más te enciende → respiración 4-4-4-4 →
+portal.
 
 **Verificado (avanzando el juego con `step(dt)`):** vuelo y aterrizaje de la
 roca en su objetivo, enfriado y anillo, atrapar (bloque colocado), quemadura
