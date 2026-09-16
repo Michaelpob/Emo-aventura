@@ -65,6 +65,22 @@
 
 /* pantallas muy bajas (celular apaisado) */
 @media (max-height: 520px) {
+  /* pantalla de inicio: centrada y compacta; el titulo grande no cabe en ~350px de alto */
+  .start-screen,
+  .result-screen {
+    top: 50%;
+    bottom: auto;
+    left: 50%;
+    width: min(600px, calc(100vw - 36px));
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .start-screen .brand-mark { width: 40px; height: 40px; margin: 0 auto 8px; font-size: 1.1rem; }
+  .start-screen h1, .result-screen h2 { max-width: none; font-size: clamp(1.8rem, 8.5vh, 2.7rem); line-height: 0.98; }
+  .start-screen p, .result-screen p { max-width: 52ch; margin: 8px auto 0; font-size: 0.95rem; line-height: 1.4; }
+  .start-screen .primary-action, .result-screen .primary-action { margin-top: 12px; min-height: 42px; }
+  .start-screen__links { margin-top: 6px; }
+
   .emo-dialog { bottom: 8px; padding: 12px 14px; }
   .emo-character { bottom: 12%; }
   .breath__stage { height: 170px; }
