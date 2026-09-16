@@ -16,13 +16,12 @@ import { AudioBus } from './AudioBus.js';
 import { gameState, setSetting, prefersReducedMotion } from '../data/gameState.js';
 
 export class MinigameBase {
-  constructor({ host, island, player, onComplete, onExit, onOpenToolbox, mode = 'first' }) {
+  constructor({ host, island, player, onComplete, onExit, mode = 'first' }) {
     this.host = host;
     this.island = island;
     this.player = player;
     this.onComplete = onComplete;
     this.onExitCb = onExit;
-    this.onOpenToolbox = onOpenToolbox;
     this.mode = mode;
 
     this.disposables = [];
@@ -507,7 +506,6 @@ export class MinigameBase {
           <button class="i3d-btn i3d-btn--primary" type="button" data-resume>Seguir</button>
           <button class="i3d-btn" type="button" data-restart>Reiniciar</button>
           <button class="i3d-btn" type="button" data-how>Cómo se juega</button>
-          <button class="i3d-btn" type="button" data-toolbox>Mi caja</button>
           <button class="i3d-btn" type="button" data-leave>Salir al mapa</button>
         </div>
         <p class="i3d-panel__hint">ESC pausa · F3 rendimiento</p>
@@ -522,7 +520,6 @@ export class MinigameBase {
       this.paused = false;
       if (this._intro) this.interactionIntro();
     });
-    q('[data-toolbox]').addEventListener('click', () => this.onOpenToolbox?.());
     q('[data-leave]').addEventListener('click', () => this.onExitCb?.());
   }
 

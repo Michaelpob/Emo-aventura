@@ -3,7 +3,6 @@
    nada que dependa solo del color. */
 
 @media (max-width: 900px) {
-  .toolbox { grid-template-columns: 1fr; }
   .thermo { grid-template-columns: 64px 1fr; }
   .emo-panel__card { padding: 18px; }
   .emo-screen__card { padding: 20px; }
@@ -62,7 +61,6 @@
   .garden__field { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
   .grounding__field { grid-template-columns: 1fr 1fr; }
   .emo-screen__card { padding: 16px; border-radius: 18px; }
-  .toolbox__grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
 }
 
 /* pantallas muy bajas (celular apaisado) */

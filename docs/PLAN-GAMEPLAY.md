@@ -548,3 +548,15 @@ otra antes:
 - La pantalla de progreso toma los nombres de las islas de `islands.js`, así
   siempre muestra el nombre actual de cada minijuego.
 
+
+## Ajuste · Sin caja de herramientas
+
+Se retira la caja de herramientas de toda la app: el enlace de la pantalla de
+inicio, el botón 🧰 del mapa, «Mi caja» en el menú de pausa de las islas 3D y
+en la pantalla de isla completada, la pantalla en sí (`openToolbox`), el botón
+de la HUD del motor 2D y los contadores de herramientas en progreso y final.
+Las recompensas siguen guardándose en `gameState.tools` (las islas las siguen
+entregando), pero ya no hay pantalla que las liste. El Valle de la Luz
+(`public/valle-luz/`) conserva su propia caja porque forma parte de su
+especificación.
+

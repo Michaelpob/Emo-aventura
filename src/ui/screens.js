@@ -1,7 +1,7 @@
 // EMO-AVENTURA · Pantallas globales
-// Caja de Herramientas · Mi Progreso · Final de la aventura
+// Mi Progreso · Final de la aventura
 
-import { TOOL_LIST, TOOLS, BADGES } from '../data/tools.js';
+import { BADGES } from '../data/tools.js';
 import { gameState, getProgressSummary, ISLAND_CHAIN } from '../data/gameState.js';
 import { islands } from '../data/islands.js';
 
@@ -31,66 +31,6 @@ function mountOverlay(host, html, { label = 'Pantalla' } = {}) {
   return { layer, close };
 }
 
-/* ==================================================== CAJA DE HERRAMIENTAS */
-
-export function openToolbox(host) {
-  const owned = new Set(gameState.tools);
-  const html = `
-    <header class="emo-screen__head">
-      <p class="emo-screen__eyebrow">Mi caja</p>
-      <h2>MI CAJA DE HERRAMIENTAS EMOCIONALES</h2>
-      <p class="emo-screen__sub">${owned.size} de ${TOOL_LIST.length} herramientas obtenidas. Toca una para ver como se usa.</p>
-    </header>
-    <div class="toolbox">
-      <div class="toolbox__grid" data-grid>
-        ${TOOL_LIST.map((t, i) => `
-          <button class="tool ${owned.has(t.id) ? '' : 'is-locked'}" type="button" data-tool="${t.id}"
-                  style="--i:${i}" ${owned.has(t.id) ? '' : 'aria-label="Herramienta aun no obtenida"'}>
-            <span class="tool__icon" aria-hidden="true">${owned.has(t.id) ? t.icon : '❔'}</span>
-            <span class="tool__name">${owned.has(t.id) ? t.name : 'Por descubrir'}</span>
-            <span class="tool__emotion">${owned.has(t.id) ? t.emotion : ''}</span>
-            ${owned.has(t.id) ? `<span class="tool__order">#${[...owned].indexOf(t.id) + 1}</span>` : ''}
-          </button>
-        `).join('')}
-      </div>
-      <aside class="toolbox__detail" data-detail aria-live="polite">
-        <p class="toolbox__empty">Selecciona una herramienta para leer su descripcion.</p>
-      </aside>
-    </div>
-  `;
-  const { layer } = mountOverlay(host, html, { label: 'Mi caja de herramientas emocionales' });
-  const detail = layer.querySelector('[data-detail]');
-
-  layer.querySelectorAll('[data-tool]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const tool = TOOLS[btn.dataset.tool];
-      layer.querySelectorAll('[data-tool]').forEach((b) => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      if (!owned.has(tool.id)) {
-        detail.innerHTML = `
-          <div class="toolbox__card">
-            <div class="toolbox__icon" aria-hidden="true">❔</div>
-            <h3>Herramienta por descubrir</h3>
-            <p>La obtendras practicando en la isla correspondiente (${tool.emotion}).</p>
-          </div>
-        `;
-        return;
-      }
-      detail.innerHTML = `
-        <div class="toolbox__card">
-          <div class="toolbox__icon" aria-hidden="true">${tool.icon}</div>
-          <h3>${tool.name}</h3>
-          <p class="toolbox__meta">${tool.emotion} · ${tool.strategy}</p>
-          <p>${tool.description}</p>
-          <p class="toolbox__order">Obtenida en el lugar ${[...gameState.tools].indexOf(tool.id) + 1} de tu recorrido.</p>
-        </div>
-      `;
-    });
-  });
-
-  return layer;
-}
-
 /* ================================================================ PROGRESO */
 
 export function openProgress(host) {
@@ -107,7 +47,6 @@ export function openProgress(host) {
       <div class="progress__stats">
         <div class="progress__stat"><strong>${p.completed.length}/${p.total}</strong><span>islas completadas</span></div>
         <div class="progress__stat"><strong>${p.points}</strong><span>puntos emocionales</span></div>
-        <div class="progress__stat"><strong>${p.tools.length}</strong><span>herramientas</span></div>
         <div class="progress__stat"><strong>${p.badges.length}</strong><span>insignias</span></div>
       </div>
 
@@ -197,12 +136,7 @@ export function openFinal(host, onClose) {
 
       <div class="final__stats">
         <div><strong>${p.points}</strong><span>puntos emocionales</span></div>
-        <div><strong>${p.tools.length}</strong><span>herramientas</span></div>
         <div><strong>${p.percent}%</strong><span>progreso</span></div>
-      </div>
-
-      <div class="final__tools">
-        ${p.tools.map((t, i) => `<span class="final__tool" style="--i:${i}" title="${t.name}">${t.icon}</span>`).join('')}
       </div>
 
       <p class="final__note">Regular una emocion no significa dejar de sentirla. Significa reconocerla y elegir que hacer con ella.</p>

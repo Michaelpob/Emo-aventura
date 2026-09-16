@@ -997,39 +997,6 @@
 .emo-screen__sub { margin: 0; color: var(--emo-ink-soft); }
 
 /* caja de herramientas */
-.toolbox { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
-.toolbox__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; align-content: start; }
-.tool {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 14px 8px;
-  border: 2px solid var(--emo-line);
-  border-radius: var(--emo-radius-sm);
-  background: #fff;
-  font: inherit;
-  color: var(--emo-ink);
-  cursor: pointer;
-  animation: emo-pop 320ms ease backwards;
-  animation-delay: calc(var(--i) * 40ms);
-  transition: transform 160ms ease, border-color 200ms ease;
-}
-.tool:hover { transform: translateY(-3px); border-color: var(--emo-accent); }
-.tool__icon { font-size: 30px; }
-.tool__name { font-size: 0.86rem; font-weight: 700; text-align: center; line-height: 1.2; }
-.tool__emotion { font-size: 0.72rem; color: var(--emo-ink-soft); }
-.tool__order { position: absolute; top: 6px; right: 8px; font-size: 0.7rem; color: var(--emo-ink-soft); }
-.tool.is-locked { opacity: 0.45; filter: grayscale(1); }
-.tool.is-active { border-color: var(--emo-accent); box-shadow: 0 0 0 3px rgba(47, 127, 181, 0.18); }
-.toolbox__detail { padding: 16px; border-radius: var(--emo-radius-sm); background: var(--emo-paper-2); }
-.toolbox__icon { font-size: 46px; text-align: center; }
-.toolbox__card h3 { margin: 8px 0 4px; text-align: center; }
-.toolbox__meta { margin: 0 0 10px; text-align: center; color: var(--emo-accent); font-weight: 700; font-size: 0.86rem; }
-.toolbox__card p { line-height: 1.5; }
-.toolbox__order { margin-top: 10px; font-size: 0.84rem; color: var(--emo-ink-soft); }
-.toolbox__empty { color: var(--emo-ink-soft); }
 
 /* progreso */
 .progress { display: grid; gap: 18px; }
@@ -1117,8 +1084,6 @@
 .final__stats { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; margin-bottom: 16px; }
 .final__stats strong { display: block; font-size: 1.5rem; }
 .final__stats span { font-size: 0.82rem; color: rgba(255, 255, 255, 0.72); }
-.final__tools { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
-.final__tool { font-size: 26px; animation: emo-pop 400ms ease backwards; animation-delay: calc(var(--i) * 60ms); }
 .final__note { margin: 0 auto 18px; max-width: 44ch; color: rgba(255, 255, 255, 0.8); font-style: italic; }
 .final__fireworks { position: absolute; inset: 0; pointer-events: none; }
 .final__fireworks i {

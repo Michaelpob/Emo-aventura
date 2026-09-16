@@ -12,7 +12,7 @@ import {
   ISLAND_CHAIN
 } from '../data/gameState.js';
 import { BADGES } from '../data/tools.js';
-import { openToolbox, openProgress, openFinal } from './screens.js';
+import { openProgress, openFinal } from './screens.js';
 
 export class EmotionIslandApp {
   constructor(root) {
@@ -109,14 +109,12 @@ export class EmotionIslandApp {
           <button class="primary-action" type="button" data-start>${gameState.completedIslands.length ? 'Continuar aventura' : 'Comenzar'}</button>
           <div class="start-screen__links">
             <button class="text-action" type="button" data-edit-profile>Mi perfil</button>
-            <button class="text-action" type="button" data-toolbox>Mi caja de herramientas</button>
             <button class="text-action" type="button" data-progress>Mi progreso</button>
           </div>
         </section>
       `;
       this.overlayRoot.querySelector('[data-start]').addEventListener('click', () => this.showMap());
       this.overlayRoot.querySelector('[data-edit-profile]').addEventListener('click', () => this.showProfile(true));
-      this.overlayRoot.querySelector('[data-toolbox]').addEventListener('click', () => openToolbox(this.root));
       this.overlayRoot.querySelector('[data-progress]').addEventListener('click', () => openProgress(this.root));
     } else {
       this.overlayRoot.innerHTML = `
@@ -237,7 +235,6 @@ export class EmotionIslandApp {
           ` : ''}
           <div class="progress-pill" title="Islas de la aventura completadas">${doneChain}/${ISLAND_CHAIN.length} islas</div>
           <div class="progress-pill progress-pill--points" title="Puntos emocionales">✦ ${gameState.emotionalPoints}</div>
-          <button class="hud-icon" type="button" data-toolbox aria-label="Mi caja de herramientas">🧰</button>
           <button class="hud-icon" type="button" data-progress aria-label="Mi progreso">📊</button>
         </div>
       </section>
@@ -258,7 +255,6 @@ export class EmotionIslandApp {
     if (editBtn) {
       editBtn.addEventListener('click', () => this.showProfile(true));
     }
-    this.overlayRoot.querySelector('[data-toolbox]')?.addEventListener('click', () => openToolbox(this.root));
     this.overlayRoot.querySelector('[data-progress]')?.addEventListener('click', () => openProgress(this.root));
 
     this.setupTouchControls();
@@ -414,8 +410,7 @@ export class EmotionIslandApp {
       island,
       player: this.player,
       onComplete: (result) => this.showResult(result),
-      onExit: () => this.exitMinigame(),
-      onOpenToolbox: () => openToolbox(this.root)
+      onExit: () => this.exitMinigame()
     });
     this.currentMinigame.mount();
   }
@@ -462,7 +457,7 @@ export class EmotionIslandApp {
     this.overlayRoot.querySelector('[data-back-map]').addEventListener('click', () => this.showMap());
   }
 
-  /** Cierre de una isla de EMO-AVENTURA: insignia y herramientas */
+  /** Cierre de una isla de EMO-AVENTURA: insignia y puntos */
   showIslandComplete(result) {
     const badge = BADGES[result.badge ?? result.islandId];
     const finished = allIslandsCompleted();
@@ -481,17 +476,14 @@ export class EmotionIslandApp {
         <p>${result.message}</p>
         <div class="island-complete__stats">
           <span>✦ ${gameState.emotionalPoints} puntos</span>
-          <span>🧰 ${gameState.tools.length} herramientas</span>
           <span>🏅 ${gameState.badges.length}/4 insignias</span>
         </div>
         <div class="panel-actions">
           <button class="primary-action" type="button" data-back-map>${finished ? 'Ver el final' : 'Volver al mapa'}</button>
-          <button class="secondary-action" type="button" data-toolbox>Mi caja</button>
         </div>
       </section>
     `;
 
-    this.overlayRoot.querySelector('[data-toolbox]').addEventListener('click', () => openToolbox(this.root));
     this.overlayRoot.querySelector('[data-back-map]').addEventListener('click', () => {
       if (finished) {
         openFinal(this.root, () => this.showMap());

@@ -77,7 +77,6 @@ export class Stage {
             <span class="emo-points__value" data-points>${gameState.emotionalPoints}</span>
             <span class="emo-sr">puntos emocionales</span>
           </div>
-          <button class="emo-hud__btn" type="button" data-toolbox aria-label="Abrir mi caja de herramientas">🧰</button>
           <button class="emo-hud__btn" type="button" data-sound aria-label="Activar o desactivar sonido">${gameState.settings.sound ? '🔊' : '🔇'}</button>
           <button class="emo-hud__btn" type="button" data-motion aria-label="Reducir o activar animaciones">${prefersReducedMotion() ? '🐢' : '🎞️'}</button>
         </div>
@@ -116,7 +115,6 @@ export class Stage {
     };
 
     this.root.querySelector('[data-exit]').addEventListener('click', () => this.confirmExit());
-    this.root.querySelector('[data-toolbox]').addEventListener('click', () => this.onOpenToolbox?.());
     const soundBtn = this.root.querySelector('[data-sound]');
     soundBtn.addEventListener('click', () => {
       const on = !gameState.settings.sound;
