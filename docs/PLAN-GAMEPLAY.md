@@ -610,3 +610,14 @@ También se corrigió un agujero negro en el centro de la vista de las islas de
 cámara fija: la esfera del cielo (210 m) quedaba más allá del plano lejano de
 la cámara (220) cuando la cámara está a más de 10 m del centro.
 
+
+## Ajuste · Recarga automática al publicar
+
+GitHub Pages deja cachear el `index.html` diez minutos y los móviles lo
+retienen bastante más, así que tras cada publicación el teléfono seguía
+mostrando la versión anterior hasta añadir `?v=` a mano. Ahora cada build lleva
+un sello (`__BUILD__`, inyectado por vite) que también se escribe en
+`docs/version.json`; al arrancar, la página pide `version.json` sin caché y, si
+el sello no coincide, se vuelve a cargar con `?v=<sello>` para saltarse la
+copia guardada. Solo una vez por sesión, por si algo fallara.
+
