@@ -1,3 +1,4 @@
+// Seis islas en hexagono regular (radio 4.7): misma distancia al centro y entre vecinas
 export const islands = [
   {
     id: 'sadness',
@@ -13,7 +14,7 @@ export const islands = [
       glow: '#b7e4f5',
       ui: '#3178a8'
     },
-    position: [0, 0, -4.4],
+    position: [0, 0, -4.7],
     radius: 1.25,
     height: 0.34,
     minigame: 'sadness-house'
@@ -33,7 +34,7 @@ export const islands = [
       glow: '#ff765f',
       ui: '#c0392b'
     },
-    position: [4.2, 0, -1.4],
+    position: [4.07, 0, -2.35],
     radius: 1.4,
     height: 0.48,
     minigame: 'anger-lava'
@@ -53,7 +54,7 @@ export const islands = [
       glow: '#b6a7ff',
       ui: '#5947a5'
     },
-    position: [-4.2, 0, -1.4],
+    position: [-4.07, 0, -2.35],
     radius: 1.3,
     height: 0.38,
     minigame: 'fear-night-house'
@@ -73,7 +74,7 @@ export const islands = [
       glow: '#8ce88c',
       ui: '#2e8b2e'
     },
-    position: [-2.6, 0, 3.6],
+    position: [-4.07, 0, 2.35],
     radius: 1.2,
     height: 0.36,
     minigame: 'disgust-territory'
@@ -93,7 +94,7 @@ export const islands = [
       glow: '#ff8c4a',
       ui: '#c9471f'
     },
-    position: [2.6, 0, 3.6],
+    position: [4.07, 0, 2.35],
     radius: 1.18,
     height: 0.4,
     minigame: 'frustration-tower-valley'
@@ -113,7 +114,7 @@ export const islands = [
       glow: '#dff6ff',
       ui: '#2f8f86'
     },
-    position: [0, 0, 5.1],
+    position: [0, 0, 4.7],
     radius: 1.2,
     height: 0.36,
     minigame: 'calm-lake'
