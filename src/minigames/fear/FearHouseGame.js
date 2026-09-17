@@ -449,28 +449,42 @@ export class FearHouseGame extends MinigameBase {
       this.spooks.armario = g;
     }
 
-    // CORTINA · el fantasma: palido, translucido, flota y se mece
+    // CORTINA · el de las ramas: oscuro (se recorta contra la ventana), con
+    // brazos larguisimos de ramitas que se estiran hacia ti y ojos naranjas
     {
-      const g = mk('#d8dcf0', '#0b0b14', '#aab4ff');
+      const g = mk('#120c08', '#ff8a2a', '#ff7a2a');
       const { mat } = g.userData;
-      mat.side = THREE.DoubleSide;
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 10), mat);
-      head.position.y = 1.9;
-      head.scale.set(1, 1.15, 0.85);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 2.2, 6), mat);
+      trunk.position.y = 1.1;
+      g.add(trunk);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), mat);
+      head.position.set(0.05, 2.35, 0.05);
+      head.scale.set(0.9, 1.4, 0.9);
       g.add(head);
-      const sheet = new THREE.Mesh(new THREE.ConeGeometry(0.62, 1.7, 10, 1, true), mat);
-      sheet.position.y = 1.15;
-      sheet.rotation.x = Math.PI;
-      g.add(sheet);
-      eye(g, -0.14, 1.98, 0.36, 0.075);
-      eye(g, 0.14, 1.98, 0.36, 0.075);
-      const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), g.userData.eyeMat);
-      mouth.position.set(0, 1.76, 0.38);
-      mouth.scale.set(1, 1.6, 0.6);
-      g.add(mouth);
-      g.userData.maxOpacity = 0.78;
-      g.userData.kind = 'ghost';
-      g.userData.sounds = ['whoosh', 'lowNote'];
+      g.userData.arms = [];
+      [-1, 1].forEach((side) => {
+        const arm = new THREE.Group();
+        arm.position.set(side * 0.22, 1.85, 0);
+        const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.95, 3, 5), mat);
+        upper.position.set(side * 0.5, -0.05, 0);
+        upper.rotation.z = side * 1.45;
+        arm.add(upper);
+        // ramitas al final del brazo: los dedos, abiertos como garras
+        for (let k = 0; k < 4; k += 1) {
+          const twig = new THREE.Mesh(new THREE.CapsuleGeometry(0.018, 0.4, 2, 4), mat);
+          twig.position.set(side * 1.12, -0.1 + k * 0.1, -0.12 + k * 0.1);
+          twig.rotation.z = side * (0.7 + k * 0.45);
+          twig.rotation.x = -0.7 + k * 0.5;
+          arm.add(twig);
+        }
+        g.add(arm);
+        g.userData.arms.push({ group: arm, side });
+      });
+      eye(g, -0.08, 2.42, 0.19, 0.05);
+      eye(g, 0.08, 2.42, 0.19, 0.05);
+      g.scale.setScalar(0.85);
+      g.userData.kind = 'twig';
+      g.userData.sounds = ['rustle', 'growl'];
       this.spooks.cortina = g;
     }
 
@@ -524,7 +538,9 @@ export class FearHouseGame extends MinigameBase {
       const dx = p.x - ax;
       const dz = p.z - az;
       const d = Math.hypot(dx, dz) || 1;
-      const dist = Math.min(2.2, d + 0.4);
+      // en la ventana la pared esta justo detras de la cortina: la criatura se
+      // queda dentro del salon, delante de ella (si no, nace fuera y no se ve)
+      const dist = f.curtain ? Math.max(1.5, d - 0.2) : Math.min(2.2, d + 0.4);
       g.position.set(p.x - (dx / d) * dist, p.y, p.z - (dz / d) * dist);
       g.lookAt(p.x, p.y, p.z);
       g.visible = true;
@@ -865,6 +881,14 @@ export class FearHouseGame extends MinigameBase {
       } else if (kind === 'crawler') {
         g.position.y = base + Math.abs(Math.sin(this.time * 14)) * 0.05;
         g.rotation.y += Math.sin(this.time * 6) * 0.02;
+      } else if (kind === 'twig') {
+        // los brazos se estiran hacia ti, despacio, con un temblor de ramas
+        const reach = Math.min(1, this.spookT / 1.4);
+        g.userData.arms.forEach(({ group, side }) => {
+          group.rotation.y = side * (0.5 - reach * 1.5) + Math.sin(this.time * 7 + side) * 0.03;
+          group.rotation.x = -0.15 - reach * 0.3;
+        });
+        g.position.y = base + Math.sin(this.time * 1.6) * 0.04;
       } else if (kind === 'beast') {
         const b = 1 + Math.sin(this.time * 3) * 0.04;
         g.scale.set(b, 1 / b, b);
