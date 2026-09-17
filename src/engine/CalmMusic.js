@@ -28,6 +28,7 @@ export class CalmMusic {
     this.oscs = [];
     this.chordIndex = 0;
     this.volume = 1;
+    this.solo = false;           // true: solo el colchon; la kalimba la toca la isla
   }
 
   get ctx() { return this.audio?.ctx; }
@@ -42,6 +43,11 @@ export class CalmMusic {
     this.out.gain.value = 0;
     this.out.connect(a.ambientGain);
     this.out.gain.setTargetAtTime(this.volume, ctx.currentTime, 3);
+    // las notas que toca el jugador salen aparte: no dependen del volumen de
+    // la musica ni del ducking del ambiente, siempre se oyen por encima
+    this.noteOut = ctx.createGain();
+    this.noteOut.gain.value = 1.5;
+    this.noteOut.connect(a.master);
 
     // eco corto y suave: da aire, no misterio
     this.delay = ctx.createDelay(1.5);
@@ -105,7 +111,7 @@ export class CalmMusic {
   /* -------------------------------------------------------------- kalimba */
 
   /** Pulsacion de kalimba: seno + armonico que se apaga antes; ataque instantaneo */
-  pluck(midi, vel = 1, when = 0) {
+  pluck(midi, vel = 1, when = 0, dest = this.out) {
     const ctx = this.ctx;
     if (!ctx || !this.out) return;
     const now = ctx.currentTime + when;
@@ -127,7 +133,7 @@ export class CalmMusic {
     o.connect(g);
     o2.connect(g2);
     g2.connect(g);
-    g.connect(this.out);
+    g.connect(dest);
     g.connect(this.wet);
     o.start(now);
     o2.start(now);
@@ -138,11 +144,11 @@ export class CalmMusic {
   /** La isla toca una nota con el mismo timbre que la musica */
   playNote(midi, vel = 1) {
     if (!this.running) return;
-    this.pluck(midi, vel);
+    this.pluck(midi, vel, 0, this.noteOut);
   }
 
   scheduleKalimba() {
-    if (this.layers >= 1) {
+    if (this.layers >= 1 && !this.solo) {
       // frases de 1 a 3 notas cercanas, siempre dentro de la pentatonica
       const start = Math.floor(Math.random() * (KALIMBA.length - 3));
       const n = 1 + Math.floor(Math.random() * 3);
@@ -158,7 +164,7 @@ export class CalmMusic {
   /* ------------------------------------------------------------- campana */
 
   scheduleBell() {
-    if (this.layers >= 2) {
+    if (this.layers >= 2 && !this.solo) {
       const ctx = this.ctx;
       const now = ctx.currentTime;
       const midi = BELL[Math.floor(Math.random() * BELL.length)];
@@ -214,6 +220,11 @@ export class CalmMusic {
     this.bassGain?.gain.setTargetAtTime(this.layers >= 3 ? 0.05 : 0, now, 2.5);
   }
 
+  /** Modo acompanamiento: calla la kalimba y la campana propias (la melodia del jugador manda) */
+  setSolo(on) {
+    this.solo = !!on;
+  }
+
   setVolume(v, time = 1.5) {
     this.volume = v;
     if (this.out && this.ctx) this.out.gain.setTargetAtTime(v, this.ctx.currentTime, time);
@@ -235,7 +246,7 @@ export class CalmMusic {
       this.oscs = [];
       setTimeout(() => {
         oscs.forEach((o) => { try { o.stop(); o.disconnect(); } catch { /* ya parado */ } });
-        try { this.out.disconnect(); this.delay.disconnect(); this.feedback.disconnect(); this.wet.disconnect(); this.padFilter.disconnect(); } catch { /* ya desconectado */ }
+        try { this.out.disconnect(); this.noteOut.disconnect(); this.delay.disconnect(); this.feedback.disconnect(); this.wet.disconnect(); this.padFilter.disconnect(); } catch { /* ya desconectado */ }
       }, 3000);
     } catch { /* contexto cerrado */ }
   }

@@ -62,6 +62,18 @@ const PADS = [
 const MIN_NOTES = 8;
 const MAX_NOTES = 24;
 
+// Niveles base del ambiente: bajos a proposito, manda el sonido de cada actividad
+const AMBIENT = { rough: 0.34, calm: 0.26, leaves: 0.2, brook: 0.6, chime: 0.4, farBird: 0.22, music: 0.7 };
+// Mezcla por actividad: cuanto se deja oir cada capa (1 = nivel base)
+const MIX = {
+  lake: { lake: 1, leaves: 1, brook: 1, extras: true, music: 1, solo: false },
+  birds: { lake: 0.45, leaves: 0.55, brook: 1, extras: true, music: 0.8, solo: false },
+  // estanque: sin agua, hojas, arroyo, campanas ni pajaros; solo el colchon muy bajo y la kalimba
+  pond: { lake: 0, leaves: 0, brook: 0, extras: false, music: 0.5, solo: true },
+  replay: { lake: 0, leaves: 0, brook: 0, extras: false, music: 0.3, solo: true },
+  after: { lake: 0.5, leaves: 0.5, brook: 0.35, extras: true, music: 1, solo: false }
+};
+
 const QUIET_TO_SING = 0.4;      // quietud minima para que canten
 const LOCK_SECONDS = 1.8;       // tiempo mirando hacia el canto para que aparezca
 const LOCK_ANGLE = Math.cos(0.3);
@@ -174,7 +186,7 @@ export class CalmLakeGame extends MinigameBase {
     this.controller.events.step.length = 0;
     this.controller.on('step', ({ running }) => {
       const wet = this.inWater();
-      this.audio.play(wet ? 'splash' : (running ? 'stepRun' : 'step'), { volume: wet ? 0.4 : 0.22 });
+      this.audio.play(wet ? 'splash' : (running ? 'stepRun' : 'step'), { volume: wet ? 0.3 : 0.2 });
     });
 
     this.breathPause = new BreathPause(this);
@@ -823,14 +835,28 @@ export class CalmLakeGame extends MinigameBase {
   }
 
   startSound() {
-    this.lakeRoughSfx = this.audio.ambient('lakeRough', { volume: 0.5 });
-    this.lakeCalmSfx = this.audio.ambient('lakeCalm', { volume: 0.12 });
-    this.leavesSfx = this.audio.ambient('leaves', { volume: 0.3, rate: 0.9 });
-    this.brookSfx = this.audio.playAt('brook', this.brookSpot, { volume: 0.9, refDistance: 3.5, loop: true });
+    this.lakeRoughSfx = this.audio.ambient('lakeRough', { volume: AMBIENT.rough });
+    this.lakeCalmSfx = this.audio.ambient('lakeCalm', { volume: 0.08 });
+    this.leavesSfx = this.audio.ambient('leaves', { volume: AMBIENT.leaves, rate: 0.9 });
+    this.brookSfx = this.audio.playAt('brook', this.brookSpot, { volume: AMBIENT.brook, refDistance: 3.5, loop: true });
     this.music = new CalmMusic(this.audio);
-    this.music.setVolume(0.9);
+    this.music.setVolume(AMBIENT.music);
     this.music.start();
     this.music.setLayers(1);
+    this.setMix(MIX.lake);
+  }
+
+  /**
+   * Mezcla del ambiente segun la actividad: cada una manda sobre el fondo.
+   * En el estanque se apaga todo lo que no sea la melodia.
+   */
+  setMix(opts) {
+    this.mix = { ...opts };
+    const ctx = this.audio.ctx;
+    this.leavesSfx?.setVolume(AMBIENT.leaves * opts.leaves, 1.2);
+    if (this.brookSfx?.gain && ctx) this.brookSfx.gain.gain.setTargetAtTime(AMBIENT.brook * opts.brook, ctx.currentTime, 1);
+    this.music?.setVolume(AMBIENT.music * opts.music, 1.5);
+    this.music?.setSolo(opts.solo);
   }
 
   /* =============================================================== etapas */
@@ -849,6 +875,7 @@ export class CalmLakeGame extends MinigameBase {
       }), 1200);
     } else if (i === 1) {
       this.setObjective(BIRDS.length, '🐦');
+      this.setMix(MIX.birds);
       this.quietBar.show(true);
       this.pointBeacon(FOREST.x + 4, FOREST.z);
       this.later(() => this.showNote({
@@ -857,6 +884,7 @@ export class CalmLakeGame extends MinigameBase {
       }), 1200);
     } else if (i === 2) {
       this.setObjective(MIN_NOTES, '♪');
+      this.setMix(MIX.pond);
       this.quietBar.show(false);
       this.pointBeacon(POND.x - 4, POND.z + 5);
       this.later(() => this.showNote({
@@ -945,8 +973,9 @@ export class CalmLakeGame extends MinigameBase {
     const k = Math.min(1, dt * 0.45);
     this.agitation += (this.calmTarget - this.agitation) * k;
     const agit = this.agitation;
-    this.lakeRoughSfx?.setVolume(0.5 * agit * agit, 0.8);
-    this.lakeCalmSfx?.setVolume(0.12 + 0.3 * (1 - agit), 0.8);
+    const m = this.mix?.lake ?? 1;
+    this.lakeRoughSfx?.setVolume(AMBIENT.rough * agit * agit * m, 0.8);
+    this.lakeCalmSfx?.setVolume((0.08 + AMBIENT.calm * (1 - agit)) * m, 0.8);
   }
 
   /* --------------------------------------------- 2 · los pajaros escondidos */
@@ -1036,12 +1065,14 @@ export class CalmLakeGame extends MinigameBase {
           b.nextSing = 1 + Math.random();
         }
       } else if (b.state === 'perched') {
-        // posado: mira al jugador y canta de vez en cuando
+        // posado: mira al jugador y canta de vez en cuando (no durante la melodia)
         b.nextSing -= dt;
         if (b.nextSing <= 0) {
           b.nextSing = 9 + Math.random() * 10;
-          this.audio.playAt(b.def.sound, b.mesh, { volume: 0.3, refDistance: 4 });
-          b.singing = 0.8;
+          if (this.mix?.extras) {
+            this.audio.playAt(b.def.sound, b.mesh, { volume: 0.3, refDistance: 4 });
+            b.singing = 0.8;
+          }
         }
         b.mesh.position.y = b.perch.top.y + Math.sin(this.time * 2.2 + b.index) * 0.015;
       }
@@ -1188,7 +1219,8 @@ export class CalmLakeGame extends MinigameBase {
     this.echoInteractable.enabled = false;
     this.controller.frozen = true;
     this.controller.exitPointerLock();
-    this.music.duck(true);
+    const prevMix = this.mix;
+    this.setMix(MIX.replay);
     this.say('TU MELODÍA', 2000);
     this.feedback.flash(this.echoStone.position, { color: '#7fd1ff', intensity: 3, duration: 1 });
     // el ritmo es el que toco el jugador, con los silencios largos acortados
@@ -1199,10 +1231,9 @@ export class CalmLakeGame extends MinigameBase {
     });
     this.later(() => {
       this.replaying = false;
-      this.music.duck(false);
       this.echoInteractable.enabled = true;
       if (!this.pondDone) this.pondDone_();
-      else this.controller.frozen = false;
+      else { this.setMix(prevMix); this.controller.frozen = false; }
     }, t + 1800);
   }
 
@@ -1217,6 +1248,7 @@ export class CalmLakeGame extends MinigameBase {
     });
     this.later(() => {
       this.controller.frozen = false;
+      this.setMix(MIX.after);
       const x = POND.x - 9.5;
       const z = POND.z + 6;
       this.openPortal(new THREE.Vector3(x, this.terrainAt(x, z), z), { color: '#bfe9ff', label: 'Terminar en la isla' });
@@ -1228,20 +1260,23 @@ export class CalmLakeGame extends MinigameBase {
 
   updateAmbient(dt) {
     // pajaros lejanos desde el bosque cuando el lago ya esta en calma
+    const extras = this.mix?.extras ?? true;
     this.nextFarBird -= dt;
     if (this.nextFarBird <= 0) {
       this.nextFarBird = 6 + Math.random() * 9;
-      if (this.agitation < 0.5 && this.stage !== 1) {
+      if (extras && this.agitation < 0.5 && this.stage !== 1) {
         const b = this.birds[Math.floor(Math.random() * this.birds.length)];
-        this.audio.playAt(b.def.sound, b.state === 'perched' ? b.mesh : b.anchor, { volume: 0.3, refDistance: 8 });
+        this.audio.playAt(b.def.sound, b.state === 'perched' ? b.mesh : b.anchor, { volume: AMBIENT.farBird, refDistance: 8 });
       }
     }
     // campanas de viento junto al inicio, con una racha
     this.nextChime -= dt;
     if (this.nextChime <= 0) {
       this.nextChime = 10 + Math.random() * 14;
-      this.audio.playAt('windChime', this.chimeSpot, { volume: 0.55, refDistance: 6 });
-      this.chimeGust = 1;
+      if (extras) {
+        this.audio.playAt('windChime', this.chimeSpot, { volume: AMBIENT.chime, refDistance: 6 });
+        this.chimeGust = 1;
+      }
     }
     if (this.chimeGust > 0) {
       this.chimeGust = Math.max(0, this.chimeGust - dt * 0.4);
@@ -1325,6 +1360,7 @@ export class CalmLakeGame extends MinigameBase {
     this.controller.yaw = 0;
     this.controller.pitch = 0;
     this.music?.setLayers(1);
+    this.setMix(MIX.lake);
     this.enterStage(0);
   }
 
