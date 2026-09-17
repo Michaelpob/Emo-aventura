@@ -105,18 +105,19 @@ export const islands = [
   },
   {
     id: 'frustration',
-    name: 'Frustracion',
+    name: 'Frustración',
     displayName: 'La torre',
     emoji: '😤',
     subtitle: 'Algo se interpone entre tu y la cima. Sigue, para, cambia de paso o pide ayuda.',
-    badge: 'Guardian de la Frustracion',
+    badge: 'Guardian de la Frustración',
     reward: 'Llave de la Paciencia',
+    // naranja-rojizo: el calor que sube cuando algo se interpone
     palette: {
-      land: '#c9925e',
-      accent: '#8a4f2a',
-      foliage: '#9aa86a',
-      glow: '#ffb070',
-      ui: '#b0602a'
+      land: '#e2743c',
+      accent: '#a83a1c',
+      foliage: '#d9a24a',
+      glow: '#ff8c4a',
+      ui: '#c9471f'
     },
     position: [3.5, 0, 2],
     radius: 1.18,

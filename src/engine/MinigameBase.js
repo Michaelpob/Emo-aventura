@@ -352,12 +352,16 @@ export class MinigameBase {
           ${hint ? `<p class="i3d-intro__hint">${hint}</p>` : ''}
           ${keys.length ? `<ul class="i3d-intro__controls i3d-intro__controls--keys">${keys.map(row).join('')}</ul>` : ''}
           ${touch.length ? `<ul class="i3d-intro__controls i3d-intro__controls--touch">${touch.map(row).join('')}</ul>` : ''}
-          <button class="i3d-btn i3d-btn--primary" type="button" data-go>${cta}</button>
+          <div class="i3d-intro__actions">
+            <button class="i3d-btn i3d-btn--primary" type="button" data-go>${cta}</button>
+            <button class="i3d-btn i3d-intro__exit" type="button" data-exit>Salir al mapa</button>
+          </div>
         </div>
       `;
       this.el.overlay.appendChild(box);
       const btn = box.querySelector('[data-go]');
       btn.focus({ preventScroll: true });
+      box.querySelector('[data-exit]').addEventListener('click', () => this.onExitCb?.());
       btn.addEventListener('click', () => {
         box.remove();
         this.paused = false;
@@ -393,9 +397,13 @@ export class MinigameBase {
                 <span>${o.text}</span>
               </button>`).join('')}
           </div>
+          <div class="i3d-intro__actions">
+            <button class="i3d-btn i3d-intro__exit" type="button" data-exit>Salir al mapa</button>
+          </div>
         </div>
       `;
       this.el.overlay.appendChild(box);
+      box.querySelector('[data-exit]').addEventListener('click', () => this.onExitCb?.());
       box.querySelectorAll('[data-choice]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const opt = options[Number(btn.dataset.choice)];
@@ -609,6 +617,9 @@ export class MinigameBase {
    * mientras la lee. Se va sola y se puede cerrar tocandola.
    */
   showNote({ title = '', text = '', seconds = 8 } = {}) {
+    // el tiempo en pantalla se calcula con las palabras: leer con calma, sin quedarse a medias
+    const words = `${title} ${text}`.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    seconds = Math.min(45, Math.max(seconds, 6 + words * 0.6));
     this.el.notes?.querySelector('.i3d-note')?.remove();
     const note = document.createElement('div');
     note.className = 'i3d-note';

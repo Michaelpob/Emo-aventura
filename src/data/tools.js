@@ -186,8 +186,8 @@ export const TOOLS = {
     id: 'llave-paciencia',
     icon: '🗝️',
     name: 'Llave de la Paciencia',
-    emotion: 'Frustracion',
-    strategy: 'Tolerar la frustracion',
+    emotion: 'Frustración',
+    strategy: 'Tolerar la frustración',
     description: 'Parar un momento cuando sube, y volver al intento con el pulso firme.',
     order: 21
   },
@@ -195,7 +195,7 @@ export const TOOLS = {
     id: 'escalera-pasos',
     icon: '🪜',
     name: 'Escalera de Pasos',
-    emotion: 'Frustracion',
+    emotion: 'Frustración',
     strategy: 'Meta en pasos pequenos',
     description: 'Dividir lo que quieres en pasos que si puedes dar, aunque se tarde un poco mas.',
     order: 22
@@ -204,7 +204,7 @@ export const TOOLS = {
     id: 'mano-amiga',
     icon: '🤝',
     name: 'Mano Amiga',
-    emotion: 'Frustracion',
+    emotion: 'Frustración',
     strategy: 'Pedir ayuda',
     description: 'No tienes que hacerlo todo tu: pedir ayuda tambien es avanzar.',
     order: 23
@@ -219,5 +219,5 @@ export const BADGES = {
   anger: { id: 'anger', icon: '🌋', name: 'Guardian de la Ira', island: 'Al rojo vivo' },
   disgust: { id: 'disgust', icon: '🍃', name: 'Guardian del Desagrado', island: 'Guardianes del Desagrado' },
   sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'La casa en marcha' },
-  frustration: { id: 'frustration', icon: '🧗', name: 'Guardian de la Frustracion', island: 'La torre' }
+  frustration: { id: 'frustration', icon: '🧗', name: 'Guardian de la Frustración', island: 'La torre' }
 };

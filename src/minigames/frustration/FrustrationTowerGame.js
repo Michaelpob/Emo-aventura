@@ -1,4 +1,4 @@
-// ISLA DE LA FRUSTRACION · La torre
+// ISLA DE LA FRUSTRACIÓN · La torre
 // Genero: PRECISION BAJO REVESES · camara fija, se juega tocando
 //
 // La frustracion aparece cuando algo se interpone entre tu y lo que quieres.
@@ -30,6 +30,18 @@ const AMP = 2.7;                  // recorrido del bloque a cada lado
 const MIN_OVERLAP = 0.28;         // menos solape que esto = el bloque se cae
 const HELP_USES = 2;
 const PAUSE_TO_UNBLOCK = 1.5;     // segundos parado para soltar la mano bloqueada
+
+// Cada bloque que se cae trae una frase corta de animo: la frustracion sube,
+// y justo ahi conviene una voz que recuerde que se puede seguir.
+const FALL_CHEERS = [
+  'SE CAYÓ · TRANQUILO, VIENE OTRO',
+  'SE CAYÓ · RESPIRA Y SIGUE',
+  'SE CAYÓ · CADA INTENTO CUENTA',
+  'SE CAYÓ · TÚ PUEDES',
+  'SE CAYÓ · NO PASA NADA, DE NUEVO',
+  'SE CAYÓ · LA TORRE SIGUE AHÍ',
+  'SE CAYÓ · UN PASO A LA VEZ'
+];
 
 // Con cuanta frustracion llega el jugador: fija el ritmo, las rafagas y lo que
 // sube el medidor con cada reves.
@@ -341,7 +353,8 @@ export class FrustrationTowerGame extends MinigameBase {
       this.spawnDebris(x, this.topY + BLOCK_H / 2, w, 0, (x < baseX ? -1 : 1) * 1.5);
       this.stats.lost += 1;
       this.addFrus(18);
-      this.say('SE CAYÓ', 1200);
+      this.fallCheer = ((this.fallCheer ?? -1) + 1) % FALL_CHEERS.length;
+      this.say(FALL_CHEERS[this.fallCheer], 2600);
       this.audio.play('thud', { volume: 0.5, rate: 0.8 });
       this.shakeBy(0.25);
       this.later(() => { if (this.phase === 'play') this.newSlider(); }, 500);

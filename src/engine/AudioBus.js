@@ -69,6 +69,34 @@ function chordBuffer(ctx, seconds, freqs, gainCurve) {
   return buffer;
 }
 
+/**
+ * Respiracion: ruido -> paso bajo con corte que se mueve -> paso alto.
+ * El paso alto quita el rumor grave (lo que sonaba a olas): queda aire.
+ */
+function breathBuffer(ctx, seconds, gainCurve, cutFrom, cutTo, highHz) {
+  const rate = ctx.sampleRate;
+  const len = Math.floor(rate * seconds);
+  const buffer = ctx.createBuffer(1, len, rate);
+  const data = buffer.getChannelData(0);
+  let lp1 = 0;
+  let lp2 = 0;
+  let hpIn = 0;
+  let hp = 0;
+  const kh = Math.exp(-2 * Math.PI * highHz / rate);
+  for (let i = 0; i < len; i += 1) {
+    const t = i / len;
+    const cutoff = cutFrom + (cutTo - cutFrom) * t;
+    const k = Math.exp(-2 * Math.PI * cutoff / rate);
+    const white = Math.random() * 2 - 1;
+    lp1 = white * (1 - k) + lp1 * k;
+    lp2 = lp1 * (1 - k) + lp2 * k;          // dos polos: mas suave
+    hp = kh * (hp + lp2 - hpIn);            // paso alto de un polo
+    hpIn = lp2;
+    data[i] = hp * gainCurve(t) * 2.2;
+  }
+  return buffer;
+}
+
 const decay = (p) => Math.pow(1 - p, 2.4);
 const bell = (p) => Math.sin(Math.PI * p);
 const soft = (p) => Math.min(1, p * 8) * Math.pow(1 - p, 1.6);
@@ -81,8 +109,9 @@ const RECIPES = {
   success:   (ctx) => toneBuffer(ctx, 0.9, 392, 784, (p) => bell(p) * 0.9, 4),
   soften:    (ctx) => toneBuffer(ctx, 0.28, 300, 220, soft, 2),   // "error" amable
   light:     (ctx) => toneBuffer(ctx, 0.7, 300, 900, bell, 3),
-  breathIn:  (ctx) => noiseBuffer(ctx, 1.4, 500, (p) => Math.sin(Math.PI * p) * 0.55),
-  breathOut: (ctx) => noiseBuffer(ctx, 1.8, 320, (p) => Math.pow(1 - p, 1.2) * 0.5),
+  // inhalar sube en brillo; exhalar empieza claro y se apaga. Sin graves: aire, no oleaje
+  breathIn:  (ctx) => breathBuffer(ctx, 1.8, (p) => Math.pow(Math.sin(Math.PI * p), 1.4) * 0.34, 900, 2300, 480),
+  breathOut: (ctx) => breathBuffer(ctx, 2.4, (p) => Math.min(1, p * 5) * Math.pow(1 - p, 1.6) * 0.32, 1900, 650, 380),
   rumble:    (ctx) => noiseBuffer(ctx, 2.2, 90, () => 0.6),
   wind:      (ctx) => noiseBuffer(ctx, 3.5, 420, (p) => 0.35 + Math.sin(p * Math.PI * 2) * 0.15),
   water:     (ctx) => noiseBuffer(ctx, 3.0, 1200, (p) => 0.22 + Math.sin(p * Math.PI * 3) * 0.08),
@@ -106,8 +135,8 @@ const RECIPES = {
   heartbeat: (ctx) => toneBuffer(ctx, 0.55, 72, 48, (p) => (p < 0.45 ? decay(p / 0.45) : decay((p - 0.45) / 0.55) * 0.7), 1),
   owl:       (ctx) => toneBuffer(ctx, 1.3, 430, 370, (p) => (p < 0.35 ? bell(p / 0.35) : p > 0.45 ? bell((p - 0.45) / 0.55) : 0) * 0.7, 2),
   crickets:  (ctx) => toneBuffer(ctx, 1.4, 4300, 4300, (p) => (Math.sin(p * Math.PI * 2 * 16) > 0.35 ? 1 : 0) * bell(p) * 0.3, 1),
-  inhale:    (ctx) => noiseBuffer(ctx, 2.2, 620, (p) => Math.pow(Math.sin(Math.PI * p), 1.3) * 0.6),
-  exhale:    (ctx) => noiseBuffer(ctx, 2.6, 380, (p) => Math.min(1, p * 4) * Math.pow(1 - p, 1.4) * 0.6),
+  inhale:    (ctx) => breathBuffer(ctx, 3.2, (p) => Math.pow(Math.sin(Math.PI * p), 1.4) * 0.34, 800, 2400, 480),
+  exhale:    (ctx) => breathBuffer(ctx, 4.2, (p) => Math.min(1, p * 5) * Math.pow(1 - p, 1.5) * 0.32, 2000, 600, 360),
   // la casa en marcha
   creak:     (ctx) => toneBuffer(ctx, 0.38, 190, 120, soft, 4),                 // ventana que se abre
   paper:     (ctx) => noiseBuffer(ctx, 0.2, 2600, (p) => Math.sin(Math.PI * p) * 0.55),  // carta recogida

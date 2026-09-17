@@ -21,6 +21,7 @@ import { MinigameBase, prefersReducedMotion } from '../../engine/MinigameBase.js
 import { createSky, createLights, GEO, scatterInstanced } from '../../engine/worldkit.js';
 import { addReward, completeActivity, recordReevaluation, setInitialIntensity } from '../../data/gameState.js';
 import { AngerCracksStage } from './AngerCracksStage.js';
+import { BreathPause } from '../../engine/BreathPause.js';
 
 // Cada oleada: rocas que hay que atrapar, ritmo, cuanto tarda en enfriarse una
 // roca, cuanto aguanta fria antes de rodar, cada cuanto sale una chispa y con
@@ -715,6 +716,23 @@ export class AngerLavaGame extends MinigameBase {
       this.seen.push(ERUPTION_NOTE);
       this.later(() => this.showNote({ ...ERUPTION_NOTE, seconds: 9 }), 1600);
     }
+
+    // la isla se hunde en lava: espacio de respiracion guiada antes de seguir
+    this.ventBreathing = true;
+    if (!this.breathPause) this.breathPause = new BreathPause(this);
+    this.later(() => {
+      if (this.phase !== 'venting') { this.ventBreathing = false; return; }
+      this.breathPause.run({
+        cycles: 1,
+        title: 'El volcán estalló · respira',
+        subtitle: 'Inhala, mantén, exhala: la lava baja contigo',
+        skippable: false,
+        onProgress: (k) => this.calmBar.set(k)
+      }).then(() => {
+        this.ventBreathing = false;
+        if (this.phase === 'venting') this.endVent();
+      });
+    }, 1500);
   }
 
   endVent() {
@@ -1056,12 +1074,13 @@ export class AngerLavaGame extends MinigameBase {
       if (this.phaseTimer >= BETWEEN_SECONDS) this.startWave(this.wave + 1);
     } else if (this.phase === 'venting') {
       this.ventTimer += dt;
-      this.calmBar.set(Math.min(1, this.ventTimer / VENT_SECONDS));
+      if (!this.ventBreathing) this.calmBar.set(Math.min(1, this.ventTimer / VENT_SECONDS));
       if (this.ventTimer > 1.1 && !this.ventPrompted) {
         this.ventPrompted = true;
         this.say('QUIETO · RESPIRA', 0);
       }
-      if (this.ventTimer >= VENT_SECONDS) this.endVent();
+      // con el espacio de respiracion abierto, es la respiracion la que termina la erupcion
+      if (!this.ventBreathing && this.ventTimer >= VENT_SECONDS) this.endVent();
     } else if (this.phase === 'cracks') {
       this.phaseTimer += dt;
       // las grietas se abren cuando la reflexion de la ultima oleada ya no esta

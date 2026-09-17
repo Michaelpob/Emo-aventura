@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { MinigameBase } from '../../engine/MinigameBase.js';
 import { MysteryMusic } from '../../engine/MysteryMusic.js';
+import { BreathPause } from '../../engine/BreathPause.js';
 import { createSky, makeTree } from '../../engine/worldkit.js';
 import { gameState, setSetting } from '../../data/gameState.js';
 
@@ -112,6 +113,7 @@ export class FearHouseGame extends MinigameBase {
     this.buildFurniture();
     this.buildLightsOfHouse();
     this.buildFocos();
+    this.buildSpook();
     this.buildFlashlight();
     this.buildHud();
     this.bindHold();
@@ -365,6 +367,110 @@ export class FearHouseGame extends MinigameBase {
   }
 
   /** Las 5 luces existen desde el principio con intensidad 0 y solo se animan */
+  /**
+   * La figura que da miedo: una silueta alta y negra con ojos encendidos.
+   * Aparece un instante tras cada descubrimiento y se disuelve con la
+   * respiracion: el miedo que queda despues de mirar se calma respirando.
+   */
+  buildSpook() {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ color: '#05060a', transparent: true, opacity: 0 });
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 1.9, 4, 8), mat);
+    body.position.y = 1.5;
+    body.scale.set(1, 1.15, 0.7);
+    g.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), mat);
+    head.position.y = 2.75;
+    head.scale.set(0.9, 1.25, 0.9);
+    g.add(head);
+    [-0.32, 0.32].forEach((sx) => {
+      const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 1.4, 3, 6), mat);
+      arm.position.set(sx * 1.35, 1.35, 0.1);
+      arm.rotation.z = sx > 0 ? 0.35 : -0.35;
+      g.add(arm);
+    });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: '#ff3b3b', transparent: true, opacity: 0 });
+    g.userData.eyes = [-0.1, 0.1].map((sx) => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), eyeMat);
+      eye.position.set(sx, 2.8, 0.27);
+      g.add(eye);
+      return eye;
+    });
+    // luz fria detras de la figura: la silueta se recorta contra la pared
+    const glow = new THREE.PointLight('#5b6cff', 0, 7, 2);
+    glow.position.set(0, 1.8, -0.9);
+    g.add(glow);
+    g.userData.glow = glow;
+    g.userData.mats = [mat, eyeMat];
+    g.scale.setScalar(0.74);
+    g.visible = false;
+    this.scene.add(g);
+    this.spook = g;
+    this.breathPause = new BreathPause(this);
+  }
+
+  /** Tras descubrir: aparece la figura, y enseguida el espacio de respiracion la disuelve */
+  spookAndBreathe(f, last) {
+    if (this.finished) return;
+    const g = this.spook;
+    const [mat, eyeMat] = g.userData.mats;
+    // donde estaba la sombra que acabas de comprobar, un paso hacia ti:
+    // siempre a la vista y nunca dentro de una pared
+    const p = this.controller.position;
+    const ax = f.anchor.position.x;
+    const az = f.anchor.position.z;
+    const dx = p.x - ax;
+    const dz = p.z - az;
+    const d = Math.hypot(dx, dz) || 1;
+    // a unos 2 m del jugador, sin pasar mas alla de donde estaba la sombra
+    const dist = Math.min(2.2, d + 0.4);
+    const x = p.x - (dx / d) * dist;
+    const z = p.z - (dz / d) * dist;
+    g.position.set(x, p.y, z);
+    g.lookAt(p.x, p.y, p.z);
+    g.visible = true;
+    mat.opacity = 0;
+    eyeMat.opacity = 0;
+    this.spookAlive = true;
+    this.spookT = 0;
+    this.breathPausing = true;
+    this.holding = false;
+    this.controller.frozen = true;
+
+    this.audio.play('whoosh', { volume: 0.55 });
+    this.later(() => this.audio.play('growl', { volume: 0.7 }), 180);
+    this.later(() => this.audio.play('heartbeat', { volume: 0.6 }), 420);
+    this.feedback.shakeCamera(0.22, 2.2);
+    this.feedback.tweenValue(mat, 'opacity', 0.96, 0.35);
+    this.feedback.tweenValue(eyeMat, 'opacity', 1, 0.25);
+    this.feedback.tweenValue(g.userData.glow, 'intensity', 2.4, 0.4);
+    this.say('¡ALGO SE ACERCA!', 1600);
+
+    this.later(() => {
+      if (this.finished) return;
+      this.breathPause.run({
+        cycles: 1,
+        title: 'Respira para calmar el miedo',
+        subtitle: 'La figura se desvanece con cada respiración',
+        onProgress: (k) => {
+          mat.opacity = 0.96 * (1 - k);
+          eyeMat.opacity = 1 - k;
+          g.userData.glow.intensity = 2.4 * (1 - k);
+          this.music?.setIntensity(0.9 * (1 - k));
+        }
+      }).then(() => {
+        this.feedback.burst(g.position.clone().add(new THREE.Vector3(0, 1.6, 0)), { count: 24, color: '#3a3f5a', speed: 1.8, life: 1.1, size: 0.8, gravity: 0.3 });
+        g.visible = false;
+        this.spookAlive = false;
+        this.breathPausing = false;
+        this.audio.play('warm', { volume: 0.4 });
+        this.say('EL MIEDO BAJÓ', 2200);
+        this.calmUntil = this.time + 4;
+        if (last) this.later(() => this.dawnHouse(), 1400);
+      });
+    }, 1700);
+  }
+
   buildLightsOfHouse() {
     const def = [
       ['#ffb56b', -7.6, 1.1, 0.1, 7],     // lampara de la mesilla
@@ -640,7 +746,14 @@ export class FearHouseGame extends MinigameBase {
     if (this.time < this.calmUntil) tension = 0;
     this.tension += (tension - this.tension) * Math.min(1, dt * 3);
 
-    this.updateChecking(dt);
+    if (this.spookAlive) {
+      this.spookT += dt;
+      this.spook.rotation.y += Math.sin(this.time * 1.3) * 0.004;
+      this.spook.position.y = this.controller.position.y + Math.sin(this.time * 2.1) * 0.06;
+      const blink = Math.sin(this.time * 9) > 0.92 ? 0.2 : 1;
+      this.spook.userData.eyes.forEach((e) => { e.scale.setScalar(blink); });
+    }
+    if (!this.breathPausing) this.updateChecking(dt);
 
     // latido: el indicador principal de estado
     if (this.tension > 0.08 && !this.leaving) {
@@ -878,7 +991,8 @@ export class FearHouseGame extends MinigameBase {
     this.revealed += 1;
     this.advanceObjective();
     this.applyPalette(this.revealed / this.focos.length);
-    if (this.revealed >= this.focos.length) this.later(() => this.dawnHouse(), 2600);
+    const last = this.revealed >= this.focos.length;
+    this.later(() => this.spookAndBreathe(f, last), 1000);
   }
 
   /** Mezcla frio -> calido segun cuantas luces hay encendidas */
@@ -1013,6 +1127,11 @@ export class FearHouseGame extends MinigameBase {
   onReset() {
     this.stopChecking(true);
     this.holding = false;
+    this.spookAlive = false;
+    this.breathPausing = false;
+    if (this.spook) this.spook.visible = false;
+    this.root.querySelector('.bp-layer')?.remove();
+    this.breathPause = new BreathPause(this);
     this.revealed = 0;
     this.tension = 0;
     this.calmUntil = 0;
