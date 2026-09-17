@@ -183,7 +183,10 @@
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
 }
 
-.i3d__btn--sound { left: 64px; font-size: 1rem; }
+/* El boton de sonido va a la derecha del de pausa. La regla movil de abajo
+   (.i3d__btn { left: 10px }) no debe pisarlo: por eso lleva el selector con
+   mas peso y se repite dentro de la media query. */
+.i3d .i3d__btn--sound { left: 64px; font-size: 1rem; }
 
 /* ------------------------------------------------------------- tactiles */
 
@@ -347,6 +350,7 @@
   .i3d-bar__track { width: 74px; }
   .i3d-prompt { bottom: 27%; font-size: 0.8rem; }
   .i3d__btn { top: 10px; left: 10px; }
+  .i3d .i3d__btn--sound { left: 58px; }     /* no debe caer encima del de pausa */
   .i3d-flash { font-size: 1.05rem; }
 }
 
