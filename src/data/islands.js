@@ -97,6 +97,26 @@ export const islands = [
     radius: 1.18,
     height: 0.4,
     minigame: 'frustration-tower-valley'
+  },
+  {
+    id: 'calm',
+    name: 'Calma',
+    displayName: 'El lago sereno',
+    emoji: '😌',
+    subtitle: 'Un lago, un bosque con pájaros y un estanque musical. Aquí todo va despacio: escucha y el agua se aquieta.',
+    reward: 'Pluma de la Calma',
+    // aguamarina: agua clara y quieta, arena y un brillo suave
+    palette: {
+      land: '#8fd4c8',
+      accent: '#3f9d95',
+      foliage: '#b9e6a8',
+      glow: '#dff6ff',
+      ui: '#2f8f86'
+    },
+    position: [0, 0, 5.1],
+    radius: 1.2,
+    height: 0.36,
+    minigame: 'calm-lake'
   }
 ];
 
@@ -113,6 +133,7 @@ export const minigameLabels = {
   'disgust-territory': 'Guardianes del Desagrado',
   'frustration-tower-valley': 'La torre · El valle',
   'frustration-tower': 'La torre',
+  'calm-lake': 'El lago sereno',
   'surprise-observe': 'El jardin que cambia',
   'fear-island': 'Isla del Miedo',
   'joy-valley': 'Valle de la Luz',

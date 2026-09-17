@@ -1,0 +1,89 @@
+/* Isla de la Calma · «El lago sereno»
+   HUD propio: banner de etapa, anillo de escucha (pajaros) y tira de la melodia. */
+
+.i3d.cl .i3d-bar { --c: #8be0c8; }
+.cl-stage[hidden], .cl-focus[hidden], .cl-melody[hidden] { display: none !important; }
+
+.cl-stage {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(10, 40, 46, 0.72);
+  border: 1px solid rgba(143, 212, 200, 0.5);
+  color: #dff6ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: i3d-pop 360ms ease;
+}
+.cl-stage.is-out { animation: i3d-night-out 480ms ease forwards; }
+
+/* anillo de escucha: se llena mientras miras hacia el canto */
+.cl-focus {
+  --p: 0;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.cl-focus i {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 58%, rgba(10, 40, 46, 0.55) 60%),
+    conic-gradient(#8be0c8 calc(var(--p) * 360deg), rgba(255, 255, 255, 0.18) 0);
+  box-shadow: 0 0 22px rgba(139, 224, 200, 0.35);
+}
+.cl-focus span {
+  color: #dff6ff;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* la melodia: un punto de color por nota */
+.cl-melody {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(10, 40, 46, 0.6);
+  border: 1px solid rgba(143, 212, 200, 0.35);
+  pointer-events: none;
+}
+.cl-melody i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c, #fff);
+  box-shadow: 0 0 8px var(--c, #fff);
+  animation: i3d-pop 260ms ease;
+}
+.cl-melody b {
+  margin-left: 6px;
+  color: #dff6ff;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 720px) {
+  .cl-stage { top: 60px; font-size: 0.68rem; padding: 6px 14px; }
+  .cl-melody { bottom: 4%; }
+  .cl-focus i { width: 54px; height: 54px; }
+}

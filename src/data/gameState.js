@@ -11,7 +11,7 @@ const STORAGE_KEY = 'emo-aventura-state';
 // cualquiera sin haber jugado otra antes. Todas cuentan en el contador del
 // mapa y en Mi progreso. (La Alegria ya no es una isla: sus orbes se juegan
 // como segundo nivel de la Frustracion.)
-export const ISLAND_CHAIN = ['fear', 'anger', 'disgust', 'sadness', 'frustration'];
+export const ISLAND_CHAIN = ['fear', 'anger', 'disgust', 'sadness', 'frustration', 'calm'];
 
 // Islas del mapa que no forman parte de la aventura (ninguna, hoy)
 export const FREE_ISLANDS = [];

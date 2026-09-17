@@ -208,6 +208,15 @@ export const TOOLS = {
     strategy: 'Pedir ayuda',
     description: 'No tienes que hacerlo todo tu: pedir ayuda tambien es avanzar.',
     order: 23
+  },
+  'pluma-calma': {
+    id: 'pluma-calma',
+    icon: '🪶',
+    name: 'Pluma de la Calma',
+    emotion: 'Calma',
+    strategy: 'Respiracion y atencion a los sonidos',
+    description: 'Recuerda el lago quieto, los pajaros que llegan cuando te paras y tu melodia: respirar despacio y escuchar bajan el ritmo.',
+    order: 24
   }
 };
 
@@ -218,5 +227,6 @@ export const BADGES = {
   anger: { id: 'anger', icon: '🌋', name: 'Guardian de la Ira', island: 'Al rojo vivo' },
   disgust: { id: 'disgust', icon: '🍃', name: 'Guardian del Desagrado', island: 'Guardianes del Desagrado' },
   sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'La casa en marcha' },
-  frustration: { id: 'frustration', icon: '🧗', name: 'Guardian de la Frustración', island: 'La torre y el valle' }
+  frustration: { id: 'frustration', icon: '🧗', name: 'Guardian de la Frustración', island: 'La torre y el valle' },
+  calm: { id: 'calm', icon: '🪶', name: 'Guardian de la Calma', island: 'El lago sereno' }
 };

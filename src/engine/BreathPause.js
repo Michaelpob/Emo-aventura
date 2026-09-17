@@ -21,9 +21,10 @@ export class BreathPause {
    * @param {string} [o.title='Respira']
    * @param {string} [o.subtitle='Sigue el círculo']
    * @param {Function} [o.onProgress]   0..1 a lo largo de toda la pausa
+   * @param {Function} [o.onPhase]      ('in'|'hold'|'out', ciclo) al cambiar de fase
    * @param {boolean} [o.skippable=true]
    */
-  run({ cycles = 2, title = 'Respira', subtitle = 'Sigue el círculo', onProgress = null, skippable = true } = {}) {
+  run({ cycles = 2, title = 'Respira', subtitle = 'Sigue el círculo', onProgress = null, onPhase = null, skippable = true } = {}) {
     const g = this.game;
     if (this.active) return Promise.resolve();
     this.active = true;
@@ -71,9 +72,10 @@ export class BreathPause {
         resolve();
       };
 
-      const setPhase = (p, label, hint) => {
+      const setPhase = (p, label, hint, cycle = 0) => {
         if (p === phase) return;
         phase = p;
+        onPhase?.(p, cycle);
         phaseEl.textContent = label;
         hintEl.textContent = hint;
         circle.dataset.phase = p;
@@ -92,9 +94,9 @@ export class BreathPause {
         const cycle = Math.min(cycles - 1, Math.floor(t / cycleLen));
         const u = t - cycle * cycleLen;
         let scale;
-        if (u < IN) { setPhase('in', 'INHALA', 'toma aire por la nariz, despacio'); scale = 0.55 + 0.45 * (u / IN); }
-        else if (u < IN + HOLD) { setPhase('hold', 'MANTÉN', 'sostén el aire un momento'); scale = 1; }
-        else { setPhase('out', 'EXHALA', 'suelta el aire por la boca, largo'); scale = 1 - 0.45 * ((u - IN - HOLD) / OUT); }
+        if (u < IN) { setPhase('in', 'INHALA', 'toma aire por la nariz, despacio', cycle); scale = 0.55 + 0.45 * (u / IN); }
+        else if (u < IN + HOLD) { setPhase('hold', 'MANTÉN', 'sostén el aire un momento', cycle); scale = 1; }
+        else { setPhase('out', 'EXHALA', 'suelta el aire por la boca, largo', cycle); scale = 1 - 0.45 * ((u - IN - HOLD) / OUT); }
         circle.style.setProperty('--s', scale.toFixed(3));
         dots.forEach((d, i) => d.classList.toggle('is-on', i < cycle + (u >= cycleLen - 0.05 ? 1 : 0)));
         if (skip && cycle >= 1 && skip.hidden) skip.hidden = false;

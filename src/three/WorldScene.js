@@ -212,7 +212,7 @@ export class WorldScene {
   focusMap() {
     this.focusMode = 'map';
     this.focusIsland = null;
-    this.drag.targetDistance = 11.2;
+    this.drag.targetDistance = 12.2;   // seis islas: un poco mas lejos para que quepan todas
     this.cameraTarget.copy(this.center);
   }
 

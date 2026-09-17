@@ -16,6 +16,7 @@ import { DisgustSortGame } from './disgust/DisgustSortGame.js';
 import { DisgustTerritoryGame } from './disgust/DisgustTerritoryGame.js';
 import { SurpriseObserveGame } from './surprise/SurpriseObserveGame.js';
 import { FrustrationTowerGame } from './frustration/FrustrationTowerGame.js';
+import { CalmLakeGame } from './calm/CalmLakeGame.js';
 import { FrustrationIslandFlow } from './frustration/FrustrationIslandFlow.js';
 
 export const minigameRegistry = {
@@ -31,7 +32,8 @@ export const minigameRegistry = {
   'disgust-sort': DisgustSortGame,
   'disgust-territory': DisgustTerritoryGame,
   'frustration-tower-valley': FrustrationIslandFlow,   // torre (nivel 1) + valle de los orbes (nivel 2)
-  'frustration-tower': FrustrationTowerGame,           // solo la torre
+  'frustration-tower': FrustrationTowerGame,
+  'calm-lake': CalmLakeGame,           // solo la torre
   'surprise-observe': SurpriseObserveGame,
   // EMO-AVENTURA (2D, en migracion a 3D)
   'fear-island': FearIslandGame,
