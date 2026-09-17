@@ -5,7 +5,6 @@ export const islands = [
     displayName: 'La casa en marcha',
     emoji: '😢',
     subtitle: 'Empiezas sin fuerzas. Cada cosa pequena que haces te devuelve impulso.',
-    badge: 'Guardian de la Tristeza',
     reward: 'Cristal del Recuerdo Positivo',
     palette: {
       land: '#7db8d6',
@@ -26,7 +25,6 @@ export const islands = [
     emoji: '😠',
     subtitle: 'Las rocas llegan ardiendo. Espera a que se enfrien antes de tocarlas.',
     chapter: 2,
-    badge: 'Guardian de la Ira',
     reward: 'Gota de Calma',
     palette: {
       land: '#e76856',
@@ -47,7 +45,6 @@ export const islands = [
     emoji: '😨',
     subtitle: 'Bosque a oscuras y una casa de noche: enciende los faroles y comprueba lo que da miedo.',
     chapter: 1,
-    badge: 'Guardian del Miedo',
     reward: 'Lupa de la Realidad',
     palette: {
       land: '#6c5a94',
@@ -68,7 +65,6 @@ export const islands = [
     emoji: '🤢',
     subtitle: 'Reconoce el desagrado, mide su intensidad y elige como responder.',
     chapter: 3,
-    badge: 'Guardian del Desagrado',
     reward: 'Semilla de Aceptacion',
     palette: {
       land: '#6ab86a',
@@ -88,7 +84,6 @@ export const islands = [
     displayName: 'La torre y el valle',
     emoji: '😤',
     subtitle: 'Algo se interpone entre tu y la cima. Sigue, para, cambia de paso o pide ayuda. Y después, el valle: salta y recoge los orbes.',
-    badge: 'Guardian de la Frustración',
     reward: 'Llave de la Paciencia',
     // naranja-rojizo: el calor que sube cuando algo se interpone
     palette: {

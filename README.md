@@ -106,8 +106,9 @@ Alegría y las instrucciones de prueba; la telemetría queda en `sessionLog` /
 ## Progreso y recompensas
 
 `src/data/gameState.js` guarda en `localStorage` puntos, herramientas,
-insignias, actividades, intensidades, reevaluaciones y desbloqueos. Cada isla 3D
-entrega sus herramientas y su insignia al cruzar el portal. **Todas las islas
+actividades, intensidades, reevaluaciones e islas completadas. Cada isla 3D
+entrega sus herramientas al cruzar el portal; el progreso que ve el jugador son
+las islas completadas y los puntos (no hay insignias). **Todas las islas
 están abiertas desde el principio**: se puede entrar a cualquiera sin haber
 jugado otra antes. El orden Miedo → Ira → Desagrado solo numera los capítulos
 de la aventura; las cinco islas cuentan en el contador del mapa y en Mi progreso.

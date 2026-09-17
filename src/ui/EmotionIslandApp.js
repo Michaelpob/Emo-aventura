@@ -9,10 +9,8 @@ import {
   completeIsland,
   allIslandsCompleted,
   addReward,
-  getBadges,
   ISLAND_CHAIN
 } from '../data/gameState.js';
-import { BADGES } from '../data/tools.js';
 import { openProgress, openFinal } from './screens.js';
 
 export class EmotionIslandApp {
@@ -274,10 +272,9 @@ export class EmotionIslandApp {
         <p class="eyebrow">${eyebrow}</p>
         <h2>${island.displayName}</h2>
         <p>${island.subtitle}</p>
-        ${island.badge ? `
+        ${island.reward ? `
           <div class="island-panel__meta">
-            <span>${completed ? '🏅 Insignia obtenida' : `🏅 Insignia: ${island.badge}`}</span>
-            ${island.reward ? `<span>🎁 Recompensa: ${island.reward}</span>` : ''}
+            <span>${completed ? '✔ Completada' : `🎁 Recompensa: ${island.reward}`}</span>
           </div>` : ''}
         <div class="panel-actions">
           <button class="primary-action" type="button" data-play>${completed ? 'Volver a jugar' : 'Jugar'}</button>
@@ -358,9 +355,9 @@ export class EmotionIslandApp {
     this.launchMinigame(island);
   }
 
-  /** Cierre de una isla de EMO-AVENTURA: insignia y puntos */
+  /** Cierre de una isla de EMO-AVENTURA: progreso y puntos */
   showIslandComplete(result) {
-    const badge = BADGES[result.badge ?? result.islandId];
+    const island = islands.find((item) => item.id === result.islandId);
     const finished = allIslandsCompleted();
     const doneChain = ISLAND_CHAIN.filter((id) => gameState.completedIslands.includes(id)).length;
 
@@ -371,15 +368,13 @@ export class EmotionIslandApp {
         </div>
         <p class="eyebrow">Isla completada</p>
         <div class="island-complete__badge">
-          <span class="island-complete__badge-icon" aria-hidden="true">${badge?.icon ?? '🏅'}</span>
-          <strong>${badge?.name ?? 'Insignia obtenida'}</strong>
+          <span class="island-complete__badge-icon" aria-hidden="true">${island?.emoji ?? '🏝️'}</span>
         </div>
         <h2>${result.title}</h2>
         <p>${result.message}</p>
         <div class="island-complete__stats">
           <span>🏝️ ${doneChain}/${ISLAND_CHAIN.length} islas</span>
           <span>✦ ${gameState.emotionalPoints} puntos</span>
-          <span>🏅 ${getBadges().length}/${Object.keys(BADGES).length} insignias</span>
         </div>
         <div class="panel-actions">
           <button class="primary-action" type="button" data-back-map>${finished ? 'Ver el final' : 'Volver al mapa'}</button>

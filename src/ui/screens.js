@@ -1,12 +1,12 @@
 // EMO-AVENTURA · Pantallas globales
 // Mi Progreso · Final de la aventura
 
-import { BADGES } from '../data/tools.js';
 import { gameState, getProgressSummary, ISLAND_CHAIN } from '../data/gameState.js';
 import { islands } from '../data/islands.js';
 
-// nombres actuales de las islas, los mismos que ve el jugador en el mapa
+// nombres y emojis actuales de las islas, los mismos que ve el jugador en el mapa
 const ISLAND_NAMES = Object.fromEntries(islands.map((i) => [i.id, i.displayName]));
+const ISLAND_EMOJI = Object.fromEntries(islands.map((i) => [i.id, i.emoji]));
 
 function mountOverlay(host, html, { label = 'Pantalla' } = {}) {
   const layer = document.createElement('div');
@@ -47,7 +47,6 @@ export function openProgress(host) {
       <div class="progress__stats">
         <div class="progress__stat"><strong>${p.completed.length}/${p.total}</strong><span>islas completadas</span></div>
         <div class="progress__stat"><strong>${p.points}</strong><span>puntos emocionales</span></div>
-        <div class="progress__stat"><strong>${p.badges.length}</strong><span>insignias</span></div>
       </div>
 
       <section class="progress__section">
@@ -57,25 +56,13 @@ export function openProgress(host) {
             const done = gameState.completedIslands.includes(id);
             return `
               <li class="${done ? 'is-done' : 'is-open'}">
-                <span aria-hidden="true">${done ? BADGES[id].icon : '🔓'}</span>
+                <span aria-hidden="true">${done ? '✅' : (ISLAND_EMOJI[id] ?? '🔓')}</span>
                 <strong>${ISLAND_NAMES[id]}</strong>
                 <em>${done ? 'Completada' : 'Disponible'}</em>
               </li>
             `;
           }).join('')}
         </ul>
-      </section>
-
-      <section class="progress__section">
-        <h3>Insignias</h3>
-        <div class="progress__badges">
-          ${Object.values(BADGES).map((b) => `
-            <div class="badge ${gameState.badges.includes(b.id) ? 'is-earned' : ''}">
-              <span aria-hidden="true">${gameState.badges.includes(b.id) ? b.icon : '🔒'}</span>
-              <p>${b.name}</p>
-            </div>
-          `).join('')}
-        </div>
       </section>
 
       <section class="progress__section">
@@ -126,10 +113,10 @@ export function openFinal(host, onClose) {
       <p class="final__lead">Recorriste las cinco islas y aprendiste que ninguna emocion es mala: todas informan y todas se pueden regular.</p>
 
       <div class="final__badges">
-        ${Object.values(BADGES).map((b, i) => `
-          <div class="final__badge ${gameState.badges.includes(b.id) ? 'is-earned' : ''}" style="--i:${i}">
-            <span aria-hidden="true">${b.icon}</span>
-            <p>${b.name}</p>
+        ${ISLAND_CHAIN.map((id, i) => `
+          <div class="final__badge ${gameState.completedIslands.includes(id) ? 'is-earned' : ''}" style="--i:${i}">
+            <span aria-hidden="true">${ISLAND_EMOJI[id] ?? '🏝️'}</span>
+            <p>${ISLAND_NAMES[id] ?? id}</p>
           </div>
         `).join('')}
       </div>
