@@ -3,6 +3,8 @@
 
 .i3d.cl .i3d-bar { --c: #8be0c8; }
 .cl-stage[hidden], .cl-focus[hidden], .cl-melody[hidden] { display: none !important; }
+/* la barra de tiempo de la nota se para con la pausa */
+.i3d.cl .i3d__notes.is-paused .i3d-note__bar { animation-play-state: paused; }
 
 .cl-stage {
   position: absolute;

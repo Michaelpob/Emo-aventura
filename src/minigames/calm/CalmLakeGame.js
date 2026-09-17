@@ -136,6 +136,9 @@ export class CalmLakeGame extends MinigameBase {
     this.nextFarBird = 6;
     this.nextChime = 9;
     this.favorite = null;
+    this.noteQueue = [];
+    this.noteNow = null;
+    this.runId = 0;              // cambia al reiniciar: las promesas viejas no siguen
   }
 
   /* ============================================================ escenario */
@@ -820,6 +823,69 @@ export class CalmLakeGame extends MinigameBase {
       `<b>${this.melody.length}/${MIN_NOTES}${this.melody.length >= MIN_NOTES ? ' ✓' : ''}</b>`;
   }
 
+  /* ================================================================ notas */
+
+  /**
+   * Notas en cola, con tiempo de lectura holgado: cada una espera a que la
+   * anterior se cierre (sola al acabar su tiempo, o con la aspa). El tiempo
+   * solo corre con el juego en marcha. Devuelve una promesa al cerrarse.
+   */
+  showNote({ title = '', text = '', seconds = 0 } = {}) {
+    return new Promise((resolve) => {
+      this.noteQueue.push({ title, text, seconds, resolve });
+      this.pumpNotes();
+    });
+  }
+
+  pumpNotes() {
+    if (this.noteNow || !this.noteQueue.length || this.finished) return;
+    const n = this.noteQueue.shift();
+    const words = `${n.title} ${n.text}`.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    // leer con calma: casi un segundo por palabra, mas un margen para empezar
+    const seconds = Math.min(60, Math.max(n.seconds, 7 + words * 0.9));
+    const el = document.createElement('div');
+    el.className = 'i3d-note';
+    el.style.setProperty('--dur', `${seconds}s`);
+    el.innerHTML = `
+      ${n.title ? `<p class="i3d-note__title">${n.title}</p>` : ''}
+      <p class="i3d-note__text">${n.text}</p>
+      <button class="i3d-note__x" type="button" aria-label="Cerrar">&times;</button>
+      <span class="i3d-note__bar" aria-hidden="true"></span>
+    `;
+    this.el.notes.appendChild(el);
+    this.noteNow = { el, left: seconds, resolve: n.resolve };
+    el.querySelector('.i3d-note__x').addEventListener('click', () => this.closeNote());
+  }
+
+  /** Cierra la nota visible (y avisa a quien la esperaba) */
+  closeNote() {
+    const n = this.noteNow;
+    if (!n) return;
+    this.noteNow = null;
+    n.el.classList.add('is-out');
+    this.later(() => n.el.remove(), 300);
+    n.resolve();
+    this.later(() => this.pumpNotes(), 500);
+  }
+
+  /** Quita la nota actual y las pendientes sin esperar (cambio de situacion) */
+  clearNotes() {
+    this.noteQueue.length = 0;
+    this.closeNote();
+  }
+
+  updateNotes(dt) {
+    if (!this.noteNow) return;
+    this.noteNow.left -= dt;
+    if (this.noteNow.left <= 0) this.closeNote();
+  }
+
+  togglePause(on) {
+    super.togglePause(on);
+    // la barra de tiempo de la nota se detiene con el juego
+    this.el.notes?.classList.toggle('is-paused', this.paused);
+  }
+
   /* ============================================================== inicio */
 
   async onStart() {
@@ -923,24 +989,27 @@ export class CalmLakeGame extends MinigameBase {
     c.pitch = -0.1;
     this.feedback.tweenValue(c.cfg, 'eyeHeight', 1.05, 0.9);
     this.audio.play('interact', { volume: 0.25, rate: 0.8 });
-    this.say('MIRA EL AGUA', 2200);
-    this.later(() => this.showNote({
-      title: 'Así se pone la cabeza cuando va rápido',
-      text: 'El agua no para. Respira con el círculo: cada vez que sueltes el aire, el lago se calmará un poco más.'
-    }), 900);
+    this.clearNotes();
+    this.say('MIRA EL AGUA', 2600);
+    const run = this.runId;
     this.later(() => {
-      if (this.finished || this.stage !== 0) return;
-      this.el.notes.querySelector('.i3d-note')?.remove();
-      this.breathPause.run({
-        cycles: 3,
-        title: 'El lago espejo',
-        subtitle: 'Con cada exhalación el agua se aquieta',
-        skippable: false,
-        onPhase: (phase, cycle) => {
-          if (phase === 'out') this.calmTarget = 1 - (cycle + 1) / 3;
-        }
-      }).then(() => this.lakeCalmed());
-    }, 6500);
+      // la respiracion empieza cuando la nota se ha leido (o se cierra con la aspa)
+      this.showNote({
+        title: 'Así se pone la cabeza cuando va rápido',
+        text: 'El agua no para. Respira con el círculo: cada vez que sueltes el aire, el lago se calmará un poco más.'
+      }).then(() => {
+        if (this.finished || run !== this.runId || this.stage !== 0) return;
+        this.breathPause.run({
+          cycles: 3,
+          title: 'El lago espejo',
+          subtitle: 'Con cada exhalación el agua se aquieta',
+          skippable: false,
+          onPhase: (phase, cycle) => {
+            if (phase === 'out') this.calmTarget = 1 - (cycle + 1) / 3;
+          }
+        }).then(() => { if (run === this.runId) this.lakeCalmed(); });
+      });
+    }, 900);
   }
 
   lakeCalmed() {
@@ -952,20 +1021,22 @@ export class CalmLakeGame extends MinigameBase {
     this.audio.play('success', { volume: 0.35 });
     this.audio.play('windChime', { volume: 0.4 });
     this.music.setLayers(2);
-    this.say('EL AGUA ES UN ESPEJO', 2600);
-    this.later(() => this.showNote({
-      title: 'Mira: el agua refleja el cielo',
-      text: 'Cuando respiras despacio, tú también te aclaras. Eso es la calma: no es que no pase nada, es que el agua está quieta y se puede ver el fondo.'
-    }), 1400);
+    this.say('EL AGUA ES UN ESPEJO', 3000);
+    const run = this.runId;
     this.later(() => {
-      if (this.finished) return;
-      this.feedback.tweenValue(this.controller.cfg, 'eyeHeight', 1.5, 0.8);
-      this.controller.frozen = false;
-      this.sitting = false;
-      this.advanceObjective();
-      completeActivity('calm-lago', 10);
-      this.later(() => this.enterStage(1), 1600);
-    }, 9000);
+      this.showNote({
+        title: 'Mira: el agua refleja el cielo',
+        text: 'Cuando respiras despacio, tú también te aclaras. Eso es la calma: no es que no pase nada, es que el agua está quieta y se puede ver el fondo.'
+      }).then(() => {
+        if (this.finished || run !== this.runId) return;
+        this.feedback.tweenValue(this.controller.cfg, 'eyeHeight', 1.5, 0.8);
+        this.controller.frozen = false;
+        this.sitting = false;
+        this.advanceObjective();
+        completeActivity('calm-lago', 10);
+        this.later(() => this.enterStage(1), 1400);
+      });
+    }, 1400);
   }
 
   updateLake(dt) {
@@ -986,7 +1057,7 @@ export class CalmLakeGame extends MinigameBase {
     const running = c.isRunning && speed > 4;
     if (running) {
       if (this.quiet > 0.5 && this.stage === 1 && this.inForest()) {
-        this.say('CORRIENDO SE ASUSTAN', 1800);
+        this.say('CORRIENDO SE ASUSTAN', 2400);
         this.audio.play('flutter', { volume: 0.5 });
         this.hushUntil = this.time + 4;
       }
@@ -1115,7 +1186,7 @@ export class CalmLakeGame extends MinigameBase {
     b.perch = this.makePerch(px, pz);
     b.flight = { from: b.anchor.position.clone(), to: b.perch.top.clone(), t: 0, dur: 1.6 };
     b.mesh.lookAt(b.perch.top);
-    this.say(`¡${b.def.name.toUpperCase()}!`, 1800);
+    this.say(`¡${b.def.name.toUpperCase()}!`, 2400);
     this.later(() => this.showNote({ title: b.def.name, text: b.def.text }), 1500);
 
     const found = this.advanceObjective();
@@ -1201,7 +1272,7 @@ export class CalmLakeGame extends MinigameBase {
       if (this.objective.done < MIN_NOTES) this.advanceObjective();
       if (this.melody.length === MIN_NOTES) {
         this.echoInteractable.enabled = true;
-        this.say('YA TIENES UNA MELODÍA', 2200);
+        this.say('YA TIENES UNA MELODÍA', 2800);
         this.later(() => this.showNote({
           title: 'La piedra del eco',
           text: 'Puedes seguir tocando nenúfares o acercarte a la piedra del centro: te devolverá tu melodía tal como la tocaste.'
@@ -1209,7 +1280,7 @@ export class CalmLakeGame extends MinigameBase {
       }
     } else if (this.melody.length === MAX_NOTES && !this.fullNoted) {
       this.fullNoted = true;
-      this.say('LA PIEDRA YA ESTÁ LLENA', 2000);
+      this.say('LA PIEDRA YA ESTÁ LLENA', 2600);
     }
   }
 
@@ -1221,7 +1292,7 @@ export class CalmLakeGame extends MinigameBase {
     this.controller.exitPointerLock();
     const prevMix = this.mix;
     this.setMix(MIX.replay);
-    this.say('TU MELODÍA', 2000);
+    this.say('TU MELODÍA', 2600);
     this.feedback.flash(this.echoStone.position, { color: '#7fd1ff', intensity: 3, duration: 1 });
     // el ritmo es el que toco el jugador, con los silencios largos acortados
     let t = 600;
@@ -1252,7 +1323,7 @@ export class CalmLakeGame extends MinigameBase {
       const x = POND.x - 9.5;
       const z = POND.z + 6;
       this.openPortal(new THREE.Vector3(x, this.terrainAt(x, z), z), { color: '#bfe9ff', label: 'Terminar en la isla' });
-      this.say('EL PORTAL SE ABRIÓ', 2200);
+      this.say('EL PORTAL SE ABRIÓ', 2800);
     }, 5200);
   }
 
@@ -1306,7 +1377,7 @@ export class CalmLakeGame extends MinigameBase {
       c.velocity.z *= 0.2;
       if (!this._wadeHint || this.time - this._wadeHint > 8) {
         this._wadeHint = this.time;
-        this.say('HASTA AQUÍ · EL LAGO ES HONDO', 1600);
+        this.say('HASTA AQUÍ · EL LAGO ES HONDO', 2200);
       }
     }
   }
@@ -1315,6 +1386,7 @@ export class CalmLakeGame extends MinigameBase {
 
   onUpdate(dt) {
     this.time += dt;
+    this.updateNotes(dt);
     this.updateWater(dt);
     this.updateLake(dt);
     this.updateBeacon(dt);
@@ -1328,6 +1400,8 @@ export class CalmLakeGame extends MinigameBase {
   /* ============================================================= reinicio */
 
   onReset() {
+    this.runId += 1;
+    this.clearNotes();
     this.stage = -1;
     this.agitation = 1;
     this.calmTarget = 1;
