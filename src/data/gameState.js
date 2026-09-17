@@ -5,14 +5,16 @@ import { TOOLS, BADGES } from './tools.js';
 
 const STORAGE_KEY = 'emo-aventura-state';
 
-// Orden de la aventura: Miedo -> Alegria -> Ira -> Desagrado. Solo ordena
-// capitulos, progreso e insignias: NO es una cadena de desbloqueo. Todas las
-// islas estan abiertas desde el principio; se puede entrar a cualquiera sin
-// haber jugado otra antes.
-export const ISLAND_CHAIN = ['fear', 'joy', 'anger', 'disgust'];
+// Orden de la aventura: Miedo -> Ira -> Desagrado -> Tristeza -> Frustracion.
+// Solo ordena capitulos, progreso e insignias: NO es una cadena de desbloqueo.
+// Todas las islas estan abiertas desde el principio; se puede entrar a
+// cualquiera sin haber jugado otra antes. Todas cuentan en el contador del
+// mapa y en Mi progreso. (La Alegria ya no es una isla: sus orbes se juegan
+// como segundo nivel de la Frustracion.)
+export const ISLAND_CHAIN = ['fear', 'anger', 'disgust', 'sadness', 'frustration'];
 
-// Islas del mapa que no forman parte de la aventura
-export const FREE_ISLANDS = ['sadness', 'frustration'];
+// Islas del mapa que no forman parte de la aventura (ninguna, hoy)
+export const FREE_ISLANDS = [];
 
 export const ALL_ISLANDS = [...ISLAND_CHAIN, ...FREE_ISLANDS];
 
@@ -36,6 +38,8 @@ function baseState() {
     // Isla del Miedo en dos niveles: bosque (level1) y casa (level2). La isla
     // cuenta como completada solo cuando el flujo termina los dos.
     fear: { level1: false, level2: false },
+    // Otras islas con varios niveles (frustracion: torre -> valle)
+    levels: {},
     settings: { sound: true, reduceMotion: false }
   };
 }
@@ -88,6 +92,7 @@ export function loadProgress() {
       // El sonido venia apagado por defecto y los guardados antiguos lo
       // conservan: se enciende salvo que el jugador lo haya apagado a mano.
       if (!gameState.settings.soundChosen) gameState.settings.sound = true;
+      if (!gameState.levels || typeof gameState.levels !== 'object') gameState.levels = {};
     }
   } catch (err) {
     console.warn('[emo-aventura] no se pudo leer el progreso, se inicia limpio', err);
@@ -223,6 +228,20 @@ export function setFearLevel(level, done = true) {
   fear[`level${level}`] = !!done;
   saveProgress();
   return fear;
+}
+
+/** Niveles superados de una isla con varios niveles: { level1, level2 } */
+export function getIslandLevels(islandId) {
+  if (!gameState.levels) gameState.levels = {};
+  if (!gameState.levels[islandId]) gameState.levels[islandId] = { level1: false, level2: false };
+  return gameState.levels[islandId];
+}
+
+export function setIslandLevel(islandId, level, done = true) {
+  const levels = getIslandLevels(islandId);
+  levels[`level${level}`] = !!done;
+  saveProgress();
+  return levels;
 }
 
 export function allIslandsCompleted() {

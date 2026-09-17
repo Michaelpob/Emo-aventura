@@ -9,6 +9,7 @@ import {
   completeIsland,
   allIslandsCompleted,
   addReward,
+  getBadges,
   ISLAND_CHAIN
 } from '../data/gameState.js';
 import { BADGES } from '../data/tools.js';
@@ -339,16 +340,29 @@ export class EmotionIslandApp {
         <h2>${title}</h2>
         <p>${result.message}</p>
         ${result.target ? `<div class="result-score">${result.score}/${result.target} ${result.unit ?? 'destellos'}</div>` : ''}
-        <button class="primary-action" type="button" data-back-map>Volver al mapa</button>
+        <div class="panel-actions">
+          <button class="primary-action" type="button" data-back-map>Volver al mapa</button>
+          <button class="secondary-action" type="button" data-replay>Volver a jugar</button>
+        </div>
       </section>
     `;
     this.overlayRoot.querySelector('[data-back-map]').addEventListener('click', () => this.showMap());
+    this.overlayRoot.querySelector('[data-replay]').addEventListener('click', () => this.replay(result.islandId));
+  }
+
+  /** Volver a jugar la misma isla sin pasar por el mapa */
+  replay(islandId) {
+    const island = islands.find((item) => item.id === islandId);
+    if (!island) { this.showMap(); return; }
+    this.syncWorldState();
+    this.launchMinigame(island);
   }
 
   /** Cierre de una isla de EMO-AVENTURA: insignia y puntos */
   showIslandComplete(result) {
     const badge = BADGES[result.badge ?? result.islandId];
     const finished = allIslandsCompleted();
+    const doneChain = ISLAND_CHAIN.filter((id) => gameState.completedIslands.includes(id)).length;
 
     this.overlayRoot.innerHTML = `
       <section class="island-complete">
@@ -363,14 +377,18 @@ export class EmotionIslandApp {
         <h2>${result.title}</h2>
         <p>${result.message}</p>
         <div class="island-complete__stats">
+          <span>🏝️ ${doneChain}/${ISLAND_CHAIN.length} islas</span>
           <span>✦ ${gameState.emotionalPoints} puntos</span>
-          <span>🏅 ${gameState.badges.length}/4 insignias</span>
+          <span>🏅 ${getBadges().length}/${Object.keys(BADGES).length} insignias</span>
         </div>
         <div class="panel-actions">
           <button class="primary-action" type="button" data-back-map>${finished ? 'Ver el final' : 'Volver al mapa'}</button>
+          <button class="secondary-action" type="button" data-replay>Volver a jugar</button>
         </div>
       </section>
     `;
+
+    this.overlayRoot.querySelector('[data-replay]').addEventListener('click', () => this.replay(result.islandId));
 
     this.overlayRoot.querySelector('[data-back-map]').addEventListener('click', () => {
       if (finished) {

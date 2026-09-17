@@ -1115,6 +1115,9 @@
 .island-complete__badge strong { font-size: 1.05rem; }
 .island-complete h2 { margin: 0 0 8px; }
 .island-complete__stats { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 16px 0; font-weight: 700; }
+.island-complete .panel-actions { justify-content: center; }
+.island-complete .primary-action,
+.island-complete .secondary-action { margin-top: 8px; }
 .island-complete__sparks { position: absolute; inset: 0; pointer-events: none; }
 .island-complete__sparks i {
   position: absolute;

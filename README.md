@@ -3,7 +3,7 @@
 > "Vive la aventura de descubrir el poder de tus emociones"
 
 Mundo 3D jugable sobre reconocimiento y regulación emocional. Desde un mapa
-central se entra a seis islas y **cada una tiene una mecánica de juego distinta**,
+central se entra a cinco islas y **cada una tiene una mecánica de juego distinta**,
 derivada de la emoción que representa. Nada de "texto + botón + barra de
 progreso": se juega moviéndose, mirando, empujando, saltando y sosteniendo.
 
@@ -29,16 +29,15 @@ Dentro de las islas que se caminan: **WASD** moverse · **SHIFT** correr ·
 pausa · **F3** medidor de rendimiento. En táctil: joystick izquierdo, arrastre
 derecho para la cámara y botones de saltar/interactuar.
 
-## Las seis islas
+## Las cinco islas
 
 | Isla | Emoción | Vista | Verbo | Reto |
 |---|---|---|---|---|
 | Al rojo vivo | Ira | cámara fija | **distinguir y contenerte** (go / no-go) | Las rocas caen al rojo: tocarlas quema y el volcán sube; hay que esperar a que se enfríen para atraparlas y hacer el puente. Las chispas nunca se enfrían. Al entrar dices cómo está tu enojo (bajo / medio / alto) y eso sube la dificultad. Después, sigues con el dedo las grietas de la cornisa hasta lo que las encendió; y de últimas, tres respiraciones 4-4-4-4 con unos pulmones que se mantienen pulsados y se sueltan |
 | Bosque de la Noche | Miedo | 1ª persona | **explorar en la oscuridad** | Linterna con batería: correr la gasta, respirar la recarga; encender 5 faroles |
 | El mundo que vuelve | Tristeza | 3ª persona | **encontrar y restaurar** | 6 fragmentos de recuerdo; cada uno hace brotar vegetación, reconstruye una estructura y añade una capa de audio |
-| Valle de la Luz | Alegría | 3ª persona | **saltar y recoger** | 12 orbes entre plataformas flotantes, con combo si no tocas el suelo |
 | Guardianes del Desagrado | Asco | 1ª persona | **reconocer, medir y responder** | Cuatro etapas en orden, cada una en su propio entorno: termómetro (se sube por terrazas y cambia el mundo), dos zonas donde los estímulos se responden con el cuerpo (alejarse = sí me genera desagrado), Espejo de las Reacciones (pisar baldosas) y La Reacción Impulsiva, que crece si corres, saltas o chocas y se encoge usando los altares: cada letrero dice qué hacer y cada altar enseña una técnica (respirar, sostener la sensación, la puerta del pensamiento equilibrado, pedir apoyo al Guardián) y da su recompensa; las Mariposas de color y el sendero 5-4-3-2-1 se juegan completos en su propio claro la primera vez y luego como repaso breve junto al altar |
-| La torre | Frustración | cámara fija | **seguir bajo reveses** | Levanta una torre de 12 bloques soltándolos a tiempo mientras ráfagas de viento (que no dependen de ti) la tumban. La frustración sube con cada revés y hace temblar la mano; se regula parando, con pasos cortos o pidiendo ayuda |
+| La torre y el valle | Frustración | cámara fija → 3ª persona | **seguir bajo reveses** | Nivel 1, la torre: levanta una torre de 12 bloques soltándolos a tiempo mientras ráfagas de viento (que no dependen de ti) la tumban. La frustración sube con cada revés y hace temblar la mano; se regula parando, con pasos cortos o pidiendo ayuda. Nivel 2, el valle: lo que hay detrás de haber seguido; 12 orbes entre plataformas flotantes, con combo si no tocas el suelo (los orbes del antiguo Valle de la Luz) |
 
 Al superar cada reto se abre un **portal físico** en la escena que el jugador
 cruza por su propia voluntad: no hay pantalla de "minijuego completado".
@@ -59,8 +58,8 @@ src/
 │   └── activities.js         actividades 2D reutilizables
 ├── minigames/
 │   ├── anger/AngerLavaGame.js (+ AngerCracksStage.js)   fear/FearNightGame.js
-│   ├── sadness/SadnessHouseGame.js  joy/JoyOrbsGame.js
-│   ├── disgust/DisgustSortGame.js     frustration/FrustrationTowerGame.js
+│   ├── sadness/SadnessHouseGame.js  joy/JoyOrbsGame.js (nivel 2 de la frustracion)
+│   ├── disgust/DisgustSortGame.js     frustration/FrustrationTowerGame.js (+ FrustrationIslandFlow.js)
 │   └── index.js                        registro de minijuegos
 ├── data/       islands · gameState · tools · player
 ├── three/      mapa 3D principal (hub)
@@ -110,8 +109,10 @@ Alegría y las instrucciones de prueba; la telemetría queda en `sessionLog` /
 insignias, actividades, intensidades, reevaluaciones y desbloqueos. Cada isla 3D
 entrega sus herramientas y su insignia al cruzar el portal. **Todas las islas
 están abiertas desde el principio**: se puede entrar a cualquiera sin haber
-jugado otra antes. El orden Miedo → Alegría → Ira → Desagrado solo numera los
-capítulos de la aventura; Tristeza y Frustración van aparte.
+jugado otra antes. El orden Miedo → Ira → Desagrado solo numera los capítulos
+de la aventura; las cinco islas cuentan en el contador del mapa y en Mi progreso.
+Al terminar una isla se puede **volver a jugar** desde la pantalla de cierre, sin
+pasar por el mapa.
 
 ## Añadir una isla
 

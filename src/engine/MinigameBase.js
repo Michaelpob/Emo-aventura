@@ -699,7 +699,7 @@ export class MinigameBase {
 
     this.feedback.flash(position, { color, intensity: 5, duration: 1.2 });
     this.feedback.burst(position, { count: 30, color, speed: 4, life: 1.4 });
-    this.audio?.play('success', { volume: 0.5 });
+    this.audio?.play('success', { volume: 0.35 });
 
     this.interactable({
       object: group,
@@ -751,7 +751,7 @@ export class MinigameBase {
     this.finished = true;
     this.controller.frozen = true;
     this.controller.exitPointerLock();
-    this.audio?.play('chime', { volume: 0.5 });
+    this.audio?.play('chime', { volume: 0.3 });
     this.onFinish?.();
     this.onComplete?.({ ...this.completionPayload, ...extra });
   }

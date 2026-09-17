@@ -106,7 +106,8 @@ const RECIPES = {
   stepRun:   (ctx) => noiseBuffer(ctx, 0.1, 1400, (p) => decay(p) * 0.7),
   interact:  (ctx) => toneBuffer(ctx, 0.18, 520, 720, soft, 2),
   collect:   (ctx) => toneBuffer(ctx, 0.32, 660, 1180, bell, 3),
-  success:   (ctx) => toneBuffer(ctx, 0.9, 392, 784, (p) => bell(p) * 0.9, 4),
+  // logro: mas suave que el resto (suena al completar cosas en todas las islas)
+  success:   (ctx) => toneBuffer(ctx, 0.9, 392, 784, (p) => bell(p) * 0.45, 4),
   soften:    (ctx) => toneBuffer(ctx, 0.28, 300, 220, soft, 2),   // "error" amable
   light:     (ctx) => toneBuffer(ctx, 0.7, 300, 900, bell, 3),
   // inhalar sube en brillo; exhalar empieza claro y se apaga. Sin graves: aire, no oleaje
@@ -116,7 +117,7 @@ const RECIPES = {
   wind:      (ctx) => noiseBuffer(ctx, 3.5, 420, (p) => 0.35 + Math.sin(p * Math.PI * 2) * 0.15),
   water:     (ctx) => noiseBuffer(ctx, 3.0, 1200, (p) => 0.22 + Math.sin(p * Math.PI * 3) * 0.08),
   swamp:     (ctx) => noiseBuffer(ctx, 3.0, 260, (p) => 0.3 + Math.sin(p * Math.PI * 2) * 0.12),
-  chime:     (ctx) => toneBuffer(ctx, 1.6, 523, 523, (p) => Math.pow(1 - p, 2) * 0.7, 5),
+  chime:     (ctx) => toneBuffer(ctx, 1.6, 523, 523, (p) => Math.pow(1 - p, 2) * 0.4, 5),
   pad:       (ctx) => toneBuffer(ctx, 4.0, 174, 176, () => 0.28, 3),
   // Isla del Enojo: rocas al rojo, chispas y erupcion
   thud:      (ctx) => noiseBuffer(ctx, 0.26, 140, (p) => decay(p) * 0.9),
@@ -186,6 +187,7 @@ export class AudioBus {
     this.camera = camera;
     this.ambientNodes = [];
     this.duckAmount = 1;
+    this.level = 1;          // volumen propio de la isla (1 = el general)
     this.ready = false;
     this.buffers = CACHE;
   }
@@ -204,7 +206,7 @@ export class AudioBus {
       this.compressor.release.value = 0.18;
       this.compressor.connect(this.ctx.destination);
       this.master = this.ctx.createGain();
-      this.master.gain.value = this.enabled ? MASTER_GAIN : 0;
+      this.master.gain.value = this.enabled ? MASTER_GAIN * this.level : 0;
       this.master.connect(this.compressor);
       this.ambientGain = this.ctx.createGain();
       this.ambientGain.gain.value = 0.55;
@@ -224,8 +226,14 @@ export class AudioBus {
 
   setEnabled(on) {
     this.enabled = on;
-    if (this.ready) this.master.gain.setTargetAtTime(on ? MASTER_GAIN : 0, this.ctx.currentTime, 0.08);
+    if (this.ready) this.master.gain.setTargetAtTime(on ? MASTER_GAIN * this.level : 0, this.ctx.currentTime, 0.08);
     if (on) this.unlock();
+  }
+
+  /** Volumen de toda la isla respecto al general (0..1). Una isla tranquila suena mas baja. */
+  setLevel(level = 1, time = 0.3) {
+    this.level = Math.max(0, Math.min(1.5, level));
+    if (this.ready && this.enabled) this.master.gain.setTargetAtTime(MASTER_GAIN * this.level, this.ctx.currentTime, time);
   }
 
   /**

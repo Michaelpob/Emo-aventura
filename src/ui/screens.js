@@ -123,7 +123,7 @@ export function openFinal(host, onClose) {
         ${Array.from({ length: 18 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}
       </div>
       <h2 class="final__title">¡HAS COMPLETADO EMO-AVENTURA!</h2>
-      <p class="final__lead">Recorriste las cuatro islas y aprendiste que ninguna emocion es mala: todas informan y todas se pueden regular.</p>
+      <p class="final__lead">Recorriste las cinco islas y aprendiste que ninguna emocion es mala: todas informan y todas se pueden regular.</p>
 
       <div class="final__badges">
         ${Object.values(BADGES).map((b, i) => `

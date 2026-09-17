@@ -1,26 +1,5 @@
 export const islands = [
   {
-    id: 'joy',
-    name: 'Alegria',
-    displayName: 'Valle de la Luz',
-    emoji: '😄',
-    subtitle: 'Salta entre plataformas y recoge los orbes: el valle se enciende contigo.',
-    chapter: 2,
-    badge: 'Guardian de la Alegria',
-    reward: 'Estrella del Disfrute',
-    palette: {
-      land: '#f6c85f',
-      accent: '#ff8a3d',
-      foliage: '#72c264',
-      glow: '#ffd85a',
-      ui: '#f59f00'
-    },
-    position: [-3.5, 0, -3],
-    radius: 1.3,
-    height: 0.4,
-    minigame: 'joy-orbs'
-  },
-  {
     id: 'sadness',
     name: 'Tristeza',
     displayName: 'La casa en marcha',
@@ -35,7 +14,7 @@ export const islands = [
       glow: '#b7e4f5',
       ui: '#3178a8'
     },
-    position: [0, 0, -4.5],
+    position: [0, 0, -4.4],
     radius: 1.25,
     height: 0.34,
     minigame: 'sadness-house'
@@ -46,7 +25,7 @@ export const islands = [
     displayName: 'Al rojo vivo',
     emoji: '😠',
     subtitle: 'Las rocas llegan ardiendo. Espera a que se enfrien antes de tocarlas.',
-    chapter: 3,
+    chapter: 2,
     badge: 'Guardian de la Ira',
     reward: 'Gota de Calma',
     palette: {
@@ -56,7 +35,7 @@ export const islands = [
       glow: '#ff765f',
       ui: '#c0392b'
     },
-    position: [3.5, 0, -3],
+    position: [4.2, 0, -1.4],
     radius: 1.4,
     height: 0.48,
     minigame: 'anger-lava'
@@ -77,7 +56,7 @@ export const islands = [
       glow: '#b6a7ff',
       ui: '#5947a5'
     },
-    position: [-3.5, 0, 2],
+    position: [-4.2, 0, -1.4],
     radius: 1.3,
     height: 0.38,
     minigame: 'fear-night-house'
@@ -88,7 +67,7 @@ export const islands = [
     displayName: 'Guardianes del Desagrado',
     emoji: '🤢',
     subtitle: 'Reconoce el desagrado, mide su intensidad y elige como responder.',
-    chapter: 4,
+    chapter: 3,
     badge: 'Guardian del Desagrado',
     reward: 'Semilla de Aceptacion',
     palette: {
@@ -98,7 +77,7 @@ export const islands = [
       glow: '#8ce88c',
       ui: '#2e8b2e'
     },
-    position: [0, 0, 3.5],
+    position: [-2.6, 0, 3.6],
     radius: 1.2,
     height: 0.36,
     minigame: 'disgust-territory'
@@ -106,9 +85,9 @@ export const islands = [
   {
     id: 'frustration',
     name: 'Frustración',
-    displayName: 'La torre',
+    displayName: 'La torre y el valle',
     emoji: '😤',
-    subtitle: 'Algo se interpone entre tu y la cima. Sigue, para, cambia de paso o pide ayuda.',
+    subtitle: 'Algo se interpone entre tu y la cima. Sigue, para, cambia de paso o pide ayuda. Y después, el valle: salta y recoge los orbes.',
     badge: 'Guardian de la Frustración',
     reward: 'Llave de la Paciencia',
     // naranja-rojizo: el calor que sube cuando algo se interpone
@@ -119,10 +98,10 @@ export const islands = [
       glow: '#ff8c4a',
       ui: '#c9471f'
     },
-    position: [3.5, 0, 2],
+    position: [2.6, 0, 3.6],
     radius: 1.18,
     height: 0.4,
-    minigame: 'frustration-tower'
+    minigame: 'frustration-tower-valley'
   }
 ];
 
@@ -137,6 +116,7 @@ export const minigameLabels = {
   'joy-orbs': 'Valle de la Luz',
   'disgust-sort': 'Guardianes del Desagrado',
   'disgust-territory': 'Guardianes del Desagrado',
+  'frustration-tower-valley': 'La torre · El valle',
   'frustration-tower': 'La torre',
   'surprise-observe': 'El jardin que cambia',
   'fear-island': 'Isla del Miedo',

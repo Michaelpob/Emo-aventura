@@ -89,6 +89,35 @@ const MESSAGES = [
   { label: 'No sé qué decir', text: 'Pero quería escribirte.', reply: 'No hace falta saber qué decir. Me alegra mucho que lo hayas hecho.' }
 ];
 
+/** Lo que se dice al terminar cada tarea: cada una tiene su frase */
+const DONE_SAY = {
+  ventanas: 'LAS VENTANAS ABIERTAS · ENTRA EL AIRE',
+  cartas: 'NADA SIN ABRIR · PESA MENOS',
+  lena: 'LA CASA CALIENTE · TE MOVISTE',
+  planta: 'LA PLANTA CON FLOR · CUIDASTE ALGO',
+  radio: 'LA CASA CON MÚSICA · VOLVISTE A ALGO TUYO',
+  mensaje: 'YA LO SABE ALGUIEN · NO ESTÁS SOLO'
+};
+
+/** Mensaje de cierre segun como salio la reevaluacion (baja / igual / sube) */
+const CLOSING_MESSAGES = {
+  down: [
+    'Empezaste pesado y saliste más ligero: no porque la tristeza se fuera, sino porque te moviste con ella.',
+    'Entraste sin fuerzas y la casa quedó en marcha. Las ganas llegaron después de hacer, no antes.',
+    'Cada cosa pequeña te devolvió un poco de impulso. Así se sale de la tristeza: a pasos cortos.'
+  ],
+  same: [
+    'La tristeza pesa igual y aun así pusiste la casa en marcha. Actuar sin esperar a que baje: esa es la idea.',
+    'No hizo falta dejar de estar triste para hacer seis cosas. Eso cuenta, y mucho.',
+    'Hoy pesó lo mismo al entrar y al salir, pero la casa tiene luz, calor y música. Lo hiciste tú.'
+  ],
+  up: [
+    'Hoy pesa más que al entrar, y aun así la casa está en marcha. A veces moverse remueve; cuenta igual.',
+    'Pusiste la casa en marcha con la tristeza encima. Si sigue pesando unos días, díselo a alguien.',
+    'Terminaste todo aunque el peso subió. Eso no es un fallo: es lo más difícil que se puede hacer.'
+  ]
+};
+
 const LETTER_SPOTS = [[-4.5, 4.2], [2.6, 7.4], [7.6, 0.4], [-8.4, -0.6], [0.4, 10.6], [-3.2, -8.2]];
 const LOG_SPOTS = [[-9.2, -5.8], [8.6, -7.4], [-7.4, 7.8], [9.6, 5.2]];
 const PILE_SLOTS = [[-0.34, 0.17, 0], [0.34, 0.17, 0], [0, 0.48, 0], [0, 0.79, 0]];
@@ -180,6 +209,9 @@ export class SadnessHouseGame extends MinigameBase {
     this.controller.orbit.targetDistance = 7.2;
     this.controller.orbit.height = 2.7;
     this.controller.speedScale = 0.5;
+
+    // isla tranquila: todo suena mas bajo que en las demas
+    this.audio.setLevel(0.55);
 
     this.setObjective(TASKS.length, '☀');
   }
@@ -483,15 +515,14 @@ export class SadnessHouseGame extends MinigameBase {
       onInteract: () => this.useMailbox()
     });
 
-    // puerta: solo cuando la casa esta en marcha
+    // puerta: cerrada dice que falta; abierta, se sale por ella
     this.doorItem = this.interactable({
       object: this.door,
       radius: 2.4,
       icon: '🚪',
-      label: 'Salir',
-      onInteract: () => this.finish()
+      label: '¿Qué falta?',
+      onInteract: () => this.knockDoor()
     });
-    this.doorItem.enabled = false;
   }
 
   /* =============================================================== input */
@@ -616,17 +647,61 @@ export class SadnessHouseGame extends MinigameBase {
   completeGroup(taskId) {
     this.groupsDone += 1;
     this.advanceObjective();
-    this.audio.play('success', { volume: 0.4 });
+    this.audio.play('success', { volume: 0.3 });
+    this.say(DONE_SAY[taskId] ?? 'HECHO', 2000);
     this.later(() => this.showStrategy(taskId), 700);
     completeActivity(`sadness-casa-${taskId}`, 4);
     if (this.replyWaiting) this.deliverReply();
     this.checkDoor();
+    // si la puerta sigue cerrada, se dice que falta (despues de la frase de la tarea)
+    if (!this.doorOpen) this.later(() => this.sayMissing(), 2200);
   }
 
   checkDoor() {
     if (this.doorOpen) return;
     if (this.groupsDone < TASKS.length || !this.replyRead) return;
     this.openDoor();
+  }
+
+  /** Lo que queda para que se abra la puerta, en el orden de la lista */
+  pendingTasks() {
+    const pending = TASKS.filter((t) => this.progress[t.id] < t.total).map((t) => t.label.toLowerCase());
+    if (this.progress.mensaje >= 1 && !this.replyRead) {
+      pending.push(this.replyArrived ? 'leer la respuesta del buzón' : 'esperar la respuesta del buzón');
+    }
+    return pending;
+  }
+
+  /** Aviso corto de lo que falta para salir. No se repite cada dos por tres. */
+  sayMissing(force = false) {
+    if (this.doorOpen || this.finished) return;
+    const now = performance.now();
+    if (!force && this._lastMissing && now - this._lastMissing < 6000) return;
+    this._lastMissing = now;
+    const pending = this.pendingTasks();
+    if (!pending.length) return;
+    if (pending.length === 1) {
+      this.say(`PARA SALIR FALTA: ${pending[0].toUpperCase()}`, 2600);
+    } else if (pending.length === 2) {
+      this.say(`FALTAN: ${pending[0].toUpperCase()} Y ${pending[1].toUpperCase()}`, 2600);
+    } else {
+      this.say(`FALTAN ${pending.length} COSAS · MIRA LA LISTA`, 2400);
+    }
+  }
+
+  /** [E] en la puerta cerrada: se explica que falta, con detalle */
+  knockDoor() {
+    if (this.doorOpen) { this.finish(); return; }
+    const pending = this.pendingTasks();
+    this.audio.play('soften', { volume: 0.25, rate: 0.8 });
+    this.sayMissing(true);
+    this.showNote({
+      title: '🚪 La puerta todavía no se abre',
+      text: pending.length === 1
+        ? `Solo falta una cosa: <b>${pending[0]}</b>.`
+        : `Falta: ${pending.map((t) => `<b>${t}</b>`).join(', ')}. La lista de «La casa» te lo va marcando.`,
+      seconds: 8
+    });
   }
 
   /** El impulso acumulado tine todo el escenario */
@@ -806,6 +881,7 @@ export class SadnessHouseGame extends MinigameBase {
       this.deliverReply();
     } else {
       this.replyWaiting = true;
+      this.later(() => { if (this.replyWaiting) this.say('LA RESPUESTA LLEGA CUANDO TERMINES OTRA COSA', 2400); }, 2200);
     }
   }
 
@@ -837,7 +913,7 @@ export class SadnessHouseGame extends MinigameBase {
     this.mailItem.done = true;
     this.mailboxMat.emissiveIntensity = 0;
     if (this.replyFlag) { this.mailbox.remove(this.replyFlag); this.replyFlag = null; }
-    this.audio.play('success', { volume: 0.45 });
+    this.audio.play('success', { volume: 0.3 });
     this.showNote({ title: 'Te contestaron', text: `«${this.message.reply}»`, seconds: 9 });
     this.later(() => this.showStrategy('respuesta'), 9500);
     this.say('ALGUIEN TE CONTESTÓ', 2200);
@@ -853,11 +929,12 @@ export class SadnessHouseGame extends MinigameBase {
     this.feedback.tween({ from: 0, to: -1.15, duration: 1.2, onUpdate: (v) => { this.door.rotation.y = v; } });
     this.doorMat.emissive.set('#ffd166');
     this.doorMat.emissiveIntensity = 0.6;
-    this.doorItem.enabled = true;
+    this.doorItem.label = 'Salir';
+    if (this.interactables.active === this.doorItem) this.interactables.setActive(null);
     this.feedback.flash(new THREE.Vector3(1.4, 1.5, -0.5), { color: '#ffe9a8', intensity: 4, duration: 1.6 });
     this.audio.play('creak', { volume: 0.5, rate: 0.7 });
-    this.later(() => this.audio.play('success', { volume: 0.55 }), 350);
-    this.say('LA PUERTA ESTÁ ABIERTA', 2600);
+    this.later(() => this.audio.play('success', { volume: 0.35 }), 350);
+    this.say('LA PUERTA ESTÁ ABIERTA · SAL POR ELLA', 2600);
   }
 
   /** La estrategia que acabas de practicar, con su version de hoy */
@@ -1047,6 +1124,7 @@ export class SadnessHouseGame extends MinigameBase {
     this.door.rotation.y = 0;
     this.door.position.x = 1.4;
     this.doorMat.emissiveIntensity = 0;
+    this._lastMissing = 0;
     this.layers.forEach((l) => l.stop());
     this.layers.clear();
     this.buildItems();
@@ -1077,7 +1155,7 @@ export class SadnessHouseGame extends MinigameBase {
       emoAventura: true,
       badge: 'sadness',
       title: 'La casa en marcha',
-      message: 'Empezaste sin fuerzas y pusiste la casa en marcha a base de cosas pequeñas.'
+      message: this.closingMessage ?? 'Empezaste sin fuerzas y pusiste la casa en marcha a base de cosas pequeñas.'
     };
   }
 
@@ -1114,6 +1192,9 @@ export class SadnessHouseGame extends MinigameBase {
     completeActivity('sadness-casa-3d', 20);
 
     const delta = after.n - this.level.n;
+    // cada cierre, una frase distinta (segun como salio y al azar dentro de eso)
+    const pool = CLOSING_MESSAGES[delta < 0 ? 'down' : delta === 0 ? 'same' : 'up'];
+    this.closingMessage = pool[Math.floor(Math.random() * pool.length)];
     const cambio = delta < 0
       ? `Entraste con «${this.level.label.toLowerCase()}» y sales con «${after.label.toLowerCase()}». No porque la tristeza se fuera: porque te moviste con ella.`
       : delta === 0
