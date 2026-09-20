@@ -94,7 +94,7 @@ export const islands = [
       glow: '#ff8c4a',
       ui: '#c9471f'
     },
-    position: [2.6, 0, 3.6],
+    position: [4.07, 0, 2.35],
     radius: 1.18,
     height: 0.4,
     minigame: 'frustration-nudos'
