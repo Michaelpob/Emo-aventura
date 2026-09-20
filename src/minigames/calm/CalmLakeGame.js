@@ -4,12 +4,15 @@
 // Tres actividades, en orden y cada una en su rincon de la isla:
 //   1. El lago espejo: el agua esta revuelta; sentado en el muelle, cada
 //      exhalacion la aquieta hasta que refleja el cielo.
-//   2. Los pajaros escondidos: cinco pajaros en el bosque del oeste que solo
-//      cantan si te quedas quieto; localizarlos escuchando los hace aparecer.
+//   2. ¿Quien canta?: siete voces escondidas en el bosque del oeste (cinco
+//      pajaros, un sapo y un grillo) que solo cantan si te quedas quieto.
+//      Se localiza el canto mirando hacia el y hay que adivinar de quien es
+//      (las opciones dicen como suena cada voz: se aprende escuchando, no de
+//      memoria); al acertar, el animal aparece y viene a posarse cerca.
 //   3. El estanque musical: nenufares que son notas de kalimba (pentatonica,
 //      siempre suena bien); pisandolos se compone una melodia propia.
-// Todo el sonido es generado: agua, arroyo, hojas, campanas, cinco cantos
-// distintos y una musica que gana capas conforme la isla se calma.
+// Todo el sonido es generado: agua, arroyo, hojas, campanas, siete voces
+// distintas y una musica que gana capas conforme la isla se calma.
 
 import * as THREE from 'three';
 import { MinigameBase } from '../../engine/MinigameBase.js';
@@ -30,23 +33,40 @@ const WADE_R = LAKE.r - 1.2;                                    // hasta aqui se
 
 const STAGES = [
   { id: 'lake', banner: 'ETAPA 1 · EL LAGO ESPEJO', icon: '🌊' },
-  { id: 'birds', banner: 'ETAPA 2 · LOS PÁJAROS ESCONDIDOS', icon: '🐦' },
+  { id: 'voices', banner: 'ETAPA 2 · ¿QUIÉN CANTA?', icon: '👂' },
   { id: 'pond', banner: 'ETAPA 3 · EL ESTANQUE MUSICAL', icon: '♪' }
 ];
 
-// Cinco pajaros, cinco cantos, cinco colores. Cada uno en la copa de un arbol.
-const BIRDS = [
-  { id: 'colibri', name: 'Colibrí', sound: 'birdTrill', body: '#2ec4a6', belly: '#eafaf3', size: 0.5, every: [2.4, 4.2], tree: { x: -19, z: -10 },
-    text: 'El colibrí solo se acerca cuando nada se mueve deprisa. Quedarte quieto fue lo que lo trajo.' },
-  { id: 'mirlo', name: 'Mirlo', sound: 'birdDown', body: '#2a2a33', belly: '#3a3a45', beak: '#f0b429', size: 0.85, every: [4, 7], tree: { x: -28, z: -1 },
+// Siete voces escondidas en el bosque del oeste: cinco pajaros en las copas,
+// un sapo entre los juncos de la orilla y un grillo en la hierba del claro.
+// `desc` es como suena (las opciones de «¿quien canta?»), `clue` la pista al
+// fallar y `text` la nota cuando aparece. El colibri no canta: zumban sus alas.
+const ANIMALS = [
+  { id: 'colibri', kind: 'bird', name: 'Colibrí', emoji: '🐦', sound: 'birdHum', desc: 'un zumbido de alas', clue: 'No es un canto: es un zumbido, como una abeja muy suave.',
+    body: '#2ec4a6', belly: '#eafaf3', size: 0.5, every: [2.4, 4.2], tree: { x: -19, z: -10 },
+    text: 'El colibrí no canta: lo que oíste son sus alas, que se mueven tan rápido que zumban. Solo se acerca cuando nada se mueve deprisa.' },
+  { id: 'mirlo', kind: 'bird', name: 'Mirlo', emoji: '🐦', sound: 'birdDown', desc: 'tres notas que bajan', clue: 'Son tres notas seguidas y cada una es más grave que la anterior.',
+    body: '#2a2a33', belly: '#3a3a45', beak: '#f0b429', size: 0.85, every: [4, 7], tree: { x: -28, z: -1 },
     text: 'El mirlo canta al atardecer, cuando el día baja de ritmo. Escucharlo es una forma de bajar tú también.' },
-  { id: 'carbonero', name: 'Carbonero', sound: 'birdChip', body: '#f5d547', belly: '#fbf3c4', head: '#1f2933', size: 0.65, every: [3, 5.5], tree: { x: -22, z: 4 },
+  { id: 'carbonero', kind: 'bird', name: 'Carbonero', emoji: '🐤', sound: 'birdChip', desc: 'chip, chip, chip', clue: 'Es un «chip» corto y agudo, repetido siempre igual.',
+    body: '#f5d547', belly: '#fbf3c4', head: '#1f2933', size: 0.65, every: [3, 5.5], tree: { x: -22, z: 4 },
     text: 'El carbonero repite lo mismo muchas veces. Tu respiración también: inhalar, exhalar, una y otra vez.' },
-  { id: 'tortola', name: 'Tórtola', sound: 'birdDove', body: '#c9b8a8', belly: '#efe6dc', size: 1, every: [5, 8], tree: { x: -31, z: -9 },
+  { id: 'tortola', kind: 'bird', name: 'Tórtola', emoji: '🕊️', sound: 'birdDove', desc: 'un arrullo grave: u-uuu', clue: 'Es suave y grave, como una voz que arrulla.',
+    body: '#c9b8a8', belly: '#efe6dc', size: 1, every: [5, 8], tree: { x: -31, z: -9 },
     text: 'El arrullo de la tórtola es grave y lento, como una voz que dice «no hay prisa».' },
-  { id: 'petirrojo', name: 'Petirrojo', sound: 'birdRise', body: '#8b6a4e', belly: '#f26b3a', size: 0.65, every: [3.5, 6], tree: { x: -16, z: 1 },
-    text: 'El petirrojo se posa cerca de quien está tranquilo. Hoy ese eres tú.' }
+  { id: 'petirrojo', kind: 'bird', name: 'Petirrojo', emoji: '🐦', sound: 'birdRise', desc: 'un silbido que sube', clue: 'Es un silbido solo, y va de grave a agudo.',
+    body: '#8b6a4e', belly: '#f26b3a', size: 0.65, every: [3.5, 6], tree: { x: -16, z: 1 },
+    text: 'El petirrojo se posa cerca de quien está tranquilo. Hoy ese eres tú.' },
+  { id: 'sapo', kind: 'toad', name: 'Sapo', emoji: '🐸', sound: 'toad', desc: 'croac, croac', clue: 'Es grave y ronco, como una carraca de madera.',
+    body: '#6d8f3a', belly: '#d9d2a0', size: 0.85, every: [3.5, 6.5], spot: { x: -17.2, z: -6.2 },
+    text: 'El sapo canta desde la orilla, escondido entre los juncos. Su voz es ronca y lenta: no tiene ninguna prisa.' },
+  { id: 'grillo', kind: 'cricket', name: 'Grillo', emoji: '🦗', sound: 'cricket', desc: 'cri-cri-cri', clue: 'Es muy agudo y va a un ritmo, cri-cri-cri, como un relojito.',
+    body: '#7aa33a', belly: '#c8d98a', size: 0.8, every: [3, 5], spot: { x: -27, z: 2.5 },
+    text: 'El grillo canta frotando sus alas. Se calla en cuanto oye pasos: por eso solo lo escuchas si te quedas quieto.' }
 ];
+const BIRDS = ANIMALS.filter((a) => a.kind === 'bird');
+/** Donde se esconde cada voz (la copa del arbol o el sitio en el suelo) */
+const hideout = (a) => a.tree ?? a.spot;
 
 // Nenufares del estanque: pentatonica de Do, una espiral desde la orilla sur
 const PADS = [
@@ -67,7 +87,7 @@ const AMBIENT = { rough: 0.34, calm: 0.26, leaves: 0.2, brook: 0.6, chime: 0.4, 
 // Mezcla por actividad: cuanto se deja oir cada capa (1 = nivel base)
 const MIX = {
   lake: { lake: 1, leaves: 1, brook: 1, extras: true, music: 1, solo: false },
-  birds: { lake: 0.45, leaves: 0.55, brook: 1, extras: true, music: 0.8, solo: false },
+  voices: { lake: 0.45, leaves: 0.55, brook: 1, extras: true, music: 0.8, solo: false },
   // estanque: sin agua, hojas, arroyo, campanas ni pajaros; solo el colchon muy bajo y la kalimba
   pond: { lake: 0, leaves: 0, brook: 0, extras: false, music: 0.5, solo: true },
   replay: { lake: 0, leaves: 0, brook: 0, extras: false, music: 0.3, solo: true },
@@ -126,7 +146,8 @@ export class CalmLakeGame extends MinigameBase {
     this.calmTarget = 1;
     this.quiet = 0;              // quietud del jugador (bosque)
     this.hushUntil = 0;
-    this.birds = [];
+    this.animals = [];
+    this.quiz = null;            // la pregunta «¿quien canta?» abierta
     this.pads = [];
     this.melody = [];
     this.ripples = [];
@@ -174,7 +195,7 @@ export class CalmLakeGame extends MinigameBase {
     this.buildSun();
     this.buildDock();
     this.buildTrees();
-    this.buildBirds();
+    this.buildAnimals();
     this.buildPond();
     this.buildDecor();
     this.buildHud();
@@ -460,7 +481,7 @@ export class CalmLakeGame extends MinigameBase {
       const x = FOREST.x + Math.cos(a) * r + Math.sin(i * 1.3) * 1.5;
       const z = FOREST.z + Math.sin(a) * r + Math.cos(i * 1.7) * 1.5;
       if (Math.hypot(x - FOREST.x, z - FOREST.z) > FOREST.r) continue;
-      if (BIRDS.some((b) => Math.hypot(b.tree.x - x, b.tree.z - z) < 3.2)) continue;
+      if (ANIMALS.some((a) => Math.hypot(hideout(a).x - x, hideout(a).z - z) < (a.tree ? 3.2 : 2.2))) continue;
       if (Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.r + 2.5) continue;
       // se camina entre los arboles: separacion minima entre troncos
       if (spots.some((sp) => Math.hypot(sp.x - x, sp.z - z) < 2.6)) continue;
@@ -544,7 +565,7 @@ export class CalmLakeGame extends MinigameBase {
     });
   }
 
-  /* ------------------------------------------------------------- pajaros */
+  /* ------------------------------------------------- las voces del bosque */
 
   makeBird(def) {
     const g = new THREE.Group();
@@ -590,40 +611,131 @@ export class CalmLakeGame extends MinigameBase {
     return g;
   }
 
-  buildBirds() {
-    this.birds = BIRDS.map((def, i) => {
-      const mesh = this.makeBird(def);
-      const tree = def.tree;
-      const y = this.terrainAt(tree.x, tree.z) + 3.4;
-      mesh.position.set(tree.x, y, tree.z);
+  /** Sapo: cuerpo achaparrado, ojos saltones y patas cortas; la garganta se hincha al croar */
+  makeToad(def) {
+    const g = new THREE.Group();
+    const body = new THREE.MeshStandardMaterial({ color: def.body, roughness: 0.9, flatShading: true });
+    const belly = new THREE.MeshStandardMaterial({ color: def.belly, roughness: 0.9, flatShading: true });
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), body);
+    b.scale.set(1.25, 0.62, 1.1);
+    b.position.y = 0.18;
+    g.add(b);
+    const throat = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), belly);
+    throat.position.set(0, 0.1, 0.26);
+    g.add(throat);
+    const eyeW = new THREE.MeshStandardMaterial({ color: '#f2e6a8', roughness: 0.6, flatShading: true });
+    const eyeB = new THREE.MeshBasicMaterial({ color: '#111111' });
+    [-0.14, 0.14].forEach((x) => {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 6), eyeW);
+      e.position.set(x, 0.38, 0.16);
+      g.add(e);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), eyeB);
+      pupil.position.set(x, 0.39, 0.225);
+      g.add(pupil);
+    });
+    // patas: delante cortas, detras dobladas y anchas
+    [[-0.22, 0.2], [0.22, 0.2], [-0.3, -0.16], [0.3, -0.16]].forEach(([x, z], i) => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(i < 2 ? 0.08 : 0.16, 0.08, i < 2 ? 0.14 : 0.26), body);
+      leg.position.set(x, 0.05, z);
+      g.add(leg);
+    });
+    // manchas oscuras del lomo
+    const spotMat = new THREE.MeshStandardMaterial({ color: '#4f6b28', roughness: 0.9, flatShading: true });
+    [[-0.12, 0.34, -0.05], [0.1, 0.35, 0.02], [0.02, 0.33, -0.18]].forEach(([x, y, z]) => {
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), spotMat);
+      sp.position.set(x, y, z);
+      sp.scale.y = 0.4;
+      g.add(sp);
+    });
+    g.scale.setScalar(def.size);
+    g.userData.throat = throat;
+    return g;
+  }
+
+  /** Grillo: cuerpo alargado, antenas largas y dos patas traseras grandes (a escala de cuento, para que se vea) */
+  makeCricket(def) {
+    const g = new THREE.Group();
+    const body = new THREE.MeshStandardMaterial({ color: def.body, roughness: 0.85, flatShading: true });
+    const light = new THREE.MeshStandardMaterial({ color: def.belly, roughness: 0.85, flatShading: true });
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 9, 7), body);
+    b.scale.set(0.7, 0.6, 1.5);
+    b.position.y = 0.12;
+    g.add(b);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), body);
+    head.position.set(0, 0.15, 0.24);
+    g.add(head);
+    const eyeB = new THREE.MeshBasicMaterial({ color: '#111111' });
+    [-0.05, 0.05].forEach((x) => {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 5), eyeB);
+      e.position.set(x, 0.19, 0.3);
+      g.add(e);
+    });
+    // antenas: dos varillas finas hacia delante y arriba, que se mecen
+    const antennae = [-1, 1].map((sd) => {
+      const a = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.42, 4), light);
+      a.position.set(sd * 0.04, 0.32, 0.36);
+      a.rotation.x = -0.9;
+      a.rotation.z = sd * 0.25;
+      g.add(a);
+      return a;
+    });
+    // patas traseras grandes y dobladas; delanteras pequenas
+    [-1, 1].forEach((sd) => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.3), body);
+      leg.position.set(sd * 0.15, 0.2, -0.02);
+      leg.rotation.x = 0.5;
+      leg.rotation.z = sd * 0.45;
+      g.add(leg);
+      const shin = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, 0.26), light);
+      shin.position.set(sd * 0.2, 0.06, 0.06);
+      shin.rotation.x = -0.9;
+      g.add(shin);
+      const front = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.1, 0.03), light);
+      front.position.set(sd * 0.1, 0.05, 0.16);
+      g.add(front);
+    });
+    g.scale.setScalar(def.size);
+    g.userData.antennae = antennae;
+    return g;
+  }
+
+  buildAnimals() {
+    this.animals = ANIMALS.map((def, i) => {
+      const mesh = def.kind === 'bird' ? this.makeBird(def) : def.kind === 'toad' ? this.makeToad(def) : this.makeCricket(def);
+      // escondite: dentro de la copa o a ras de suelo
+      const at = hideout(def);
+      const y = this.terrainAt(at.x, at.z) + (def.tree ? 3.4 : 0.05);
+      mesh.position.set(at.x, y, at.z);
       mesh.visible = false;
       this.scene.add(mesh);
-      // desde donde canta (dentro de la copa)
+      // desde donde canta
       const anchor = new THREE.Object3D();
-      anchor.position.set(tree.x, y, tree.z);
+      anchor.position.set(at.x, y + (def.tree ? 0 : 0.3), at.z);
       this.scene.add(anchor);
       return {
         def, mesh, anchor, index: i,
-        state: 'hidden',          // hidden → flying → perched
+        state: 'hidden',          // hidden → moving → perched
         lock: 0,
         nextSing: 2 + Math.random() * 3,
         singing: 0,
         flight: null,
-        perch: null
+        perch: null,
+        tries: 0
       };
     });
   }
 
-  /** Un tocon bajo donde el pajaro se posa cerca del jugador */
-  makePerch(x, z) {
+  /** Donde se posa cada voz junto al jugador: un tocon para los pajaros, una piedra plana para el sapo y el grillo */
+  makePerch(x, z, kind) {
     const y = this.terrainAt(x, z);
-    const stump = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.16, 0.22, 0.7, 6),
-      new THREE.MeshStandardMaterial({ color: '#8a6238', roughness: 1, flatShading: true })
+    const stump = kind === 'bird';
+    const mesh = new THREE.Mesh(
+      stump ? new THREE.CylinderGeometry(0.16, 0.22, 0.7, 6) : new THREE.CylinderGeometry(0.42, 0.5, 0.2, 7),
+      new THREE.MeshStandardMaterial({ color: stump ? '#8a6238' : '#b9c1c4', roughness: 1, flatShading: true })
     );
-    stump.position.set(x, y + 0.35, z);
-    this.scene.add(stump);
-    return { mesh: stump, top: new THREE.Vector3(x, y + 0.72, z) };
+    mesh.position.set(x, y + (stump ? 0.35 : 0.08), z);
+    this.scene.add(mesh);
+    return { mesh, top: new THREE.Vector3(x, y + (stump ? 0.72 : 0.18), z) };
   }
 
   /* ------------------------------------------------------------ estanque */
@@ -891,10 +1003,10 @@ export class CalmLakeGame extends MinigameBase {
   async onStart() {
     await this.showIntro({
       eyebrow: 'Isla de la Calma',
-      goal: 'Escucha la isla: el lago, los pájaros y el estanque',
+      goal: 'Escucha la isla: el lago, las voces del bosque y el estanque',
       hint: 'Aquí no hay prisa. Cuanto más despacio vayas, más cosas se dejan ver y oír.',
-      keys: [['W A S D', 'moverte'], ['Ratón', 'mirar'], ['E', 'sentarte · escuchar'], ['Quieto', 'los pájaros cantan']],
-      touch: [['Joystick', 'moverte'], ['Arrastra', 'mirar'], ['E', 'sentarte · escuchar'], ['Quieto', 'los pájaros cantan']]
+      keys: [['W A S D', 'moverte'], ['Ratón', 'mirar'], ['E', 'sentarte · escuchar'], ['Quieto', 'las voces cantan']],
+      touch: [['Joystick', 'moverte'], ['Arrastra', 'mirar'], ['E', 'sentarte · escuchar'], ['Quieto', 'las voces cantan']]
     });
     this.startSound();
     this.enterStage(0);
@@ -940,13 +1052,13 @@ export class CalmLakeGame extends MinigameBase {
         text: 'Camina hasta el final del muelle y siéntate en el banco. Desde ahí vamos a calmar el agua.'
       }), 1200);
     } else if (i === 1) {
-      this.setObjective(BIRDS.length, '🐦');
-      this.setMix(MIX.birds);
+      this.setObjective(ANIMALS.length, '👂');
+      this.setMix(MIX.voices);
       this.quietBar.show(true);
       this.pointBeacon(FOREST.x + 4, FOREST.z);
       this.later(() => this.showNote({
-        title: 'Cinco pájaros escondidos',
-        text: 'En el bosque del oeste hay cinco pájaros que solo cantan si te quedas quieto. Ve despacio, escucha de dónde viene el canto y mira hacia allí: aparecerán.'
+        title: 'Siete voces escondidas',
+        text: 'En el bosque del oeste viven cinco pájaros, un sapo y un grillo, y solo cantan si te quedas quieto. Ve despacio, escucha de dónde viene la voz y mira hacia allí. Cuando la tengas, te preguntaré quién canta: fíjate en cómo suena.'
       }), 1200);
     } else if (i === 2) {
       this.setObjective(MIN_NOTES, '♪');
@@ -1049,15 +1161,15 @@ export class CalmLakeGame extends MinigameBase {
     this.lakeCalmSfx?.setVolume((0.08 + AMBIENT.calm * (1 - agit)) * m, 0.8);
   }
 
-  /* --------------------------------------------- 2 · los pajaros escondidos */
+  /* --------------------------------------------------- 2 · ¿quien canta? */
 
   updateQuiet(dt) {
     const c = this.controller;
     const speed = Math.hypot(c.velocity.x, c.velocity.z);
     const running = c.isRunning && speed > 4;
     if (running) {
-      if (this.quiet > 0.5 && this.stage === 1 && this.inForest()) {
-        this.say('CORRIENDO SE ASUSTAN', 2400);
+      if (this.quiet > 0.5 && this.stage === 1 && this.inForest() && !this.quiz) {
+        this.say('CORRIENDO SE CALLAN', 2400);
         this.audio.play('flutter', { volume: 0.5 });
         this.hushUntil = this.time + 4;
       }
@@ -1075,77 +1187,82 @@ export class CalmLakeGame extends MinigameBase {
     return Math.hypot(p.x - FOREST.x, p.z - FOREST.z) < FOREST.r + 4;
   }
 
-  updateBirds(dt) {
+  updateAnimals(dt) {
     const p = this.controller.position;
     const cam = this.camera;
     cam.getWorldDirection(_dir);
     let candidate = null;
     let bestLock = 0;
-    const canSing = this.quiet >= QUIET_TO_SING && this.time > this.hushUntil;
+    const canSing = this.quiet >= QUIET_TO_SING && this.time > this.hushUntil && !this.quiz;
 
-    this.birds.forEach((b) => {
-      // aleteo y vaiven cuando se ve
-      if (b.mesh.visible) {
+    this.animals.forEach((a) => {
+      const ud = a.mesh.userData;
+      if (a.mesh.visible) {
         // volando aletea; posado lleva las alas plegadas al cuerpo
-        b.mesh.userData.wings.forEach(({ pivot, s }) => {
-          pivot.rotation.z = b.state === 'flying'
+        ud.wings?.forEach(({ pivot, s }) => {
+          pivot.rotation.z = a.state === 'moving'
             ? s * Math.sin(this.time * 26) * 0.9
-            : -s * (1.25 + Math.sin(this.time * 3 + b.index) * 0.04);
+            : -s * (1.25 + Math.sin(this.time * 3 + a.index) * 0.04);
         });
+        // el sapo hincha la garganta al croar; el grillo mece las antenas
+        if (ud.throat) ud.throat.scale.setScalar(a.singing > 0 ? 1 + 0.7 * Math.abs(Math.sin(this.time * 14)) : 1);
+        ud.antennae?.forEach((an, i) => { an.rotation.x = -0.9 + Math.sin(this.time * 3 + i * 1.7) * 0.18; });
       }
-      if (b.singing > 0) {
-        b.singing -= dt;
-        b.mesh.rotation.x = Math.sin(this.time * 18) * 0.06;
+      if (a.singing > 0) {
+        a.singing -= dt;
+        if (a.def.kind === 'bird') a.mesh.rotation.x = Math.sin(this.time * 18) * 0.06;
       }
 
-      if (b.state === 'hidden' && this.stage === 1) {
-        b.nextSing -= dt;
-        if (b.nextSing <= 0) {
-          b.nextSing = b.def.every[0] + Math.random() * (b.def.every[1] - b.def.every[0]);
+      if (a.state === 'hidden' && this.stage === 1) {
+        a.nextSing -= dt;
+        if (a.nextSing <= 0) {
+          a.nextSing = a.def.every[0] + Math.random() * (a.def.every[1] - a.def.every[0]);
           if (canSing) {
-            this.audio.playAt(b.def.sound, b.anchor, { volume: 0.35 + 0.55 * this.quiet, refDistance: 7 });
-            b.singing = 0.8;
-            b.lastSang = this.time;
+            this.audio.playAt(a.def.sound, a.anchor, { volume: 0.35 + 0.55 * this.quiet, refDistance: 7 });
+            a.singing = 0.8;
+            a.lastSang = this.time;
           }
         }
         // localizar: quieto, cerca y mirando hacia donde canta
-        _to.copy(b.anchor.position).sub(cam.position);
+        _to.copy(a.anchor.position).sub(cam.position);
         const dist = _to.length();
         _to.normalize();
         const facing = _dir.dot(_to) > LOCK_ANGLE;
-        const heard = this.time - (b.lastSang ?? -99) < 6;
+        const heard = this.time - (a.lastSang ?? -99) < 6;
         if (canSing && dist < 11 && facing && heard) {
-          b.lock = Math.min(1, b.lock + dt / LOCK_SECONDS);
-          if (b.lock > bestLock) { bestLock = b.lock; candidate = b; }
-          if (b.lock >= 1) this.revealBird(b);
+          a.lock = Math.min(1, a.lock + dt / LOCK_SECONDS);
+          if (a.lock > bestLock) { bestLock = a.lock; candidate = a; }
+          if (a.lock >= 1) this.askWho(a);
         } else {
-          b.lock = Math.max(0, b.lock - dt * 0.6);
+          a.lock = Math.max(0, a.lock - dt * 0.6);
         }
-      } else if (b.state === 'flying' && b.flight) {
-        const f = b.flight;
+      } else if (a.state === 'moving' && a.flight) {
+        const f = a.flight;
         f.t = Math.min(1, f.t + dt / f.dur);
-        const u = smooth(f.t);
-        b.mesh.position.lerpVectors(f.from, f.to, u);
-        b.mesh.position.y += Math.sin(f.t * Math.PI) * 1.6;      // arco de vuelo
-        b.mesh.lookAt(f.to.x, b.mesh.position.y, f.to.z);
+        a.mesh.position.lerpVectors(f.from, f.to, f.hops ? f.t : smooth(f.t));
+        // los pajaros trazan un arco; el sapo y el grillo van a saltos
+        a.mesh.position.y += f.hops
+          ? Math.abs(Math.sin(f.t * Math.PI * f.hops)) * f.height
+          : Math.sin(f.t * Math.PI) * 1.6;
+        a.mesh.lookAt(f.to.x, a.mesh.position.y, f.to.z);
         if (f.t >= 1) {
-          b.state = 'perched';
-          b.flight = null;
-          b.mesh.position.copy(f.to);
-          b.mesh.lookAt(p.x, f.to.y, p.z);
-          b.nextSing = 1 + Math.random();
+          a.state = 'perched';
+          a.flight = null;
+          a.mesh.position.copy(f.to);
+          a.mesh.lookAt(p.x, f.to.y, p.z);
+          a.nextSing = 1 + Math.random();
         }
-      } else if (b.state === 'perched') {
+      } else if (a.state === 'perched') {
         // posado: mira al jugador y canta de vez en cuando (no durante la melodia)
-        b.nextSing -= dt;
-        if (b.nextSing <= 0) {
-          b.nextSing = 9 + Math.random() * 10;
+        a.nextSing -= dt;
+        if (a.nextSing <= 0) {
+          a.nextSing = 9 + Math.random() * 10;
           if (this.mix?.extras) {
-            this.audio.playAt(b.def.sound, b.mesh, { volume: 0.3, refDistance: 4 });
-            b.singing = 0.8;
+            this.audio.playAt(a.def.sound, a.mesh, { volume: 0.3, refDistance: 4 });
+            a.singing = 0.8;
           }
         }
-        b.mesh.position.y = b.perch.top.y + Math.sin(this.time * 2.2 + b.index) * 0.015;
+        if (a.def.kind === 'bird') a.mesh.position.y = a.perch.top.y + Math.sin(this.time * 2.2 + a.index) * 0.015;
       }
     });
 
@@ -1158,58 +1275,172 @@ export class CalmLakeGame extends MinigameBase {
     }
   }
 
-  revealBird(b) {
-    if (b.state !== 'hidden') return;
-    b.state = 'flying';
-    b.lock = 0;
+  /* ------------------------------------------------------- ¿quien canta? */
+
+  /** Opciones de la pregunta: la voz correcta, al menos una de otra familia (pajaro / no pajaro) y el resto al azar */
+  quizOptions(a) {
+    const isBird = a.def.kind === 'bird';
+    const others = ANIMALS.filter((d) => d !== a.def);
+    const otherKind = others.filter((d) => (d.kind === 'bird') !== isBird);
+    const pick = [otherKind[Math.floor(Math.random() * otherKind.length)]];
+    const rest = others.filter((d) => !pick.includes(d)).sort(() => Math.random() - 0.5);
+    while (pick.length < 3) pick.push(rest.pop());
+    return [a.def, ...pick].sort(() => Math.random() - 0.5);
+  }
+
+  /** «el sapo», «la tórtola»: el articulo de cada voz */
+  named(def) {
+    return `${def.id === 'tortola' ? 'la' : 'el'} ${def.name.toLowerCase()}`;
+  }
+
+  /**
+   * Localizada la voz, hay que decir de quien es. Se elige entre cuatro
+   * opciones que describen como suena cada una (no hace falta saberse los
+   * nombres: se escucha y se compara). Fallar no quita nada: da una pista y
+   * la voz vuelve a sonar. Al acertar, el animal aparece y viene.
+   */
+  askWho(a) {
+    if (this.quiz || a.state !== 'hidden') return;
+    a.lock = 0;
+    this.focusEl.hidden = true;
+    const c = this.controller;
+    c.frozen = true;
+    c.exitPointerLock();
+    c.velocity.set(0, 0, 0);
+    this._resetStick?.();
+    this.releaseButtons?.();
+    this.clearNotes();
+    this.audio.duck(0.4);
+
+    const options = this.quizOptions(a);
+    const layer = document.createElement('div');
+    layer.className = 'cl-who';
+    layer.innerHTML = `
+      <div class="cl-who__card" role="dialog" aria-label="¿Quién canta?">
+        <p class="cl-who__eyebrow">👂 ¿Quién canta?</p>
+        <div class="cl-who__options">
+          ${options.map((d, i) => `
+            <button class="cl-who__opt" type="button" data-id="${d.id}" style="--c:${d.body}">
+              <span class="cl-who__ico" aria-hidden="true">${d.emoji}</span>
+              <strong><kbd>${i + 1}</kbd> ${d.name}</strong>
+              <small>${d.desc}</small>
+            </button>`).join('')}
+        </div>
+        <button class="i3d-btn cl-who__replay" type="button" data-replay>🔊 Oír otra vez</button>
+        <p class="cl-who__hint" data-hint>Escucha con atención: ¿es agudo o grave? ¿sube, baja o se repite?</p>
+      </div>`;
+    this.root.appendChild(layer);
+    const hint = layer.querySelector('[data-hint]');
+    const buttons = [...layer.querySelectorAll('[data-id]')];
+
+    const sing = () => {
+      this.audio.playAt(a.def.sound, a.anchor, { volume: 0.9, refDistance: 7 });
+      a.singing = 0.8;
+    };
+    const onKey = (e) => {
+      const n = Number(e.key);
+      if (n >= 1 && n <= buttons.length) buttons[n - 1].click();
+      else if (e.key.toLowerCase() === 'r') sing();
+    };
+    const close = () => {
+      if (this.quiz !== q) return;
+      this.quiz = null;
+      window.removeEventListener('keydown', onKey);
+      layer.classList.add('is-out');
+      setTimeout(() => layer.remove(), 380);
+      this.audio.unduck();
+      c.frozen = false;
+    };
+    const q = { animal: a, layer, close };
+    this.quiz = q;
+    window.addEventListener('keydown', onKey);
+    layer.querySelector('[data-replay]').addEventListener('click', sing);
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        if (this.quiz !== q || btn.disabled) return;
+        if (btn.dataset.id !== a.def.id) {
+          // no es: pista concreta de como suena y otra escucha
+          a.tries += 1;
+          btn.disabled = true;
+          btn.classList.add('is-wrong');
+          hint.textContent = `Ese no es. ${a.def.clue}`;
+          this.audio.play('soften', { volume: 0.35 });
+          this.later(sing, 500);
+          return;
+        }
+        btn.classList.add('is-right');
+        buttons.forEach((b) => { b.disabled = true; });
+        hint.textContent = `${a.tries ? '¡Eso es!' : '¡A la primera!'} Es ${this.named(a.def)}.`;
+        this.audio.play('collect', { volume: 0.45 });
+        // con raton, el puntero vuelve a quedar capturado sin otro clic
+        if (!e.pointerType || e.pointerType === 'mouse') this.later(() => c.requestPointerLock(), 60);
+        this.later(() => { close(); this.revealAnimal(a); }, 900);
+      });
+    });
+    sing();
+  }
+
+  revealAnimal(a) {
+    if (a.state !== 'hidden') return;
+    a.state = 'moving';
+    a.lock = 0;
     const p = this.controller.position;
     this.camera.getWorldDirection(_dir);
-    // aparece en la copa y vuela a un tocon delante del jugador
-    b.mesh.visible = true;
-    b.mesh.position.copy(b.anchor.position);
-    this.feedback.burst(b.anchor.position, { count: 18, color: '#8cc98a', speed: 2.2, life: 1, size: 0.7, gravity: -1.5 });
-    this.audio.playAt(b.def.sound, b.anchor, { volume: 0.8, refDistance: 6 });
-    this.audio.play('flutter', { volume: 0.35 });
-    // el tocon: delante del jugador si hay hueco; si no, se prueban otros angulos
+    // aparece en su escondite y viene a posarse delante del jugador
+    a.mesh.visible = true;
+    a.mesh.position.copy(a.anchor.position);
+    if (!a.def.tree) a.mesh.position.y -= 0.25;
+    this.feedback.burst(a.anchor.position, { count: 18, color: '#8cc98a', speed: 2.2, life: 1, size: 0.7, gravity: -1.5 });
+    this.audio.playAt(a.def.sound, a.anchor, { volume: 0.8, refDistance: 6 });
+    if (a.def.kind === 'bird') this.audio.play('flutter', { volume: 0.35 });
+    // el sitio: delante del jugador si hay hueco; si no, se prueban otros angulos
     const base = Math.atan2(_dir.x, _dir.z);
     let px = p.x;
     let pz = p.z;
     const free = (x, z) =>
       Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 1 &&
       !this.treeSpots.some((sp) => Math.hypot(sp.x - x, sp.z - z) < 1.6) &&
-      !BIRDS.some((bd) => Math.hypot(bd.tree.x - x, bd.tree.z - z) < 2.2);
+      !ANIMALS.some((d) => Math.hypot(hideout(d).x - x, hideout(d).z - z) < 2.2) &&
+      !this.animals.some((o) => o.perch && Math.hypot(o.perch.top.x - x, o.perch.top.z - z) < 1.2);
     for (const off of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, Math.PI]) {
       const x = p.x + Math.sin(base + off) * 2.6;
       const z = p.z + Math.cos(base + off) * 2.6;
       if (free(x, z)) { px = x; pz = z; break; }
     }
-    b.perch = this.makePerch(px, pz);
-    b.flight = { from: b.anchor.position.clone(), to: b.perch.top.clone(), t: 0, dur: 1.6 };
-    b.mesh.lookAt(b.perch.top);
-    this.say(`¡${b.def.name.toUpperCase()}!`, 2400);
-    this.later(() => this.showNote({ title: b.def.name, text: b.def.text }), 1500);
+    a.perch = this.makePerch(px, pz, a.def.kind);
+    const from = a.mesh.position.clone();
+    const to = a.perch.top.clone();
+    const far = from.distanceTo(to);
+    a.flight = a.def.kind === 'bird'
+      ? { from, to, t: 0, dur: 1.6 }
+      : a.def.kind === 'toad'
+        ? { from, to, t: 0, dur: 0.9 + far * 0.16, hops: Math.max(3, Math.round(far / 2.2)), height: 0.55 }
+        : { from, to, t: 0, dur: 0.7 + far * 0.1, hops: Math.max(4, Math.round(far / 1.4)), height: 0.35 };
+    a.mesh.lookAt(a.perch.top);
+    this.say(`¡${a.def.name.toUpperCase()}!`, 2400);
+    this.later(() => this.showNote({ title: a.def.name, text: a.def.text }), 1500);
 
     const found = this.advanceObjective();
-    completeActivity(`calm-pajaro-${b.def.id}`, 3);
-    if (found) this.later(() => this.birdsDone(), 2600);
+    completeActivity(`calm-voz-${a.def.id}`, 3);
+    if (found) this.later(() => this.voicesDone(), 2600);
   }
 
-  birdsDone() {
+  voicesDone() {
     if (this.finished || this.stage !== 1) return;
-    // los cinco cantan juntos, en cascada
-    this.birds.forEach((b, i) => {
-      this.later(() => this.audio.playAt(b.def.sound, b.mesh, { volume: 0.5, refDistance: 6 }), i * 550);
+    // las siete cantan juntas, en cascada
+    this.animals.forEach((a, i) => {
+      this.later(() => this.audio.playAt(a.def.sound, a.mesh, { volume: 0.5, refDistance: 6 }), i * 550);
     });
     this.audio.play('windChime', { volume: 0.35 });
     this.music.setLayers(3);
     this.later(() => {
       this.showNote({
-        title: 'Los cinco cantaron para ti',
-        text: 'No los perseguiste: bajaste el ritmo y ellos vinieron. Así funciona la calma. Ahora el estanque del este te espera.'
+        title: 'Las siete voces cantaron para ti',
+        text: 'No las perseguiste: bajaste el ritmo, escuchaste y supiste quién era cada una. Así funciona la calma. Ahora el estanque del este te espera.'
       });
-      completeActivity('calm-pajaros', 10);
+      completeActivity('calm-voces', 10);
       this.later(() => this.enterStage(2), 3000);
-    }, 3200);
+    }, 4200);
   }
 
   /* ------------------------------------------------ 3 · el estanque musical */
@@ -1330,14 +1561,14 @@ export class CalmLakeGame extends MinigameBase {
   /* ============================================================ ambiente */
 
   updateAmbient(dt) {
-    // pajaros lejanos desde el bosque cuando el lago ya esta en calma
+    // voces lejanas desde el bosque cuando el lago ya esta en calma
     const extras = this.mix?.extras ?? true;
     this.nextFarBird -= dt;
     if (this.nextFarBird <= 0) {
       this.nextFarBird = 6 + Math.random() * 9;
       if (extras && this.agitation < 0.5 && this.stage !== 1) {
-        const b = this.birds[Math.floor(Math.random() * this.birds.length)];
-        this.audio.playAt(b.def.sound, b.state === 'perched' ? b.mesh : b.anchor, { volume: AMBIENT.farBird, refDistance: 8 });
+        const a = this.animals[Math.floor(Math.random() * this.animals.length)];
+        this.audio.playAt(a.def.sound, a.state === 'perched' ? a.mesh : a.anchor, { volume: AMBIENT.farBird, refDistance: 8 });
       }
     }
     // campanas de viento junto al inicio, con una racha
@@ -1393,7 +1624,7 @@ export class CalmLakeGame extends MinigameBase {
     this.updateAmbient(dt);
     this.keepAshore();
     this.updateQuiet(dt);
-    if (this.stage >= 1) this.updateBirds(dt);
+    if (this.stage >= 1) this.updateAnimals(dt);
     if (this.stage >= 2) this.updatePond(dt);
   }
 
@@ -1414,13 +1645,15 @@ export class CalmLakeGame extends MinigameBase {
     this.renderMelody();
     this.sunPath.material.opacity = 0;
     this.sunDisc.material.opacity = 0;
-    this.birds.forEach((b) => {
-      b.state = 'hidden';
-      b.lock = 0;
-      b.flight = null;
-      b.mesh.visible = false;
-      b.mesh.position.copy(b.anchor.position);
-      if (b.perch) { this.scene.remove(b.perch.mesh); b.perch = null; }
+    this.quiz?.close();
+    this.animals.forEach((a) => {
+      a.state = 'hidden';
+      a.lock = 0;
+      a.tries = 0;
+      a.flight = null;
+      a.mesh.visible = false;
+      a.mesh.position.copy(a.anchor.position);
+      if (a.perch) { this.scene.remove(a.perch.mesh); a.perch = null; }
     });
     this.pads.forEach((p) => { p.flash = 0; p.mat.emissiveIntensity = 0; });
     this.echoInteractable.enabled = false;
@@ -1441,14 +1674,14 @@ export class CalmLakeGame extends MinigameBase {
   /* =============================================================== cierre */
 
   get completionPayload() {
-    const fav = { agua: 'el agua del lago', pajaros: 'el canto de los pájaros', musica: 'tu propia melodía' }[this.favorite] ?? 'la isla';
+    const fav = { agua: 'el agua del lago', pajaros: 'las voces del bosque', musica: 'tu propia melodía' }[this.favorite] ?? 'la isla';
     return {
       islandId: 'calm',
       success: true,
       emoAventura: true,
       badge: 'calm',
       title: 'Isla de la Calma',
-      message: `Calmaste el lago, cinco pájaros vinieron a ti y compusiste tu melodía. Lo que más te calmó: ${fav}.`
+      message: `Calmaste el lago, supiste quién cantaba en el bosque y compusiste tu melodía. Lo que más te calmó: ${fav}.`
     };
   }
 
@@ -1462,7 +1695,7 @@ export class CalmLakeGame extends MinigameBase {
       title: '¿Qué te calmó más?',
       options: [
         { label: '🌊 El agua', text: 'El lago quieto y su sonido', value: 'agua', color: '#7fd1ff' },
-        { label: '🐦 Los pájaros', text: 'Quedarme quieto y escucharlos', value: 'pajaros', color: '#8be0c8' },
+        { label: '👂 Las voces', text: 'Quedarme quieto y adivinar quién cantaba', value: 'pajaros', color: '#8be0c8' },
         { label: '♪ La música', text: 'Tocar mi melodía en el estanque', value: 'musica', color: '#f5a3c7' }
       ]
     }).then((value) => {
@@ -1480,7 +1713,7 @@ export class CalmLakeGame extends MinigameBase {
         title: 'La calma se entrena',
         lines: [
           '<strong>El lago.</strong> El agua no se calmó porque la empujaras: se calmó porque tú respiraste despacio. La cabeza funciona igual.',
-          '<strong>Los pájaros.</strong> Aparecieron cuando dejaste de moverte. Escuchar con atención es una de las formas más rápidas de bajar el ritmo.',
+          '<strong>Las voces.</strong> Aparecieron cuando dejaste de moverte, y supiste quién cantaba fijándote en cómo sonaba cada una. Escuchar con atención es una de las formas más rápidas de bajar el ritmo.',
           '<strong>La melodía.</strong> Sin prisa y sin notas malas: la calma también es dejar que las cosas salgan como salen.',
           `<strong>Para llevarte:</strong> ${tip}`
         ],
@@ -1490,6 +1723,7 @@ export class CalmLakeGame extends MinigameBase {
   }
 
   onDispose() {
+    this.quiz?.close();
     this.music?.stop();
     this.lakeRoughSfx?.stop();
     this.lakeCalmSfx?.stop();

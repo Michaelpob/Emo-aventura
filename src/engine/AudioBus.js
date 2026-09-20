@@ -97,6 +97,18 @@ function breathBuffer(ctx, seconds, gainCurve, cutFrom, cutTo, highHz) {
   return buffer;
 }
 
+/** Suma de varios buffers (manda la duracion del mas largo) */
+function mixBuffers(ctx, buffers) {
+  const len = Math.max(...buffers.map((b) => b.length));
+  const out = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = out.getChannelData(0);
+  buffers.forEach((b) => {
+    const d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i += 1) data[i] += d[i];
+  });
+  return out;
+}
+
 const decay = (p) => Math.pow(1 - p, 2.4);
 const bell = (p) => Math.sin(Math.PI * p);
 const soft = (p) => Math.min(1, p * 8) * Math.pow(1 - p, 1.6);
@@ -178,7 +190,7 @@ const RECIPES = {
   lowNote:   (ctx) => toneBuffer(ctx, 0.55, 130, 110, (p) => Math.min(1, p * 6) * Math.pow(1 - p, 1.6) * 0.45, 2), // fallo suave
   clock:     (ctx) => toneBuffer(ctx, 0.07, 1500, 1500, (p) => decay(p) * 0.35, 3),                         // reloj a lo lejos
   dawnPad:   (ctx) => chordBuffer(ctx, 4.5, [196, 246.9, 293.7, 392], (p) => Math.min(1, p * 3) * Math.pow(1 - p, 0.8) * 0.5), // amanecer
-  // Isla de la Calma: agua, bosque con pajaros y estanque. Bucles de duracion
+  // Isla de la Calma: agua, bosque con voces (pajaros, sapo, grillo) y estanque. Bucles de duracion
   // entera en ciclos para que no se note el corte.
   lakeCalm:  (ctx) => noiseBuffer(ctx, 4.0, 380, (p) => 0.16 + 0.1 * Math.pow(0.5 + 0.5 * Math.sin(p * Math.PI * 4), 2)),   // chapoteo lento
   lakeRough: (ctx) => noiseBuffer(ctx, 4.0, 1100, (p) => 0.2 + 0.16 * Math.abs(Math.sin(p * Math.PI * 14)) * (0.6 + 0.4 * Math.sin(p * Math.PI * 4))), // agua revuelta
@@ -186,11 +198,24 @@ const RECIPES = {
   leaves:    (ctx) => noiseBuffer(ctx, 5.0, 2600, (p) => 0.05 + 0.09 * Math.pow(0.5 + 0.5 * Math.sin(p * Math.PI * 2), 3)),      // viento en las hojas
   windChime: (ctx) => chordBuffer(ctx, 2.6, [1567.98, 1975.53, 2349.32], (p) => Math.pow(1 - p, 2.6) * 0.5),                     // campana de viento
   splash:    (ctx) => noiseBuffer(ctx, 0.3, 1400, (p) => Math.min(1, p * 10) * Math.pow(1 - p, 2.6) * 0.8),                        // paso en el agua
-  birdTrill: (ctx) => toneBuffer(ctx, 0.62, 3100, 3400, (p) => (Math.sin(p * Math.PI * 2 * 14) > 0 ? 1 : 0.15) * bell(p) * 0.42, 1),   // colibri: trino rapido
+  // colibri: no canta, zumban sus alas (un ronroneo agudo que se acerca) y suelta dos chips finisimos
+  birdHum:   (ctx) => mixBuffers(ctx, [
+    toneBuffer(ctx, 1.1, 200, 236, (p) => bell(p) * (0.6 + 0.4 * Math.abs(Math.sin(p * Math.PI * 2 * 44))) * 0.3, 7),
+    toneBuffer(ctx, 1.1, 6200, 5800, (p) => (p > 0.4 && p < 0.46 ? bell((p - 0.4) / 0.06) : p > 0.56 && p < 0.62 ? bell((p - 0.56) / 0.06) : 0) * 0.22, 1)
+  ]),
   birdDown:  (ctx) => toneBuffer(ctx, 0.9, 2600, 1500, (p) => (p < 0.3 ? bell(p / 0.3) : p < 0.62 ? bell((p - 0.32) / 0.3) : bell((p - 0.64) / 0.36)) * 0.42, 1), // mirlo: tres notas que bajan
   birdChip:  (ctx) => toneBuffer(ctx, 0.7, 3900, 3700, (p) => (Math.sin(p * Math.PI * 2 * 5) > 0.4 ? 1 : 0) * 0.4, 1),           // carbonero: chip chip chip
   birdDove:  (ctx) => toneBuffer(ctx, 1.2, 520, 470, (p) => (p < 0.35 ? bell(p / 0.35) : p > 0.45 ? bell((p - 0.45) / 0.55) * 0.85 : 0) * 0.5, 2), // tortola: arrullo
   birdRise:  (ctx) => toneBuffer(ctx, 0.55, 1800, 3200, (p) => Math.pow(bell(p), 0.8) * 0.4, 1),                                  // petirrojo: silbido que sube
+  // sapo: dos croares graves y roncos (carraca a 26 Hz), mas lento y bajo que la rana del pantano
+  toad:      (ctx) => toneBuffer(ctx, 1.15, 118, 96, (p) => (p < 0.42 ? bell(p / 0.42) : p > 0.55 ? bell((p - 0.55) / 0.45) * 0.9 : 0) * (0.55 + 0.45 * Math.abs(Math.sin(p * Math.PI * 2 * 26))) * 0.75, 7),
+  // grillo: un solo grillo, cuatro cri-cri agudos a ritmo de relojito
+  cricket:   (ctx) => toneBuffer(ctx, 1.25, 4300, 4300, (p) => {
+    const c = p * 4.5;
+    const f = c - Math.floor(c);
+    const on = c < 4 && f < 0.5 ? Math.sin(Math.PI * f / 0.5) : 0;
+    return on * (Math.sin(p * Math.PI * 2 * 70) > 0 ? 1 : 0.35) * 0.42;
+  }, 1),
 
 };
 

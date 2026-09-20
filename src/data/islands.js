@@ -104,7 +104,7 @@ export const islands = [
     name: 'Calma',
     displayName: 'El lago sereno',
     emoji: '😌',
-    subtitle: 'Un lago, un bosque con pájaros y un estanque musical. Aquí todo va despacio: escucha y el agua se aquieta.',
+    subtitle: 'Un lago, un bosque lleno de voces (pájaros, un sapo, un grillo) y un estanque musical. Aquí todo va despacio: escucha, adivina quién canta y el agua se aquieta.',
     reward: 'Pluma de la Calma',
     // aguamarina: agua clara y quieta, arena y un brillo suave
     palette: {

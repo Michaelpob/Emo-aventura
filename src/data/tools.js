@@ -215,7 +215,7 @@ export const TOOLS = {
     name: 'Pluma de la Calma',
     emotion: 'Calma',
     strategy: 'Respiracion y atencion a los sonidos',
-    description: 'Recuerda el lago quieto, los pajaros que llegan cuando te paras y tu melodia: respirar despacio y escuchar bajan el ritmo.',
+    description: 'Recuerda el lago quieto, las voces del bosque que llegan cuando te paras y tu melodia: respirar despacio y escuchar bajan el ritmo.',
     order: 24
   }
 };

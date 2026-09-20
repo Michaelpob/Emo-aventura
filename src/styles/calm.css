@@ -1,5 +1,6 @@
 /* Isla de la Calma · «El lago sereno»
-   HUD propio: banner de etapa, anillo de escucha (pajaros) y tira de la melodia. */
+   HUD propio: banner de etapa, anillo de escucha, la pregunta «¿quien canta?»
+   y la tira de la melodia. */
 
 .i3d.cl .i3d-bar { --c: #8be0c8; }
 .cl-stage[hidden], .cl-focus[hidden], .cl-melody[hidden] { display: none !important; }
@@ -84,8 +85,96 @@
   letter-spacing: 0.08em;
 }
 
+/* ¿quien canta?: cuatro voces para elegir, abajo, sin tapar el bosque */
+.cl-who {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding: 16px 16px max(9%, 150px);
+  z-index: 7;                            /* sobre los controles tactiles, bajo el menu de pausa */
+  pointer-events: none;
+  animation: i3d-pop 320ms ease;
+}
+.cl-who.is-out { animation: i3d-night-out 380ms ease forwards; }
+.cl-who__card {
+  width: min(440px, 100%);
+  padding: 12px 14px 12px;
+  border-radius: 22px;
+  background: rgba(10, 40, 46, 0.92);
+  border: 1px solid rgba(143, 212, 200, 0.5);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 36px rgba(139, 224, 200, 0.16);
+  text-align: center;
+  color: #fff;
+  pointer-events: auto;
+}
+.cl-who__eyebrow {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8be0c8;
+}
+.cl-who__options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cl-who__opt {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  min-height: 54px;
+  padding: 7px 10px 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-left: 4px solid var(--c, #8be0c8);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 160ms ease, transform 140ms ease, opacity 200ms ease;
+}
+.cl-who__opt:hover, .cl-who__opt:focus-visible { background: rgba(255, 255, 255, 0.14); transform: translateY(-1px); }
+.cl-who__opt .cl-who__ico { grid-row: span 2; font-size: 1.55rem; line-height: 1; }
+.cl-who__opt strong { font-size: 0.86rem; letter-spacing: 0.02em; }
+.cl-who__opt strong kbd {
+  display: inline-block;
+  min-width: 1.2em;
+  margin-right: 2px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.14);
+  font: 700 0.7rem/1.5 inherit;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+}
+.cl-who__opt small { font-size: 0.76rem; line-height: 1.25; color: rgba(255, 255, 255, 0.72); }
+.cl-who__opt.is-wrong { opacity: 0.32; cursor: default; }
+.cl-who__opt.is-wrong:hover { background: rgba(255, 255, 255, 0.06); transform: none; }
+.cl-who__opt.is-right { border-color: #8be0c8; background: rgba(139, 224, 200, 0.28); }
+.cl-who__replay { margin-top: 10px; min-height: 38px; padding: 8px 14px; font-size: 0.85rem; }
+.cl-who__hint { margin: 8px 0 0; font-size: 0.82rem; line-height: 1.4; color: rgba(255, 255, 255, 0.82); }
+
 @media (max-width: 720px) {
   .cl-stage { top: 60px; font-size: 0.68rem; padding: 6px 14px; }
   .cl-melody { bottom: 4%; }
   .cl-focus i { width: 54px; height: 54px; }
+}
+/* pantalla baja (celular apaisado): la pregunta va al centro, entre el joystick y los botones */
+@media (max-height: 520px) {
+  .cl-who { place-items: center; padding: 8px 165px; }
+  .cl-who__card { padding: 8px 10px; }
+  .cl-who__eyebrow { margin-bottom: 6px; font-size: 0.68rem; }
+  .cl-who__options { gap: 5px; }
+  .cl-who__opt { min-height: 42px; padding: 4px 8px 4px 7px; }
+  .cl-who__opt .cl-who__ico { font-size: 1.2rem; }
+  .cl-who__opt strong { font-size: 0.78rem; }
+  .cl-who__opt small { font-size: 0.68rem; }
+  .cl-who__replay { margin-top: 6px; min-height: 32px; padding: 5px 12px; font-size: 0.78rem; }
+  .cl-who__hint { margin-top: 5px; font-size: 0.74rem; }
 }
