@@ -15,7 +15,8 @@ import { JoyOrbsGame } from './joy/JoyOrbsGame.js';
 import { DisgustSortGame } from './disgust/DisgustSortGame.js';
 import { DisgustTerritoryGame } from './disgust/DisgustTerritoryGame.js';
 import { SurpriseObserveGame } from './surprise/SurpriseObserveGame.js';
-import { FrustrationTowerGame } from './frustration/FrustrationTowerGame.js';
+import { MaquinaTercaGame } from './frustration/MaquinaTercaGame.js';
+import { VolcanPresionGame } from './frustration/VolcanPresionGame.js';
 import { CalmLakeGame } from './calm/CalmLakeGame.js';
 import { FrustrationIslandFlow } from './frustration/FrustrationIslandFlow.js';
 
@@ -31,9 +32,10 @@ export const minigameRegistry = {
   'joy-orbs': JoyOrbsGame,
   'disgust-sort': DisgustSortGame,
   'disgust-territory': DisgustTerritoryGame,
-  'frustration-tower-valley': FrustrationIslandFlow,   // torre (nivel 1) + valle de los orbes (nivel 2)
-  'frustration-tower': FrustrationTowerGame,
-  'calm-lake': CalmLakeGame,           // solo la torre
+  'frustration-nudos': FrustrationIslandFlow,          // La Maquina Terca (nivel 1) + El Volcan de la Presion (nivel 2)
+  'frustration-maquina': MaquinaTercaGame,             // solo el taller
+  'frustration-volcan': VolcanPresionGame,             // solo el volcan
+  'calm-lake': CalmLakeGame,
   'surprise-observe': SurpriseObserveGame,
   // EMO-AVENTURA (2D, en migracion a 3D)
   'fear-island': FearIslandGame,

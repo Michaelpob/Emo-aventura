@@ -1,0 +1,351 @@
+/* Isla de la Frustración · «La Cordillera de los Nudos»
+   Medidor de tensión/presión (manómetro), caja de herramientas de calma,
+   HUD del taller de la Máquina Terca y HUD del Volcán de la Presión.
+   Botones grandes (≥ 48 px), alto contraste, todo con mouse o dedo. */
+
+/* ------------------------------------------------- manómetro (TensionMeter) */
+
+.tm {
+  position: absolute;
+  top: 60px;
+  left: 14px;
+  display: grid;
+  grid-template-columns: 96px auto;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 16px;
+  background: rgba(8, 16, 22, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  pointer-events: none;
+}
+.tm[hidden] { display: none; }
+.tm__dial { width: 96px; height: 64px; overflow: visible; }
+.tm__arc { fill: none; stroke-width: 9; stroke-linecap: butt; }
+.tm__arc--bg { stroke: rgba(255, 255, 255, 0.12); }
+.tm__arc--calma { stroke: #7fd1a8; }
+.tm__arc--sube { stroke: #ffd166; }
+.tm__arc--alta { stroke: #ff9a5c; }
+.tm__arc--tope { stroke: #ff5c5c; }
+.tm__needle { transform-origin: 60px 66px; transition: transform 120ms linear; }
+.tm__needle line { stroke: #fff; stroke-width: 3.5; stroke-linecap: round; }
+.tm__needle circle { fill: #fff; }
+.tm__label { display: grid; line-height: 1.05; }
+.tm__label b { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.tm__label small { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.7); }
+.tm__icon { font-size: 0.9rem; }
+.tm[data-band='sube'] .tm__label b { color: #ffd166; }
+.tm[data-band='alta'] .tm__label b { color: #ff9a5c; }
+.tm[data-band='tope'] { border-color: rgba(255, 92, 92, 0.7); animation: tm-alert 700ms ease-in-out infinite alternate; }
+.tm[data-band='tope'] .tm__label b { color: #ff5c5c; }
+@keyframes tm-alert { from { box-shadow: 0 0 0 rgba(255, 92, 92, 0); } to { box-shadow: 0 0 22px rgba(255, 92, 92, 0.55); } }
+
+/* ---------------------------------------------- caja de calma (CalmToolbox) */
+
+.ct-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 7;                           /* sobre el táctil, bajo el menú de pausa */
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(4, 8, 14, 0.42);
+  animation: i3d-pop 320ms ease;
+}
+.ct-layer.is-out { animation: i3d-night-out 360ms ease forwards; }
+.ct-card {
+  width: min(460px, 100%);
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow-y: auto;
+  padding: 14px 16px 14px;
+  border-radius: 22px;
+  background: rgba(14, 22, 30, 0.94);
+  border: 1px solid rgba(255, 209, 102, 0.45);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  color: #fff;
+}
+.ct-eyebrow { margin: 0 0 4px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #ffd166; }
+.ct-sub { margin: 0 0 12px; min-height: 1.2em; font-size: 0.9rem; color: rgba(255, 255, 255, 0.82); }
+.ct-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ct-opt {
+  display: grid;
+  gap: 3px;
+  min-height: 84px;
+  padding: 10px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  transition: background 160ms ease, transform 140ms ease;
+}
+.ct-opt:hover, .ct-opt:focus-visible { background: rgba(255, 255, 255, 0.16); transform: translateY(-1px); }
+.ct-opt__ico { font-size: 1.7rem; line-height: 1; }
+.ct-opt strong { font-size: 0.92rem; }
+.ct-opt small { font-size: 0.74rem; line-height: 1.25; color: rgba(255, 255, 255, 0.7); }
+.ct-skip { margin-top: 12px; font-size: 0.86rem; opacity: 0.85; }
+
+/* respirar 4-4-4: el círculo es el botón */
+.ct-breath { display: grid; justify-items: center; gap: 8px; padding: 4px 0; }
+.ct-circle {
+  --s: 0.55;
+  width: 150px;
+  height: 150px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, rgba(127, 209, 255, 0.6), rgba(127, 209, 255, 0.14) 68%, transparent 72%);
+  color: #fff;
+  font: 800 1rem/1 inherit;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(var(--s));
+  transition: transform 160ms linear;
+}
+.ct-circle span { transform: scale(calc(1 / var(--s))); transition: transform 160ms linear; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+.ct-circle[data-phase='hold'] { background: radial-gradient(circle, rgba(255, 233, 168, 0.6), rgba(255, 233, 168, 0.14) 68%, transparent 72%); }
+.ct-circle[data-phase='out'] { background: radial-gradient(circle, rgba(159, 216, 192, 0.6), rgba(159, 216, 192, 0.14) 68%, transparent 72%); }
+.ct-circle.is-held { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.35); }
+.ct-circle[disabled] { cursor: default; }
+.ct-breath__stars { margin: 0; min-height: 1.3em; font-size: 0.9rem; color: #ffd166; }
+.ct-cycles { display: flex; gap: 8px; }
+.ct-cycles i { font-style: normal; color: rgba(255, 255, 255, 0.28); }
+.ct-cycles i.is-on { color: #7fd1ff; }
+
+/* contar 5 a 1: los faroles son botones grandes */
+.ct-lanterns { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
+.ct-lantern {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 64px;
+  min-height: 78px;
+  padding: 8px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 184, 112, 0.18);
+  color: #fff;
+  font: 800 1.1rem/1 inherit;
+  cursor: pointer;
+  transition: background 200ms ease, opacity 300ms ease, transform 200ms ease;
+}
+.ct-lantern span { font-size: 1.7rem; line-height: 1; filter: drop-shadow(0 0 8px rgba(255, 184, 112, 0.9)); }
+.ct-lantern.is-off { opacity: 0.32; background: rgba(255, 255, 255, 0.04); cursor: default; }
+.ct-lantern.is-off span { filter: grayscale(1); }
+.ct-lantern.is-wrong { animation: ct-wobble 360ms ease; }
+@keyframes ct-wobble { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* pedir ayuda / cambiar de plan */
+.ct-help { display: grid; gap: 12px; justify-items: center; padding: 4px 0; }
+.ct-help__tuerca { margin: 0; font-size: 0.98rem; line-height: 1.5; text-align: left; }
+.ct-help__tuerca b { color: #ffd166; }
+.ct-stamp {
+  margin: 0;
+  padding: 8px 14px;
+  border: 2px dashed #7fd1a8;
+  border-radius: 12px;
+  color: #7fd1a8;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  transform: rotate(-3deg);
+  animation: ct-stamp 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes ct-stamp { from { transform: rotate(-3deg) scale(1.8); opacity: 0; } to { transform: rotate(-3deg) scale(1); opacity: 1; } }
+.is-reduced .ct-stamp, .is-reduced .ct-lantern.is-wrong { animation: none; }
+.is-reduced .ct-circle, .is-reduced .ct-circle span { transition: none; }
+
+/* ------------------------------------------------ taller de la Máquina Terca */
+
+.i3d.mt .i3d__canvas { cursor: grab; }
+.i3d.mt .i3d__canvas:active { cursor: grabbing; }
+.mt-vignette {
+  --k: 0;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  box-shadow: inset 0 0 calc(40px + var(--k) * 140px) rgba(255, 120, 40, calc(var(--k) * 0.55));
+  transition: box-shadow 400ms ease;
+}
+.mt-round { right: auto; left: 14px; top: 150px; bottom: auto; padding: 6px 12px; font-size: 0.8rem; }
+.tq-bubble {
+  position: absolute;
+  left: 50%;
+  top: 60px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: min(520px, calc(100% - 32px));
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(20, 16, 12, 0.88);
+  border: 1px solid rgba(255, 184, 112, 0.5);
+  color: #fff;
+  pointer-events: none;
+  animation: i3d-note-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tq-bubble[hidden] { display: none; }
+.tq-bubble.is-out { animation: i3d-note-out 360ms ease forwards; }
+.tq-bubble__ico { font-size: 1.5rem; line-height: 1; }
+.tq-bubble b { display: block; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: #ffb870; }
+.tq-bubble p { margin: 2px 0 0; font-size: 0.94rem; line-height: 1.45; color: #fff; opacity: 1; }
+.mt-options {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: i3d-pop 320ms ease;
+}
+.mt-options[hidden] { display: none; }
+.mt-options .i3d-btn { min-height: 48px; font-size: 0.92rem; background: rgba(14, 22, 30, 0.9); }
+.mt-options .i3d-btn--primary { background: linear-gradient(180deg, #f5a524, #d98614); }
+.mt-tools .i3d-tool { min-height: 48px; }
+
+/* ------------------------------------------------- el Volcán de la Presión */
+
+.i3d.vp .i3d__canvas { cursor: default; }
+/* burbujas de pensamientos: botones que suben del cráter */
+.vp-field {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.vp-bubble {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 48px;
+  min-height: 48px;
+  max-width: 190px;
+  padding: 10px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(24, 20, 20, 0.92);
+  color: #fff;
+  font: 700 0.86rem/1.2 inherit;
+  text-align: center;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  animation: i3d-pop 320ms ease;
+}
+.vp-bubble:hover { border-color: rgba(255, 255, 255, 0.6); }
+.vp-bubble.is-light {
+  background: rgba(255, 233, 168, 0.96);
+  border-color: #ffd166;
+  color: #2b1a02;
+  box-shadow: 0 0 26px rgba(255, 209, 102, 0.8);
+  animation: vp-light 1.7s ease forwards;
+}
+.vp-bubble.is-lost { animation: vp-lost 480ms ease forwards; }
+@keyframes vp-light { 0% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(-50%, -90%) scale(0.9); opacity: 0; } }
+@keyframes vp-lost { to { transform: translate(-50%, -50%) scale(1.6); opacity: 0; } }
+
+/* válvula A: el anillo de respirar es el botón (abajo a la izquierda) */
+.vp-ring {
+  position: absolute;
+  left: 16px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: 110px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px 6px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(8, 16, 22, 0.62);
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.vp-ring[hidden] { display: none; }
+.vp-ring i {
+  --s: 0.55;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(127, 209, 255, 0.65), rgba(127, 209, 255, 0.16) 66%, transparent 70%);
+  transform: scale(var(--s));
+  transition: transform 120ms linear;
+}
+.vp-ring[data-phase='out'] i { background: radial-gradient(circle, rgba(159, 216, 192, 0.65), rgba(159, 216, 192, 0.16) 66%, transparent 70%); }
+.vp-ring.is-held { border-color: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3); }
+.vp-ring.is-ok { border-color: #7fd1a8; box-shadow: 0 0 22px rgba(127, 209, 168, 0.8); }
+.vp-ring span { display: grid; gap: 2px; }
+.vp-ring b { font-size: 0.95rem; }
+.vp-ring small { font-size: 0.74rem; color: rgba(255, 255, 255, 0.72); }
+
+/* lava fría: la meta de la oleada, arriba en el centro */
+.vp-lava {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(8, 16, 22, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.vp-lava i { display: block; width: 150px; height: 9px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.vp-lava b { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7fd1ff, #dff6ff); transition: width 300ms linear; }
+
+/* la trampa: rojo, grande, tentador */
+.vp-tools .i3d-tool { min-height: 50px; }
+.vp-tools .vp-hit { background: linear-gradient(180deg, #ff5c5c, #c0392b); border-color: transparent; color: #fff; }
+.vp-tools .vp-hit:hover { background: linear-gradient(180deg, #ff7070, #d84a3a); }
+.vp-tools .vp-hit small { color: rgba(255, 255, 255, 0.8); }
+
+@media (max-width: 720px), (max-height: 520px) {
+  .vp-ring { grid-template-columns: 74px auto; padding: 4px 12px 4px 4px; }
+  .vp-ring i { width: 74px; height: 74px; }
+  .vp-ring b { font-size: 0.82rem; }
+  .vp-ring small { display: none; }
+  .vp-lava { top: 10px; font-size: 0.66rem; padding: 4px 10px; }
+  .vp-lava i { width: 100px; }
+  .vp-bubble { max-width: 150px; padding: 8px 10px; font-size: 0.78rem; }
+  .tm { top: 54px; grid-template-columns: 72px auto; padding: 4px 8px 4px 4px; }
+  .tm__dial { width: 72px; height: 48px; }
+  .tm__label b { font-size: 1.05rem; }
+  .mt-round { top: 118px; font-size: 0.72rem; }
+  .tq-bubble { top: 54px; width: min(420px, calc(100% - 180px)); padding: 7px 10px; }
+  .tq-bubble p { font-size: 0.82rem; line-height: 1.35; }
+  /* en el taller, con poca altura, Tuerca habla abajo para no tapar los huecos */
+  .i3d.mt .tq-bubble { top: auto; bottom: 12px; width: min(420px, calc(100% - 300px)); }
+  .mt-options { bottom: 18%; }
+  .ct-card { padding: 10px 12px; }
+  .ct-opt { min-height: 68px; padding: 7px 6px; }
+  .ct-opt__ico { font-size: 1.4rem; }
+  .ct-circle { width: 120px; height: 120px; }
+  .ct-lantern { width: 54px; min-height: 66px; }
+}

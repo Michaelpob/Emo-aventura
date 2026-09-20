@@ -575,40 +575,68 @@ isla se entra tocándola. `README` y los apartados históricos de este plan
 siguen describiendo el mapa antiguo con jugador; esta nota manda.
 
 
-## Frustración · «La torre» (sustituye a la Isla de la Sorpresa)
+## Frustración · «La Cordillera de los Nudos» (sustituye a «La torre y el valle»)
 
-`src/minigames/frustration/FrustrationTowerGame.js` · cámara fija, se juega
-tocando · género **precisión bajo reveses**.
+`src/minigames/frustration/` · dos mini-juegos encadenados, cámara fija, todo
+con mouse o dedo. La torre y el valle de los orbes se eliminaron: la isla es
+solo esto. Spec: `Isla-Frustracion-Prompts-Minijuegos.docx`, adaptada a la
+arquitectura del repo (`MinigameBase`, registro en `minigames/index.js`) como
+se hizo con «La Casa» del Miedo. Principio no negociable: el fallo está en el
+guion, nunca hay derrota, reinicio, pérdida de progreso ni castigo; pedir
+ayuda siempre se premia; si el jugador se atasca, el juego se vuelve más fácil
+(nunca más difícil).
 
-- La frustración aparece cuando algo se interpone entre tú y lo que quieres.
-  Lo que quieres es la cima: una torre de 12 bloques. Cada bloque va y viene
-  por encima de la torre y hay que soltarlo a tiempo; lo que sobresale se cae
-  (y se ve caer). Un bloque perdido se repone: no hay game over.
-- **Ráfagas** a alturas fijas (1, 2 o 3 según el nivel que dice el jugador al
-  entrar) tumban los dos bloques de arriba. No dependen de ti: es el revés
-  diseñado.
-- **Medidor de frustración**: sube con cada bloque caído, corte grande o
-  ráfaga; baja despacio sola. Cuando sube, el bloque va más rápido y baila (la
-  mano tiembla) y el cielo se carga. Si llega arriba, la mano se bloquea: solo
-  se sale parando.
-- **Las estrategias son el juego**: *Parar* (mantener pulsado: el bloque se
-  detiene y la frustración baja rápido), *Paso corto* (bloques pequeños, más
-  fáciles de acertar, que suman medio nivel) y *Ayuda* (dos usos: alguien
-  sostiene el bloque en su sitio). Cada una trae su reflexión sin cortar la
-  partida; también la primera ráfaga, la primera vez que sube mucho y la cima.
-- Herramientas: Llave de la Paciencia (siempre), Escalera de Pasos y Mano
-  Amiga (si se usaron). Insignia Guardián de la Frustración.
+Módulos compartidos:
+- `TensionMeter.js` — manómetro 0..100 (tensión / presión) con bandas
+  0-30 · 31-60 · 61-90 · 91-100, máximo y promedio para el feedback.
+- `CalmToolbox.js` — caja de herramientas de calma: respirar 4-4-4 (mantener
+  al inflar, soltar al exhalar, 3 ciclos, estrellas amables), contar 5 a 1
+  (faroles), pedir ayuda (pista + sello «Pedir ayuda también es ser valiente»)
+  y cambiar de plan. El jugador elige; nada se impone.
+- `Tuerca.js` — la NPC (figura + burbuja de diálogo); nunca regaña.
+- `textos.js` — todos los diálogos, avisos, preguntas, feedback y retos.
+- `gameState.recordSession()` — JSON de sesión de cada nivel (consola, evento
+  `emo-sesion` en `window`, `gameState.sessions`); el nivel 2 lo lee para
+  comparar con el taller.
 
-La Isla de la Sorpresa (`surprise-observe`) queda registrada pero fuera del
-mapa. `FREE_ISLANDS` pasa a `['sadness', 'frustration']`.
+**Nivel 1 · La Máquina Terca** (`MaquinaTercaGame.js`, puzzle de ensamblaje):
+tres rondas (la fácil · la que no entra: la pieza obvia está doblada y nunca
+entra, tras dos rebotes «Probar otra pieza» / «Pedirle una idea a Tuerca», la
+solución es la pequeña girada 90° · el engranaje que solo gira despacio y
+seguido). Tensión: +12 rebote · +3 clic rápido · +15 forzar · +2 cada 5 s
+sin avanzar · −20 encajar · −40 herramienta · −15 ayuda. El taller devuelve
+la tensión en el cuerpo (vibración, vapor, latido, tinte naranja, temblor de
+cámara que respeta «reducir movimiento»); al 100, BLOQUEO de 3 s y la caja.
+Cierre: reevaluación 1-5 (caritas), «¿qué te ayudó más?», feedback según los
+datos reales y reto («respira cuatro y prueba de otra forma»). Recompensa:
+Llave de Engranaje.
 
-**Verificado con Playwright:** mapa con la isla nueva y sin rastro de Sorpresa,
-pregunta de nivel, partida completa con bot (19 bloques, 3 ráfagas, paso corto
-y ayuda), bloqueo por frustración al 100 y salida parando, portal, tarjeta
-final, insignia y herramientas; en iPhone emulado los tres botones caben.
-También se corrigió un agujero negro en el centro de la vista de las islas de
-cámara fija: la esfera del cielo (210 m) quedaba más allá del plano lejano de
-la cámara (220) cuando la cámara está a más de 10 m del centro.
+**Nivel 2 · El Volcán de la Presión** (`VolcanPresionGame.js`, tiempo real):
+la presión sube sola; válvula de respiración (anillo: mantener al crecer,
+soltar al decrecer, −18; fallar no sube), pensamientos trampa en burbujas
+(tocarlas −10; si se escapan +8; pares en `textos.js`), cuerda de ayuda
+(−25, 20 s, Tuerca despeja) y el botón rojo ¡GOLPEAR! (−15 un segundo, luego
++30 y tubería rota 10 s; se cuenta, nunca se bloquea, Tuerca lo comenta una
+vez). Tres oleadas: burbujas · la grieta (solo se sella con dos respiraciones
+seguidas) · la meta se mueve (temblor al 85 %, hay que aguantar 20 s más).
+Desborde: erupción cómica (piedras de goma, Tuerca con paraguas), presión al
+50 %, se sigue; al segundo, escalado adaptativo (burbujas 25 % más lentas,
+presión base 25 % menos); la caja se ofrece tras el primero. Victoria: la
+cima se abre, sale el puente y la cámara sube. Cierre: reevaluación, «¿qué
+válvula te funcionó mejor?», feedback (golpes vs respiraciones vs ayudas,
+comparación con el taller) y la válvula de la semana (`setPlan`). Insignia
+Guardián de la Presión.
+
+Además: «Reducir movimiento» en el menú de pausa de todas las islas.
+
+**Verificado con Playwright (headless):** nivel 1 completo con gestos reales
+(arrastrar, rebotes, opciones, ayuda, girar con E, bloqueo → caja forzada →
+contar 5 a 1, engranaje trabado por ir rápido y completado despacio, molino,
+reevaluación, feedback, JSON de sesión, paso al nivel 2); nivel 2 completo
+(respiración bien y fuera de ritmo, burbujas transformadas y perdidas, cuerda
+con cooldown, golpe con tubería, dos desbordes con adaptativo, grieta sellada,
+temblor, victoria, cierre, plan, insignia e isla completada); celular apaisado
+con botones ≥ 48 px; sin errores de página.
 
 
 ## Ajuste · Recarga automática al publicar
