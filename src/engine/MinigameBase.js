@@ -514,7 +514,6 @@ export class MinigameBase {
           <button class="i3d-btn i3d-btn--primary" type="button" data-resume>Seguir</button>
           <button class="i3d-btn" type="button" data-restart>Reiniciar</button>
           <button class="i3d-btn" type="button" data-how>Cómo se juega</button>
-          <button class="i3d-btn" type="button" data-motion aria-pressed="${gameState.settings.reduceMotion ? 'true' : 'false'}">Reducir movimiento: ${gameState.settings.reduceMotion ? 'sí' : 'no'}</button>
           <button class="i3d-btn" type="button" data-leave>Salir al mapa</button>
         </div>
         <p class="i3d-panel__hint">ESC pausa · F3 rendimiento</p>
@@ -522,13 +521,6 @@ export class MinigameBase {
     `;
     const q = (s) => this.el.overlay.querySelector(s);
     q('[data-resume]').focus({ preventScroll: true });
-    // accesibilidad: sin temblores de camara ni vibraciones (se guarda para todas las islas)
-    q('[data-motion]').addEventListener('click', () => {
-      const on = !gameState.settings.reduceMotion;
-      setSetting('reduceMotion', on);
-      q('[data-motion]').textContent = `Reducir movimiento: ${on ? 'sí' : 'no'}`;
-      q('[data-motion]').setAttribute('aria-pressed', String(on));
-    });
     q('[data-resume]').addEventListener('click', () => this.togglePause(false));
     q('[data-restart]').addEventListener('click', () => { this.togglePause(false); this.reset(); });
     q('[data-how]').addEventListener('click', () => {

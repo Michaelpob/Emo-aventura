@@ -207,12 +207,6 @@ const RECIPES = {
   birdChip:  (ctx) => toneBuffer(ctx, 0.7, 3900, 3700, (p) => (Math.sin(p * Math.PI * 2 * 5) > 0.4 ? 1 : 0) * 0.4, 1),           // carbonero: chip chip chip
   birdDove:  (ctx) => toneBuffer(ctx, 1.2, 520, 470, (p) => (p < 0.35 ? bell(p / 0.35) : p > 0.45 ? bell((p - 0.45) / 0.55) * 0.85 : 0) * 0.5, 2), // tortola: arrullo
   birdRise:  (ctx) => toneBuffer(ctx, 0.55, 1800, 3200, (p) => Math.pow(bell(p), 0.8) * 0.4, 1),                                  // petirrojo: silbido que sube
-  // Isla de la Frustracion: el taller de la Maquina Terca y el Volcan de la Presion
-  clank:     (ctx) => toneBuffer(ctx, 0.16, 1900, 900, (p) => decay(p) * 0.6, 4),                                // pieza que encaja: clic metalico
-  ratchet:   (ctx) => toneBuffer(ctx, 0.06, 900, 700, decay, 3),                                                  // diente de engranaje
-  hiss:      (ctx) => noiseBuffer(ctx, 1.2, 3200, (p) => Math.min(1, p * 6) * Math.pow(1 - p, 1.3) * 0.6),       // chorro de vapor
-  boing:     (ctx) => toneBuffer(ctx, 0.38, 320, 170, (p) => decay(p) * (0.7 + 0.3 * Math.sin(p * 80)), 3),        // piedra de goma
-  crack:     (ctx) => noiseBuffer(ctx, 0.4, 2200, (p) => Math.pow(1 - p, 3) * 0.9),                              // tuberia que se rompe
   // sapo: dos croares graves y roncos (carraca a 26 Hz), mas lento y bajo que la rana del pantano
   toad:      (ctx) => toneBuffer(ctx, 1.15, 118, 96, (p) => (p < 0.42 ? bell(p / 0.42) : p > 0.55 ? bell((p - 0.55) / 0.45) * 0.9 : 0) * (0.55 + 0.45 * Math.abs(Math.sin(p * Math.PI * 2 * 26))) * 0.75, 7),
   // grillo: un solo grillo, cuatro cri-cri agudos a ritmo de relojito
@@ -379,7 +373,6 @@ export class AudioBus {
     src.start();
     const node = {
       setVolume: (v, time = 0.4) => g.gain.setTargetAtTime(v, this.ctx.currentTime, time),
-      setRate: (r, time = 0.4) => src.playbackRate.setTargetAtTime(r, this.ctx.currentTime, time),
       stop: () => { try { src.stop(); src.disconnect(); g.disconnect(); } catch {} }
     };
     this.ambientNodes.push(node);

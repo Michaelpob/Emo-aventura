@@ -9,7 +9,8 @@ const STORAGE_KEY = 'emo-aventura-state';
 // Solo ordena capitulos, progreso e insignias: NO es una cadena de desbloqueo.
 // Todas las islas estan abiertas desde el principio; se puede entrar a
 // cualquiera sin haber jugado otra antes. Todas cuentan en el contador del
-// mapa y en Mi progreso. (La Alegria ya no es una isla del mapa.)
+// mapa y en Mi progreso. (La Alegria ya no es una isla: sus orbes se juegan
+// como segundo nivel de la Frustracion.)
 export const ISLAND_CHAIN = ['fear', 'anger', 'disgust', 'sadness', 'frustration', 'calm'];
 
 // Islas del mapa que no forman parte de la aventura (ninguna, hoy)
@@ -37,10 +38,8 @@ function baseState() {
     // Isla del Miedo en dos niveles: bosque (level1) y casa (level2). La isla
     // cuenta como completada solo cuando el flujo termina los dos.
     fear: { level1: false, level2: false },
-    // Otras islas con varios niveles (frustracion: maquina -> volcan)
+    // Otras islas con varios niveles (frustracion: torre -> valle)
     levels: {},
-    // Datos de sesion de los mini-juegos (feedback e investigacion), los ultimos 40
-    sessions: [],
     settings: { sound: true, reduceMotion: false }
   };
 }
@@ -94,7 +93,6 @@ export function loadProgress() {
       // conservan: se enciende salvo que el jugador lo haya apagado a mano.
       if (!gameState.settings.soundChosen) gameState.settings.sound = true;
       if (!gameState.levels || typeof gameState.levels !== 'object') gameState.levels = {};
-      if (!Array.isArray(gameState.sessions)) gameState.sessions = [];
     }
   } catch (err) {
     console.warn('[emo-aventura] no se pudo leer el progreso, se inicia limpio', err);
@@ -305,34 +303,6 @@ export function setPlan(islandId, { strategy, action }) {
 
 export function getPlans() {
   return [...gameState.plans];
-}
-
-/* -------------------------------------------------------------- sesiones */
-
-/**
- * Guarda el JSON de sesion de un mini-juego (lo que paso de verdad: intentos,
- * tension, herramientas...). Lo usa el feedback del nivel siguiente y queda
- * disponible para investigacion: en consola, como evento `emo-sesion` en
- * window y en localStorage.
- */
-export function recordSession(session) {
-  const entry = { ...session, at: Date.now() };
-  gameState.sessions.push(entry);
-  if (gameState.sessions.length > 40) gameState.sessions.splice(0, gameState.sessions.length - 40);
-  saveProgress();
-  try {
-    console.info('[emo-aventura] sesion', JSON.stringify(entry));
-    window.dispatchEvent(new CustomEvent('emo-sesion', { detail: entry }));
-  } catch { /* sin consola o sin window */ }
-  return entry;
-}
-
-/** Ultima sesion de un nivel (p. ej. 'frustracion_1') */
-export function lastSession(nivel) {
-  for (let i = gameState.sessions.length - 1; i >= 0; i -= 1) {
-    if (gameState.sessions[i].nivel === nivel) return gameState.sessions[i];
-  }
-  return null;
 }
 
 /* --------------------------------------------------------------- ajustes */

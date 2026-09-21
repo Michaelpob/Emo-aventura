@@ -82,10 +82,10 @@ export const islands = [
   {
     id: 'frustration',
     name: 'Frustración',
-    displayName: 'La Cordillera de los Nudos',
+    displayName: 'La torre y el valle',
     emoji: '😤',
-    subtitle: 'Rocas trabadas, engranajes oxidados y un volcán en la cima. Primero, repara la Máquina Terca del taller (algunas piezas no van a entrar, y eso es parte del plan). Después, el Volcán de la Presión: suelta la presión con tus válvulas hasta que la lava se enfríe.',
-    reward: 'Llave de Engranaje',
+    subtitle: 'Algo se interpone entre tu y la cima. Sigue, para, cambia de paso o pide ayuda. Y después, el valle: salta y recoge los orbes.',
+    reward: 'Llave de la Paciencia',
     // naranja-rojizo: el calor que sube cuando algo se interpone
     palette: {
       land: '#e2743c',
@@ -97,7 +97,7 @@ export const islands = [
     position: [4.07, 0, 2.35],
     radius: 1.18,
     height: 0.4,
-    minigame: 'frustration-nudos'
+    minigame: 'frustration-tower-valley'
   },
   {
     id: 'calm',
@@ -132,9 +132,8 @@ export const minigameLabels = {
   'joy-orbs': 'Valle de la Luz',
   'disgust-sort': 'Guardianes del Desagrado',
   'disgust-territory': 'Guardianes del Desagrado',
-  'frustration-nudos': 'La Cordillera de los Nudos',
-  'frustration-maquina': 'La Máquina Terca',
-  'frustration-volcan': 'El Volcán de la Presión',
+  'frustration-tower-valley': 'La torre · El valle',
+  'frustration-tower': 'La torre',
   'calm-lake': 'El lago sereno',
   'surprise-observe': 'El jardin que cambia',
   'fear-island': 'Isla del Miedo',

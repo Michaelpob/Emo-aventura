@@ -182,14 +182,32 @@ export const TOOLS = {
     description: 'La tristeza suelta frases («para que», «manana», «no sirve»). No son hechos ni ordenes: puedes moverte con ellas puestas.',
     order: 20
   },
-  'llave-engranaje': {
-    id: 'llave-engranaje',
-    icon: '⚙️',
-    name: 'Llave de Engranaje',
+  'llave-paciencia': {
+    id: 'llave-paciencia',
+    icon: '🗝️',
+    name: 'Llave de la Paciencia',
     emotion: 'Frustración',
-    strategy: 'Tolerar la frustracion',
-    description: 'Cuando algo no entra: nota la tension, para un momento y prueba de otra forma. Abre el volcan de la cima.',
+    strategy: 'Tolerar la frustración',
+    description: 'Parar un momento cuando sube, y volver al intento con el pulso firme.',
     order: 21
+  },
+  'escalera-pasos': {
+    id: 'escalera-pasos',
+    icon: '🪜',
+    name: 'Escalera de Pasos',
+    emotion: 'Frustración',
+    strategy: 'Meta en pasos pequenos',
+    description: 'Dividir lo que quieres en pasos que si puedes dar, aunque se tarde un poco mas.',
+    order: 22
+  },
+  'mano-amiga': {
+    id: 'mano-amiga',
+    icon: '🤝',
+    name: 'Mano Amiga',
+    emotion: 'Frustración',
+    strategy: 'Pedir ayuda',
+    description: 'No tienes que hacerlo todo tu: pedir ayuda tambien es avanzar.',
+    order: 23
   },
   'pluma-calma': {
     id: 'pluma-calma',
@@ -209,6 +227,6 @@ export const BADGES = {
   anger: { id: 'anger', icon: '🌋', name: 'Guardian de la Ira', island: 'Al rojo vivo' },
   disgust: { id: 'disgust', icon: '🍃', name: 'Guardian del Desagrado', island: 'Guardianes del Desagrado' },
   sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'La casa en marcha' },
-  frustration: { id: 'frustration', icon: '🌋', name: 'Guardian de la Presión', island: 'La Cordillera de los Nudos' },
+  frustration: { id: 'frustration', icon: '🧗', name: 'Guardian de la Frustración', island: 'La torre y el valle' },
   calm: { id: 'calm', icon: '🪶', name: 'Guardian de la Calma', island: 'El lago sereno' }
 };
