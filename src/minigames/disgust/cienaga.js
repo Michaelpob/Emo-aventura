@@ -203,32 +203,6 @@ export function materialTranslucido() {
   return new THREE.MeshStandardMaterial({ color: '#d9e6e2', emissive: '#a9cfc6', emissiveIntensity: 0.25, roughness: 0.4, transparent: true, opacity: 0.55, flatShading: true });
 }
 
-/**
- * Voz opcional (SpeechSynthesis, es). Nunca obligatoria: el texto siempre va
- * en pantalla. Sigue el ajuste de sonido del juego.
- */
-export function crearVoz() {
-  const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
-  let activa = true;
-  return {
-    hablar(texto) {
-      if (!synth || !activa || !gameState.settings.sound) return;
-      try {
-        synth.cancel();
-        const u = new SpeechSynthesisUtterance(String(texto).replace(/<[^>]+>/g, ' '));
-        u.lang = 'es-ES';
-        u.rate = 1.02;
-        u.pitch = 1;
-        const voces = synth.getVoices();
-        const es = voces.find((v) => /^es/i.test(v.lang) && /natural|neural|google|monica|paulina|helena|elvira/i.test(v.name)) ?? voces.find((v) => /^es/i.test(v.lang));
-        if (es) u.voice = es;
-        synth.speak(u);
-      } catch { /* sin voz: el texto ya esta en pantalla */ }
-    },
-    callar() { try { synth?.cancel(); } catch { /* */ } },
-    dispose() { activa = false; try { synth?.cancel(); } catch { /* */ } }
-  };
-}
 
 /** Punto en el plano y=altura bajo el puntero, o null si no lo cruza */
 export function puntoEnPlano(raycaster, camera, ndc, plane, out) {
@@ -255,4 +229,102 @@ export function barajar(lista) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/* ------------------------------------------------------------- guia y pistas */
+
+/**
+ * Linea de guia: el UNICO sitio donde el jugador lee que tiene que hacer.
+ * `guiar` fija la instruccion del momento; `avisar` muestra un resultado breve
+ * encima y despues vuelve sola a la instruccion. Nada mas compite por la vista.
+ */
+export function crearGuia(game) {
+  const el = document.createElement('div');
+  el.className = 'dg-guia';
+  el.hidden = true;
+  el.setAttribute('aria-live', 'polite');
+  el.innerHTML = '<span class="dg-guia__icono" aria-hidden="true"></span><span class="dg-guia__cuerpo"><span class="dg-guia__texto"></span><b class="dg-guia__extra"></b></span>';
+  game.el.hud.appendChild(el);
+  const icono = el.querySelector('.dg-guia__icono');
+  const texto = el.querySelector('.dg-guia__texto');
+  const extra = el.querySelector('.dg-guia__extra');
+  const ICONOS = { ok: '✅', mal: '⚠️', info: '💬', grima: '🫧' };
+  let base = { texto: '', icono: '' };
+  let timer = null;
+  let boton = null;
+  const pintar = (t, i, tipo) => {
+    icono.textContent = i;
+    texto.innerHTML = t;
+    extra.textContent = '';
+    el.className = `dg-guia${tipo ? ` dg-guia--${tipo}` : ''}`;
+    el.classList.remove('is-pop');
+    void el.offsetWidth;                 // reinicia la animacion de entrada
+    el.classList.add('is-pop');
+    el.hidden = !t;
+  };
+  const volver = () => { timer = null; pintar(base.texto, base.icono, ''); if (boton) el.appendChild(boton); };
+  return {
+    el,
+    /** Instruccion del momento (se queda hasta la siguiente) */
+    guiar(t, i = '👉') { base = { texto: t, icono: i }; if (!timer) { pintar(t, i, ''); if (boton) el.appendChild(boton); } },
+    /** Dato que acompana a la instruccion (progreso, contador) sin reanimar */
+    progreso(t) { if (!timer) extra.textContent = t; },
+    /** Resultado breve: ok | mal | info | grima. Luego vuelve la instruccion. */
+    avisar(t, tipo = 'ok', ms = 2600) {
+      if (timer) clearTimeout(timer);
+      pintar(t, ICONOS[tipo] ?? '💬', tipo);
+      timer = setTimeout(volver, ms);
+    },
+    /** Boton opcional dentro de la guia (por ejemplo, saltar la practica) */
+    boton(t, fn) {
+      this.sinBoton();
+      if (!t) return;
+      boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'dg-guia__btn';
+      boton.textContent = t;
+      boton.addEventListener('click', fn);
+      el.appendChild(boton);
+    },
+    sinBoton() { boton?.remove(); boton = null; },
+    ocultar() { el.hidden = true; },
+    mostrar() { el.hidden = !(base.texto || timer); },
+    dispose() { if (timer) clearTimeout(timer); el.remove(); }
+  };
+}
+
+/**
+ * Pistas animadas ancladas a un punto del mundo (se proyectan cada frame).
+ * Tipos: corte (✂️ que cruza), hold (👆 que late), baliza (🕯️ que bota),
+ * frotar (🖐️ que va y viene), destino (⬇️ que bota).
+ */
+export function crearPistas(game, contenedor) {
+  const ICONOS = { corte: '✂️', hold: '👆', baliza: '🕯️', frotar: '🖐️', destino: '⬇️' };
+  const lista = [];
+  const v = new THREE.Vector3();
+  const quitar = (id) => {
+    const i = lista.findIndex((p) => p.id === id);
+    if (i >= 0) { lista[i].el.remove(); lista.splice(i, 1); }
+  };
+  return {
+    poner(id, tipo, pos, texto = '') {
+      quitar(id);
+      const el = document.createElement('div');
+      el.className = `dg-pista dg-pista--${tipo}`;
+      el.innerHTML = `<b>${ICONOS[tipo] ?? '👉'}</b>${texto ? `<span>${texto}</span>` : ''}`;
+      contenedor.appendChild(el);
+      lista.push({ id, el, pos: pos.clone() });
+    },
+    quitar,
+    limpiar() { while (lista.length) quitar(lista[0].id); },
+    update() {
+      if (!lista.length || !game.renderer) return;
+      const r = game.renderer.domElement.getBoundingClientRect();
+      for (const p of lista) {
+        v.copy(p.pos).project(game.camera);
+        p.el.style.transform = `translate(${(v.x * 0.5 + 0.5) * r.width}px, ${(-v.y * 0.5 + 0.5) * r.height}px) translate(-50%, -50%)`;
+      }
+    },
+    dispose() { this.limpiar(); }
+  };
 }

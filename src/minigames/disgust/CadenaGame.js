@@ -23,7 +23,7 @@ import {
 } from '../../data/gameState.js';
 import { CADENA as T } from './CadenaTextos.js';
 import { CONDUCTAS, INTENSIDADES } from './IslaTextos.js';
-import { construirCienaga, materialViscoso, materialTranslucido, crearVoz, ndcDe, escapar, barajar } from './cienaga.js';
+import { construirCienaga, materialViscoso, materialTranslucido, crearGuia, crearPistas, ndcDe, escapar, barajar } from './cienaga.js';
 
 const ISLAND = 'disgust';
 const NET_Y = 1.1;                 // altura del plano de la red sobre el agua
@@ -83,7 +83,9 @@ export class CadenaGame extends MinigameBase {
     this.timeScale = 1;
     this.hold = null;              // { inicio, x, z }
     this.corte = null;             // { puntos: [] }
-    this.arrastre = null;          // { paquete }
+    this.arrastre = null;          // { paquete, pid, x0, y0, movido }
+    this.menu = null;              // { paquete, el } botones al tocar un mensaje
+    this.practica = null;          // { paso, usados } durante la practica guiada
     this.orbit = null;
     this.yaw = 0;
     this.decisiones = [];          // registro concreto para el feedback
@@ -91,7 +93,6 @@ export class CadenaGame extends MinigameBase {
     this.valores = new Set(getIslandData(ISLAND).valores ?? CONDUCTAS.map((c) => c.id));
     this.intensidadInicial = getIslandData(ISLAND).intensidad ?? gameState.initialIntensity ?? 'media';
     this.raycaster = new THREE.Raycaster();
-    this.voz = crearVoz();
     this.time = 0;
   }
 
@@ -107,6 +108,8 @@ export class CadenaGame extends MinigameBase {
     this.buildNet();
     this.buildHud();
     this.buildInput();
+    this.guia = crearGuia(this);
+    this.pistas = crearPistas(this, this.cardsEl);
     this.setObjective(RONDAS.length, '◉');
   }
 
@@ -187,10 +190,6 @@ export class CadenaGame extends MinigameBase {
   /* ================================================================ HUD */
 
   buildHud() {
-    this.barClaridad = this.addBar('claridad', { icon: '💧', color: '#a9cfc6', value: this.claridad / 100 });
-    this.barCoherencia = this.addBar('coherencia', { icon: '🧭', color: '#ffd166', value: this.coherencia / 100 });
-    this.barTermo = this.addBar('termo', { icon: '🌡️', color: '#e0453a', value: 0 });
-
     this.tools = document.createElement('div');
     this.tools.className = 'i3d-tools dg-tools';
     this.tools.innerHTML = `
@@ -222,17 +221,19 @@ export class CadenaGame extends MinigameBase {
 
   buildInput() {
     const dom = this.renderer.domElement;
+    const enJuego = () => !this.paused && !this.finished && (this.fase === 'ronda' || this.fase === 'practica') && !this.eco;
     const down = (e) => {
-      if (this.paused || this.finished || this.fase !== 'ronda' || this.eco) return;
+      if (!enJuego()) return;
       if (e.button !== undefined && e.button > 0) return;
       e.preventDefault();
       try { dom.setPointerCapture(e.pointerId); } catch { /* opcional */ }
+      if (this.menu) { this.cerrarMenu(); return; }   // tocar fuera cierra los botones
       const p = this.puntoRed(e);
       if (!p) return;
       const paquete = this.paqueteCerca(p, 1.0);
       if (paquete) {
-        this.arrastre = { paquete, pid: e.pointerId };
-        paquete.estado = 'arrastre';
+        // un toque abre los botones; si se mueve, es un arrastre (a la baliza)
+        this.arrastre = { paquete, pid: e.pointerId, x0: e.clientX, y0: e.clientY, movido: false };
         this.audio.play('interact', { volume: 0.25 });
         return;
       }
@@ -247,8 +248,11 @@ export class CadenaGame extends MinigameBase {
     const move = (e) => {
       if (this.paused || this.finished) return;
       if (this.arrastre && e.pointerId === this.arrastre.pid) {
+        const a = this.arrastre;
+        if (!a.movido && Math.hypot(e.clientX - a.x0, e.clientY - a.y0) > 10) { a.movido = true; a.paquete.estado = 'arrastre'; }
+        if (!a.movido) return;
         const p = this.puntoRed(e);
-        if (p) this.arrastre.paquete.mesh.position.set(clamp(p.x, -12, 12), NET_Y, clamp(p.z, -12, 12));
+        if (p) a.paquete.mesh.position.set(clamp(p.x, -12, 12), NET_Y, clamp(p.z, -12, 12));
         return;
       }
       if (this.hold && e.pointerId === this.hold.pid) {
@@ -276,7 +280,10 @@ export class CadenaGame extends MinigameBase {
       }
     };
     const up = (e) => {
-      if (this.arrastre && (!e || e.pointerId === undefined || e.pointerId === this.arrastre.pid)) this.soltarPaquete(e);
+      if (this.arrastre && (!e || e.pointerId === undefined || e.pointerId === this.arrastre.pid)) {
+        if (this.arrastre.movido) this.soltarPaquete(e);
+        else { const pq = this.arrastre.paquete; this.arrastre = null; this.abrirMenu(pq); }
+      }
       if (this.hold && (!e || e.pointerId === undefined || e.pointerId === this.hold.pid)) this.cancelarHold();
       if (this.corte && (!e || e.pointerId === undefined || e.pointerId === this.corte.pid)) { this.corte = null; this.orbit = null; }
     };
@@ -346,8 +353,83 @@ export class CadenaGame extends MinigameBase {
     this.ambient = this.audio.ambient('swamp', { volume: 0.22, rate: 0.9 });
     this.mazoDano = barajar(T.daninos);
     this.mazoTrampa = barajar(T.trampas);
-    this.empezarRonda(0);
+    if (getIslandData(ISLAND).cadenaPractica) this.empezarRonda(0);
+    else this.empezarPractica();
   }
+
+  /* ============================================================ practica */
+
+  /** Practica guiada: un mensaje cada vez, quieto, con una sola instruccion */
+  empezarPractica() {
+    this.fase = 'practica';
+    this.practica = { paso: -1, usados: new Set() };
+    this.hilos.forEach((h, k) => {
+      const dentro = h.fila === 1 && (k % 8) < 6;
+      h.activo = dentro; h.nodo.visible = dentro; h.mesh.visible = dentro;
+    });
+    this.renderLabel();
+    this.guia.guiar(T.practica.inicio, '🎓');
+    this.guia.boton(T.practica.saltar, () => this.terminarPractica(true));
+    this.later(() => this.practicaPaso(0), 2600);
+  }
+
+  practicaPaso(n) {
+    if (this.fase !== 'practica') return;
+    const P = T.practica.pasos[n];
+    this.pistas.limpiar();
+    if (!P) { this.terminarPractica(false); return; }
+    this.practica.paso = n;
+    this.practica.usados.add(P.id);
+    const hilo = this.elegirHilo(P.hilo);
+    const datos = P.tipo === 'trampa' ? T.trampas.find((t) => t.id === P.id) ?? T.trampas[0] : T.daninos.find((d) => d.id === P.id) ?? T.daninos[0];
+    const pq = this.lanzarPaquete({ tipo: P.tipo, datos }, { hilo, t0: 0.42 });
+    if (!pq) { this.terminarPractica(false); return; }
+    pq.practica = true;
+    pq.vel = P.tipo === 'trampa' ? 1 / 9 : 0;          // los daninos esperan quietos
+    this.guia.guiar(P.texto, P.icono);
+    if (P.pista === 'corte') this.pistas.poner('corte', 'corte', _v.lerpVectors(hilo.a, hilo.b, 0.7));
+    else if (P.pista === 'hold') this.pistas.poner('hold', 'hold', _v.set(0, NET_Y, 0));
+    else if (P.pista === 'baliza') this.pistas.poner('baliza', 'baliza', this.balizaPos);
+  }
+
+  terminarPractica(saltada) {
+    if (this.fase !== 'practica') return;
+    this.fase = 'pausaRonda';
+    this.pistas.limpiar();
+    this.cerrarMenu();
+    this.guia.sinBoton();
+    this.paquetes.forEach((p) => this.retirar(p));
+    setIslandData(ISLAND, { cadenaPractica: true });
+    // los mensajes de la practica no vuelven a salir en la ronda 1
+    this.mazoDano = this.mazoDano.filter((d) => !this.practica.usados.has(d.id));
+    this.mazoTrampa = this.mazoTrampa.filter((t) => !this.practica.usados.has(t.id));
+    this.practica = null;
+    this.reiniciarMarcadores();
+    if (saltada) { this.empezarRonda(0); return; }
+    this.guia.avisar(T.practica.fin, 'ok', 2600);
+    this.later(() => this.empezarRonda(0), 2800);
+  }
+
+  /** Hilo activo libre por posicion en pantalla: izquierda | derecha | frente */
+  elegirHilo(donde) {
+    const libres = this.hilos.filter((h) => h.activo && !h.paquete);
+    const orden = [...libres].sort((h1, h2) => donde === 'izquierda' ? h1.a.x - h2.a.x : donde === 'derecha' ? h2.a.x - h1.a.x : h2.a.z - h1.a.z);
+    return orden[0] ?? null;
+  }
+
+  /** Marcadores a cero (tras la practica o al reiniciar) */
+  reiniciarMarcadores() {
+    this.stats = { cortes: 0, asertiva: 0, agresiva: 0, evasiva: 0, ayudas: 0, pasaron: 0, grima: 0, diferenciaBien: 0, sobreTi: null };
+    this.decisiones = [];
+    this.claridad = 62; this.coherencia = 60; this.termo = 0; this.alcanzados = 0;
+    this.termoAvisado = false;
+    this.ecos.forEach((e) => this.netGroup.remove(e.mesh));
+    this.ecos = [];
+    this.cienaga.setClaridad(0.62);
+    this.renderLabel();
+  }
+
+  /* ============================================================= rondas */
 
   empezarRonda(i) {
     this.ronda = i;
@@ -367,16 +449,16 @@ export class CadenaGame extends MinigameBase {
       h.mesh.visible = dentro;
     });
     this.renderLabel();
-    this.say(T.rondas[i].titulo, 2600);
-    this.showNote({ title: T.rondas[i].titulo, text: T.rondas[i].nota, seconds: 7 });
-    this.voz.hablar(T.rondas[i].nota);
+    this.guia.guiar(T.guia.ronda, '👉');
+    this.guia.avisar(T.rondas[i].titulo, 'info', 3200);
     this.audio.play('bubble', { volume: 0.3 });
   }
 
   terminarRonda() {
     this.fase = 'pausaRonda';
     this.advanceObjective(1);
-    this.say(T.avisos.finRonda(this.ronda + 1), 2200);
+    this.cerrarMenu();
+    this.guia.avisar(T.avisos.finRonda(this.ronda + 1), 'info', 2400);
     this.audio.play('chime', { volume: 0.3 });
     const siguiente = this.ronda + 1;
     this.later(() => {
@@ -458,21 +540,20 @@ export class CadenaGame extends MinigameBase {
       if (accion === 'pasar') {
         this.stats.diferenciaBien += 1;
         this.coherencia += 4; this.claridad += 1;
-        this.say(T.avisos.diferenciaPaso, 2200);
+        this.guia.avisar(T.avisos.diferenciaPaso, 'ok');
         this.audio.play('soften', { volume: 0.3 });
       } else {
         this.stats.grima += 1;
         this.coherencia -= 6; this.claridad -= 3;
         if (accion === 'ayuda') this.ayudas -= 1;
-        this.say(T.avisos.grima, 2600);
-        if (this.stats.grima === 1) this.showNote({ title: T.avisos.grima, text: T.avisos.grimaLargo, seconds: 7 });
+        this.guia.avisar(T.avisos.grima, 'grima', 4200);
         this.audio.play('lowNote', { volume: 0.35 });
         this.feedback.burst(pq.mesh.position, { count: 10, color: '#d9e6e2', speed: 1.6, life: 0.7 });
       }
     } else if (accion === 'cortar') {
       this.stats.cortes += 1;
       this.coherencia += enValores ? 6 : 2; this.claridad += 2;
-      this.say(T.avisos.cortado, 1800);
+      this.guia.avisar(T.avisos.cortado, 'ok');
       this.audio.play('glassTap', { volume: 0.45 });
       this.feedback.burst(pq.mesh.position, { count: 14, color: '#c8f0dc', speed: 2.4, life: 0.7 });
     } else if (accion === 'pasar') {
@@ -481,34 +562,33 @@ export class CadenaGame extends MinigameBase {
       this.coherencia -= enValores ? 8 : 3; this.claridad -= 6 + grave * 2;
       this.replicar(n);
       registro.alcanzados = n;
-      this.say(T.avisos.dejoPasar(n), 2200);
+      this.guia.avisar(T.avisos.dejoPasar(n), 'mal', 3200);
       this.audio.play('squelch', { volume: 0.5 });
       this.feedback.shakeCamera(gameState.settings.reduceMotion ? 0 : 0.08, 2);
     } else if (accion === 'asertiva') {
       this.stats.asertiva += 1;
       this.coherencia += enValores ? 8 : 4; this.claridad += 6;
       this.hilos.forEach((h) => { if (h.activo && Math.hypot(h.a.x - pq.hilo.a.x, h.a.z - pq.hilo.a.z) < 6) h.brillo = 1; });
-      this.say(T.avisos.asertivo, 2200);
+      this.guia.avisar(T.avisos.asertivo, 'ok');
       this.audio.play('warm', { volume: 0.4 });
     } else if (accion === 'agresiva') {
       this.stats.agresiva += 1;
       this.claridad -= 4;
-      this.say(T.avisos.agresivo, 2400);
-      if (this.stats.agresiva === 1) this.showNote({ title: T.avisos.agresivo, text: T.avisos.agresivoLargo, seconds: 7 });
+      this.guia.avisar(T.avisos.agresivo, 'mal', 3600);
       this.audio.play('growl', { volume: 0.4 });
       // la burla ensucia otro hilo: aparece un paquete danino a medio camino
       this.later(() => { if (this.fase === 'ronda') this.lanzarPaquete(this.siguienteDano(), { t0: 0.35 }); }, 400);
     } else if (accion === 'evasiva') {
       this.stats.evasiva += 1;
       this.coherencia -= 2;
-      this.say(T.avisos.evasivo, 2000);
+      this.guia.avisar(T.avisos.evasivo, 'info');
       this.audio.play('lowNote', { volume: 0.25 });
       fin = false;                              // el paquete sigue su camino
     } else if (accion === 'ayuda') {
       this.stats.ayudas += 1;
       this.ayudas -= 1;
       this.coherencia += 6; this.claridad += 7;
-      this.say(T.avisos.ayuda, 2200);
+      this.guia.avisar(T.avisos.ayuda, 'ok');
       this.audio.play('chime', { volume: 0.4 });
       this.feedback.flash(this.balizaPos, { color: '#ffd166', intensity: 4, duration: 0.8 });
     }
@@ -518,8 +598,13 @@ export class CadenaGame extends MinigameBase {
     this.claridad = clamp(this.claridad, 0, 100);
     this.cienaga.setClaridad(this.claridad / 100);
     this.renderLabel();
-    if (fin) this.retirar(pq);
+    if (fin || this.fase === 'practica') this.retirar(pq);
     else pq.estado = 'viaje';
+    // en la practica, cada mensaje resuelto da paso al siguiente
+    if (this.fase === 'practica' && pq.practica) {
+      this.pistas.limpiar();
+      this.later(() => { if (this.practica) this.practicaPaso(this.practica.paso + 1); }, 2600);
+    }
   }
 
   siguienteDano() {
@@ -543,7 +628,7 @@ export class CadenaGame extends MinigameBase {
     const pos = p ? { x: p.x, z: p.z } : { x: paquete.mesh.position.x, z: paquete.mesh.position.z };
     if (Math.hypot(pos.x - this.balizaPos.x, pos.z - this.balizaPos.z) < 1.6) {
       if (this.ayudas > 0) { this.resolver(paquete, 'ayuda'); return; }
-      this.say(T.avisos.sinAyuda, 2000);
+      this.guia.avisar(T.avisos.sinAyuda, 'mal');
     }
     // vuelve a su hilo por el punto mas cercano
     const h = paquete.hilo;
@@ -553,12 +638,66 @@ export class CadenaGame extends MinigameBase {
     paquete.estado = 'viaje';
   }
 
+  /* =============================================================== menu */
+
+  /** Tocar un mensaje: botones con las cuatro decisiones (sin gestos) */
+  abrirMenu(pq) {
+    this.cerrarMenu();
+    if (!pq || pq.estado === 'resuelto') return;
+    pq.estado = 'viaje';
+    this.timeScale = 0.12;
+    pq.card.classList.add('is-sel');
+    const el = document.createElement('div');
+    el.className = 'dg-menu';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', T.guia.menu);
+    el.innerHTML = `
+      <p class="dg-menu__titulo">${T.guia.menu}</p>
+      <p class="dg-menu__texto ${pq.tipo === 'trampa' ? 'dg-menu__texto--trampa' : ''}">${escapar(pq.texto)}</p>
+      <div class="dg-menu__botones">
+        <button type="button" data-a="cortar">✂️ ${T.menu.cortar}</button>
+        <button type="button" data-a="responder">🗣️ ${T.menu.responder}</button>
+        <button type="button" data-a="ayuda" ${this.ayudas > 0 ? '' : 'disabled'}>🕯️ ${T.menu.ayuda}</button>
+        <button type="button" data-a="pasar">➡️ ${T.menu.pasar}</button>
+      </div>`;
+    this.el.hud.appendChild(el);
+    this.menu = { paquete: pq, el };
+    this.guia.ocultar();
+    el.querySelectorAll('[data-a]').forEach((b) => b.addEventListener('click', () => this.elegirDelMenu(b.dataset.a)));
+    el.querySelector('[data-a="cortar"]').focus({ preventScroll: true });
+  }
+
+  elegirDelMenu(accion) {
+    const pq = this.menu?.paquete;
+    this.cerrarMenu();
+    if (!pq || pq.estado === 'resuelto') return;
+    if (accion === 'cortar') { pq.hilo.cerrado = 1; this.resolver(pq, 'cortar'); }
+    else if (accion === 'responder') this.abrirEco(pq);
+    else if (accion === 'ayuda') { if (this.ayudas > 0) this.resolver(pq, 'ayuda'); else this.guia.avisar(T.avisos.sinAyuda, 'mal'); }
+    else if (accion === 'pasar') {
+      // decision explicita: el mensaje sigue (mas rapido) y se resuelve al llegar
+      pq.vel = Math.max(pq.vel, 1 / RONDAS[this.ronda].viaje) * 2.5;
+      this.guia.avisar(T.avisos.dejasPasar, 'info', 2000);
+    }
+  }
+
+  cerrarMenu() {
+    if (!this.menu) return;
+    this.menu.el.remove();
+    this.menu.paquete.card.classList.remove('is-sel');
+    this.menu = null;
+    if (!this.eco) this.timeScale = 1;
+    this.guia.mostrar();
+  }
+
   /* ================================================================ eco */
 
-  abrirEco() {
-    const objetivo = this.paquetes.filter((p) => p.estado === 'viaje').sort((a, b) => b.t - a.t)[0];
+  abrirEco(objetivo = null) {
+    objetivo = objetivo ?? this.paquetes.filter((p) => p.estado === 'viaje').sort((a, b) => b.t - a.t)[0];
     this.cancelarHold();
-    if (!objetivo) { this.say('No hay ningún mensaje llegando', 1800); return; }
+    if (!objetivo) { this.guia.avisar(T.avisos.nadieLlega, 'info', 1800); return; }
+    this.cerrarMenu();
+    this.guia.ocultar();
     this.eco = { paquete: objetivo };
     this.timeScale = 0.12;
     this.audio.duck(0.4);
@@ -582,14 +721,13 @@ export class CadenaGame extends MinigameBase {
       </div>
     `;
     this.el.overlay.appendChild(panel);
-    this.el.notes.hidden = true;                 // la nota de la ronda no tapa el eco
     panel.querySelector('button').focus({ preventScroll: true });
     panel.querySelectorAll('[data-k]').forEach((b) => b.addEventListener('click', () => {
       panel.remove();
-      this.el.notes.hidden = false;
       this.eco = null;
       this.timeScale = 1;
       this.audio.unduck();
+      this.guia.mostrar();
       this.resolver(objetivo, b.dataset.k);
     }));
   }
@@ -604,9 +742,6 @@ export class CadenaGame extends MinigameBase {
     this.halo.material.opacity = 0.4 + Math.sin(this.time * 2) * 0.15;
     this.balizaLuz.intensity = 1.4 + Math.sin(this.time * 3) * 0.3;
     this.termo = Math.max(0, this.termo - dt * 4);
-    this.barTermo.set(this.termo / 100);
-    this.barClaridad.set(this.claridad / 100);
-    this.barCoherencia.set(this.coherencia / 100);
 
     // limite: mantener el nodo propio
     if (this.hold && this.time - this.hold.inicio >= HOLD_LIMITE) this.abrirEco();
@@ -630,6 +765,7 @@ export class CadenaGame extends MinigameBase {
     this.updatePaquetes(ts, dt);
     this.updateEcos(ts);
     this.updateCards();
+    this.pistas.update();
   }
 
   updateRonda(ts) {
@@ -644,7 +780,7 @@ export class CadenaGame extends MinigameBase {
     // ultima ronda: el paquete que habla del jugador
     if (this.ronda === RONDAS.length - 1 && !this.sobreTiLanzado && this.tiempoRonda > cfg.duracion * 0.6) {
       const pq = this.lanzarPaquete({ tipo: 'sobreTi', datos: T.sobreTi });
-      if (pq) { this.sobreTiLanzado = true; pq.vel *= 0.85; this.say(T.avisos.sobreTi, 2600); this.voz.hablar(T.avisos.sobreTi); }
+      if (pq) { this.sobreTiLanzado = true; pq.vel *= 0.85; this.guia.avisar(T.avisos.sobreTi, 'info', 3000); }
     }
     // la ronda acaba cuando se agota el tiempo y no queda nada en vuelo (contando lo recien lanzado)
     if (this.tiempoRonda >= cfg.duracion && !this.paquetes.some((p) => p.estado !== 'resuelto')) this.terminarRonda();
@@ -667,11 +803,10 @@ export class CadenaGame extends MinigameBase {
         if (pq.tipo !== 'trampa') {
           this.termo = Math.min(100, this.termo + 16 + (pq.datos.severidad ?? 1) * 9);
           this.audio.play('gurgle', { volume: 0.22 });
-          if (this.termo > 60 && !this.termoAvisado) { this.termoAvisado = true; this.showNote({ title: '🌡️ ' + T.hud.termometro, text: T.avisos.termometro, seconds: 6 }); }
+          if (this.termo > 60 && !this.termoAvisado && this.fase === 'ronda') { this.termoAvisado = true; this.guia.avisar('🌡️ ' + T.avisos.termometro, 'info', 3200); }
         } else {
           this.audio.play('bubble', { volume: 0.18 });
         }
-        this.voz.hablar(pq.texto);
       }
       if (pq.estado === 'viaje' && pq.t >= 1) this.resolver(pq, 'pasar');
     }
@@ -703,6 +838,9 @@ export class CadenaGame extends MinigameBase {
 
   async cerrar() {
     this.fase = 'fin';
+    this.cerrarMenu();
+    this.pistas.limpiar();
+    this.guia.ocultar();
     this.paquetes.forEach((p) => this.retirar(p));
     this.cienaga.setClaridad(Math.max(0.45, this.claridad / 100));
     const respuestas = [];
@@ -750,7 +888,6 @@ export class CadenaGame extends MinigameBase {
       </div>`;
     this.el.overlay.querySelector('[data-ok]').focus({ preventScroll: true });
     this.el.overlay.querySelector('[data-ok]').addEventListener('click', () => { this.el.overlay.innerHTML = ''; this.finish(); });
-    this.voz.hablar(T.feedback.cierre);
   }
 
   get completionPayload() {
@@ -759,6 +896,7 @@ export class CadenaGame extends MinigameBase {
 
   /** Menu de pausa con salida al menu de la isla (sin perder la sesion) */
   _showPauseMenu() {
+    this.cerrarMenu();
     super._showPauseMenu();
     if (!this.onMenu) return;
     const acciones = this.el.overlay.querySelector('.i3d-panel__actions');
@@ -769,13 +907,12 @@ export class CadenaGame extends MinigameBase {
   }
 
   onReset() {
+    this.cerrarMenu();
+    this.pistas.limpiar();
+    this.guia.sinBoton();
+    this.practica = null;
     this.paquetes.forEach((p) => this.retirar(p));
-    this.ecos.forEach((e) => this.netGroup.remove(e.mesh));
-    this.ecos = [];
-    this.stats = { cortes: 0, asertiva: 0, agresiva: 0, evasiva: 0, ayudas: 0, pasaron: 0, grima: 0, diferenciaBien: 0, sobreTi: null };
-    this.decisiones = [];
-    this.claridad = 62; this.coherencia = 60; this.termo = 0; this.alcanzados = 0;
-    this.cienaga.setClaridad(0.62);
+    this.reiniciarMarcadores();
     this.el.overlay.innerHTML = '';
     this.eco = null; this.timeScale = 1;
     this.mazoDano = barajar(T.daninos); this.mazoTrampa = barajar(T.trampas);
@@ -784,7 +921,9 @@ export class CadenaGame extends MinigameBase {
   }
 
   onDispose() {
-    this.voz.dispose();
+    this.cerrarMenu();
+    this.pistas?.dispose();
+    this.guia?.dispose();
     this.cardsEl?.remove();
     this.tools?.remove();
     this.waveEl?.remove();

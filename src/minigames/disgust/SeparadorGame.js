@@ -3,7 +3,7 @@
 // una mesa iluminada y tres contenedores al fondo. Llegan «grumos»: burbujas
 // con una escena congelada donde una figura aparece envuelta por una
 // sustancia oscura. La sustancia es la conducta; la figura es la persona.
-//   1. Escuchar: la escena se narra (texto + voz opcional)
+//   1. Escuchar: la escena se lee en un panel
 //   2. Separar: arrastrar repetidamente sobre el grumo para despegar la
 //      sustancia de la figura. Se resiste: hay que insistir.
 //   3. Clasificar: la conducta a «Esto rechazo» (y nombrarla), la figura a
@@ -22,7 +22,7 @@ import {
 } from '../../data/gameState.js';
 import { SEPARADOR as T } from './SeparadorTextos.js';
 import { CONDUCTAS, INTENSIDADES } from './IslaTextos.js';
-import { construirCienaga, materialViscoso, crearVoz, ndcDe, escapar, barajar } from './cienaga.js';
+import { construirCienaga, materialViscoso, crearGuia, crearPistas, ndcDe, escapar, barajar } from './cienaga.js';
 
 const ISLAND = 'disgust';
 const MESA_Y = 1.0;                 // altura de la superficie de la mesa
@@ -53,12 +53,12 @@ export class SeparadorGame extends MinigameBase {
     this.fase = 'intro';             // intro | llega | escuchar | separar | clasificar | nombrar | accion | fin
     this.nitidez = 50;
     this.stroke = null;
-    this.arrastre = null;
+    this.arrastre = null;            // { item, pid, x0, y0, movido }
+    this.menu = null;                // botones al tocar una pieza
     this.stats = { separadas: 0, conDano: 0, etiquetas: 0, diferencias: 0, totalDiferencias: 0, diferenciasFallo: 0, personaRechazada: 0, dilemas: 0, pasos: 0 };
     this.diario = [];
     this.intensidadInicial = getIslandData(ISLAND).intensidad ?? gameState.initialIntensity ?? 'media';
     this.raycaster = new THREE.Raycaster();
-    this.voz = crearVoz();
     this.time = 0;
     this.pins = [];
   }
@@ -138,6 +138,8 @@ export class SeparadorGame extends MinigameBase {
 
     this.buildHud();
     this.buildInput();
+    this.guia = crearGuia(this);
+    this.pistas = crearPistas(this, this.pinsEl);
     this.grumos = [...T.grumos];
     this.setObjective(this.grumos.length, '◦');
   }
@@ -160,7 +162,7 @@ export class SeparadorGame extends MinigameBase {
       el.className = `dg-pin dg-pin--${c.id}`;
       el.innerHTML = `<strong>${T.contenedores[c.id].titulo}</strong><small>${T.contenedores[c.id].sub}</small>`;
       this.pinsEl.appendChild(el);
-      return { el, pos: new THREE.Vector3(c.x, 1.9, c.z) };
+      return { id: c.id, el, pos: new THREE.Vector3(c.x, 1.9, c.z) };
     });
     this.renderLabel();
   }
@@ -183,6 +185,7 @@ export class SeparadorGame extends MinigameBase {
       if (e.button !== undefined && e.button > 0) return;
       e.preventDefault();
       try { dom.setPointerCapture(e.pointerId); } catch { /* opcional */ }
+      if (this.menu) { this.cerrarMenu(); return; }
       if (this.fase === 'separar') {
         this.stroke = { pid: e.pointerId, px: e.clientX, py: e.clientY, largo: 0, dentro: this.sobreGrumo(e) };
         this.haz.visible = true;
@@ -191,7 +194,7 @@ export class SeparadorGame extends MinigameBase {
       if (this.fase === 'clasificar') {
         const item = this.piezaBajo(e);
         if (item) {
-          this.arrastre = { item, pid: e.pointerId };
+          this.arrastre = { item, pid: e.pointerId, x0: e.clientX, y0: e.clientY, movido: false };
           item.obj.userData.origen = item.obj.position.clone();
           this.audio.play('interact', { volume: 0.25 });
         }
@@ -208,12 +211,19 @@ export class SeparadorGame extends MinigameBase {
         return;
       }
       if (this.arrastre && e.pointerId === this.arrastre.pid && p) {
-        this.arrastre.item.obj.position.set(clamp(p.x, -5.2, 5.2), PLANO_Y + 0.3, clamp(p.z, -4.2, 2.4));
+        const a = this.arrastre;
+        if (!a.movido && Math.hypot(e.clientX - a.x0, e.clientY - a.y0) > 10) a.movido = true;
+        if (!a.movido) return;
+        a.item.obj.position.set(clamp(p.x, -5.2, 5.2), PLANO_Y + 0.3, clamp(p.z, -4.2, 2.4));
+        this.marcarContenedor(this.contenedorBajo(a.item.obj.position)?.id ?? null);
       }
     };
     const up = (e) => {
       if (this.stroke && (!e || e.pointerId === undefined || e.pointerId === this.stroke.pid)) this.terminarStroke();
-      if (this.arrastre && (!e || e.pointerId === undefined || e.pointerId === this.arrastre.pid)) this.soltarPieza();
+      if (this.arrastre && (!e || e.pointerId === undefined || e.pointerId === this.arrastre.pid)) {
+        if (this.arrastre.movido) this.soltarPieza();
+        else { const { item } = this.arrastre; this.arrastre = null; this.abrirMenu(item); }
+      }
     };
     const blur = () => up();
     dom.addEventListener('pointerdown', down);
@@ -228,6 +238,52 @@ export class SeparadorGame extends MinigameBase {
     this.listeners.push(() => dom.removeEventListener('pointercancel', up));
     this.listeners.push(() => window.removeEventListener('pointerup', up));
     this.listeners.push(() => window.removeEventListener('blur', blur));
+  }
+
+  contenedorBajo(p) {
+    return CONTENEDORES.find((k) => Math.abs(p.x - k.x) < 1.6 && p.z < -1.5) ?? null;
+  }
+
+  /** Resalta el contenedor sobre el que pasa la pieza arrastrada */
+  marcarContenedor(id) {
+    this.pins.forEach((pin) => pin.el.classList.toggle('is-over', pin.id === id));
+  }
+
+  /** Resalta el contenedor al que toca llevar la pieza (o ninguno) */
+  destinoSugerido(id) {
+    this.pins.forEach((pin) => pin.el.classList.toggle('is-target', pin.id === id));
+  }
+
+  /* =============================================================== menu */
+
+  /** Tocar una pieza: los tres contenedores como botones */
+  abrirMenu(item) {
+    this.cerrarMenu();
+    if (!item || item.hecha || this.fase !== 'clasificar') return;
+    const el = document.createElement('div');
+    el.className = 'dg-menu';
+    el.setAttribute('role', 'dialog');
+    el.innerHTML = `
+      <p class="dg-menu__titulo">${T.guia.menu(T.guia.piezas[item.id])}</p>
+      <div class="dg-menu__botones dg-menu__botones--col">
+        ${CONTENEDORES.map((c) => `<button type="button" data-c="${c.id}" class="dg-menu__btn--${c.id}">${T.contenedores[c.id].titulo}<small>${T.contenedores[c.id].sub}</small></button>`).join('')}
+      </div>`;
+    this.el.hud.appendChild(el);
+    this.menu = { item, el };
+    this.guia.ocultar();
+    el.querySelectorAll('[data-c]').forEach((b) => b.addEventListener('click', () => {
+      const destino = b.dataset.c;
+      this.cerrarMenu();
+      if (!item.hecha && this.fase === 'clasificar') this.clasificar(item, destino);
+    }));
+    el.querySelector('[data-c]').focus({ preventScroll: true });
+  }
+
+  cerrarMenu() {
+    if (!this.menu) return;
+    this.menu.el.remove();
+    this.menu = null;
+    this.guia.mostrar();
   }
 
   puntoPlano(e) {
@@ -282,6 +338,8 @@ export class SeparadorGame extends MinigameBase {
     const datos = this.grumos[this.indice];
     this.fase = 'llega';
     this.renderLabel();
+    this.guia.guiar(T.guia.llega, '🫧');
+    this.destinoSugerido(null);
     this.actual = this.crearGrumo(datos);
     // llega flotando desde la cienaga hasta la mesa
     const desde = new THREE.Vector3(-9, MESA_Y + 2.2, -4);
@@ -344,7 +402,6 @@ export class SeparadorGame extends MinigameBase {
     const g = this.actual;
     this.fase = 'escuchar';
     this.renderLabel();
-    this.voz.hablar(`${g.datos.titulo}. ${g.datos.texto}`);
     this.panel({
       eyebrow: `${T.pasos.escuchar} · ${g.datos.titulo}`,
       html: `<p class="dg-escena">${escapar(g.datos.texto)}</p>${g.datos.tipo === 'dilema' ? `<p class="dg-sub">${T.avisos.dilema}</p>` : ''}`,
@@ -357,7 +414,9 @@ export class SeparadorGame extends MinigameBase {
     const g = this.actual;
     this.fase = 'separar';
     this.renderLabel();
-    this.say(T.pasos.separar.toUpperCase() + ' · ARRASTRA SOBRE LA ESCENA', 2400);
+    this.guia.guiar(T.guia.separar, '🖐️');
+    this.guia.progreso('');
+    this.pistas.poner('frotar', 'frotar', CENTRO);
   }
 
   /** Cada tramo de arrastre sobre el grumo tira de la sustancia */
@@ -368,6 +427,7 @@ export class SeparadorGame extends MinigameBase {
     // resistencia: los primeros tirones rinden poco; insistir rinde mas
     const rendimiento = 0.0009 + Math.min(0.0022, g.strokes * 0.00035);
     g.sep = Math.min(SEP_META, g.sep + px * rendimiento);
+    this.guia.progreso(`${T.guia.separando} ${Math.round(g.sep * 100)} %`);
     if (Math.random() < 0.06) this.audio.play('rub', { volume: 0.2, rate: 0.9 + Math.random() * 0.3 });
   }
 
@@ -378,23 +438,22 @@ export class SeparadorGame extends MinigameBase {
     const g = this.actual;
     if (!g || !s || s.largo < STROKE_MIN_PX) return;
     g.strokes += 1;
+    this.pistas.quitar('frotar');
     if (!g.blobs.length) {
-      // trampa: insistir no despega nada; a la tercera se avisa
-      if (g.strokes === 3 && !g.avisoNada) {
+      // trampa: insistir no despega nada; a la segunda se dice y se deja decidir
+      if (g.strokes === 2 && !g.avisoNada) {
         g.avisoNada = true;
-        this.say(T.avisos.nadaQueSeparar, 3200);
-        this.showNote({ title: g.datos.titulo, text: T.avisos.nadaQueSeparar + ' Si es así, la escena entera va al contenedor de la diferencia.', seconds: 7 });
-        this.voz.hablar(T.avisos.nadaQueSeparar);
+        this.guia.avisar(T.avisos.nadaQueSeparar, 'grima', 2600);
         this.fase = 'clasificar';
         this.prepararPiezas();
-      } else if (g.strokes > 3) {
+      } else if (g.strokes > 2) {
         this.nitidez = clamp(this.nitidez - 1, 0, 100);
       }
       this.audio.play('bubble', { volume: 0.2 });
       return;
     }
     if (g.sep >= SEP_META) this.completarSeparacion();
-    else if (g.strokes === 2) this.say(T.avisos.separando, 2000);
+    else if (g.strokes === 2) this.guia.avisar(T.avisos.separando, 'info', 1600);
   }
 
   completarSeparacion() {
@@ -408,7 +467,7 @@ export class SeparadorGame extends MinigameBase {
     g.blobs.forEach((b) => { g.group.remove(b); g.sustancia.add(b); b.position.copy(b.userData.fuera).sub(new THREE.Vector3(1.9, -0.55, 0.2)); });
     g.sustancia.position.set(1.9, -0.55, 0.2);
     g.sustancia.visible = true;
-    this.say(T.avisos.separado, 2600);
+    this.guia.avisar(T.avisos.separado, 'ok', 2400);
     this.later(() => { this.fase = 'clasificar'; this.prepararPiezas(); }, 900);
   }
 
@@ -427,14 +486,25 @@ export class SeparadorGame extends MinigameBase {
       g.piezas.push({ id: 'grumo', obj: g.group, hecha: false });
     }
     this.renderLabel();
-    this.say(T.pasos.clasificar.toUpperCase() + ' · ARRASTRA CADA PARTE A UN CONTENEDOR', 3000);
+    this.guiarClasificacion();
+  }
+
+  /** La guia dice que pieza toca y se ilumina el contenedor que le corresponde */
+  guiarClasificacion() {
+    const g = this.actual;
+    if (!g || this.fase !== 'clasificar') return;
+    if (g.datos.tipo === 'dilema') { this.guia.guiar(T.guia.dilema, '⚖️'); this.destinoSugerido(null); return; }
+    if (!g.separado) { this.guia.guiar(T.guia.nadaQueSeparar, '👉'); this.destinoSugerido(null); return; }
+    if (!g.rechazoHecho) { this.guia.guiar(T.guia.conducta, '👉'); this.destinoSugerido('rechazo'); return; }
+    if (!g.personaHecha) { this.guia.guiar(T.guia.persona, '👉'); this.destinoSugerido('persona'); return; }
+    this.destinoSugerido(null);
   }
 
   soltarPieza() {
     const { item } = this.arrastre;
     this.arrastre = null;
-    const p = item.obj.position;
-    const c = CONTENEDORES.find((k) => Math.abs(p.x - k.x) < 1.6 && p.z < -1.5);
+    this.marcarContenedor(null);
+    const c = this.contenedorBajo(item.obj.position);
     if (!c) { this.devolver(item); return; }
     this.clasificar(item, c.id);
   }
@@ -452,7 +522,7 @@ export class SeparadorGame extends MinigameBase {
     const tipo = g.datos.tipo;
     const esDilema = tipo === 'dilema';
     const aviso = (texto, sonido = 'lowNote', delta = 0) => {
-      this.say(texto, 3000);
+      this.guia.avisar(texto, delta < 0 ? 'mal' : 'ok', 3200);
       this.audio.play(sonido, { volume: 0.35 });
       this.nitidez = clamp(this.nitidez + delta, 0, 100);
       this.renderLabel();
@@ -465,7 +535,7 @@ export class SeparadorGame extends MinigameBase {
       aviso(T.avisos.danoEnDiferencia, 'lowNote', -4); this.devolver(item); return;
     }
     if (item.id === 'persona') {
-      if (destino === 'persona') { this.meter(item, destino); item.hecha = true; g.personaHecha = true; aviso(T.avisos.personaVuelve, 'warm', 4); this.comprobarGrumo(); return; }
+      if (destino === 'persona') { this.meter(item, destino); item.hecha = true; g.personaHecha = true; aviso(T.avisos.personaVuelve, 'warm', 4); this.guiarClasificacion(); this.comprobarGrumo(); return; }
       if (destino === 'rechazo') {
         this.stats.personaRechazada += 1;
         if (esDilema) { this.meter(item, destino); item.hecha = true; g.personaHecha = true; g.clasificacion = 'persona→rechazo'; this.comprobarGrumo(); return; }
@@ -529,12 +599,13 @@ export class SeparadorGame extends MinigameBase {
         g.etiqueta = id;
         this.cerrarPanel();
         const bien = id === g.datos.conducta;
-        if (bien) { this.stats.etiquetas += 1; this.nitidez = clamp(this.nitidez + 4, 0, 100); this.say(T.avisos.etiquetaBien, 2400); this.audio.play('chime', { volume: 0.35 }); }
-        else { this.nitidez = clamp(this.nitidez + 1, 0, 100); this.say(T.avisos.etiquetaOtra, 2600); this.audio.play('soften', { volume: 0.3 }); }
+        if (bien) { this.stats.etiquetas += 1; this.nitidez = clamp(this.nitidez + 4, 0, 100); this.guia.avisar(T.avisos.etiquetaBien, 'ok'); this.audio.play('chime', { volume: 0.35 }); }
+        else { this.nitidez = clamp(this.nitidez + 1, 0, 100); this.guia.avisar(T.avisos.etiquetaOtra, 'info'); this.audio.play('soften', { volume: 0.3 }); }
         item.hecha = true;
         g.rechazoHecho = true;
         this.fase = 'clasificar';
         this.renderLabel();
+        this.guiarClasificacion();
         this.comprobarGrumo();
       }))
     });
@@ -556,7 +627,6 @@ export class SeparadorGame extends MinigameBase {
     const g = this.actual;
     this.stats.dilemas += 1;
     this.cienaga.sumar(0.04);
-    this.voz.hablar(g.datos.tension);
     this.panel({
       eyebrow: `${g.datos.titulo} · ${T.avisos.dilema}`,
       html: `<p class="dg-escena">${escapar(g.datos.tension)}</p><h3>${T.criterios.pregunta}</h3>
@@ -589,7 +659,7 @@ export class SeparadorGame extends MinigameBase {
         setIslandData(ISLAND, { diario: [...(datos.diario ?? []), entrada] });
         this.cerrarPanel();
         this.audio.play('paper', { volume: 0.35 });
-        this.say('GUARDADO EN TU DIARIO', 2000);
+        this.guia.avisar(T.avisos.guardado, 'ok', 2000);
         this.later(() => this.terminarGrumo(), 900);
       }))
     });
@@ -597,6 +667,11 @@ export class SeparadorGame extends MinigameBase {
 
   terminarGrumo() {
     const g = this.actual;
+    this.cerrarMenu();
+    this.pistas.limpiar();
+    this.destinoSugerido(null);
+    this.marcarContenedor(null);
+    if (this.indice + 1 < this.grumos.length) this.guia.guiar(T.guia.siguiente, '🫧');
     if (g.datos.tipo === 'diferencia') this.stats.totalDiferencias += 1;
     this.advanceObjective(1);
     this.cienaga.setClaridad(clamp(this.nitidez / 100, 0.2, 0.95));
@@ -643,6 +718,7 @@ export class SeparadorGame extends MinigameBase {
       if (this.fase === 'llega' || this.fase === 'escuchar') g.group.rotation.y += dt * 0.15;
     }
     this.updatePins();
+    this.pistas.update();
   }
 
   updatePins() {
@@ -657,6 +733,8 @@ export class SeparadorGame extends MinigameBase {
 
   /** Panel sobre la escena (sin pausar el agua). `botones` = [{texto, primario, accion}] */
   panel({ eyebrow = '', html = '', botones = [], onMount = null }) {
+    this.cerrarMenu();
+    this.guia.ocultar();
     this.el.overlay.innerHTML = `
       <div class="i3d-panel i3d-panel--card dg-panel" role="dialog" aria-modal="true" aria-label="${escapar(eyebrow)}">
         ${eyebrow ? `<p class="i3d-intro__eyebrow">${escapar(eyebrow)}</p>` : ''}
@@ -670,12 +748,16 @@ export class SeparadorGame extends MinigameBase {
     return p;
   }
 
-  cerrarPanel() { this.el.overlay.innerHTML = ''; }
+  cerrarPanel() { this.el.overlay.innerHTML = ''; this.guia.mostrar(); }
 
   /* ============================================================= cierre */
 
   async cerrar() {
     this.fase = 'fin';
+    this.cerrarMenu();
+    this.pistas.limpiar();
+    this.destinoSugerido(null);
+    this.guia.ocultar();
     this.renderLabel();
     const respuestas = [];
     for (const q of T.reevaluacion) {
@@ -716,7 +798,6 @@ export class SeparadorGame extends MinigameBase {
       </div>`;
     this.el.overlay.querySelector('[data-ok]').focus({ preventScroll: true });
     this.el.overlay.querySelector('[data-ok]').addEventListener('click', () => { this.el.overlay.innerHTML = ''; this.finish(); });
-    this.voz.hablar(T.feedback.cierre);
   }
 
   get completionPayload() {
@@ -724,6 +805,7 @@ export class SeparadorGame extends MinigameBase {
   }
 
   _showPauseMenu() {
+    this.cerrarMenu();
     super._showPauseMenu();
     if (!this.onMenu) return;
     const acciones = this.el.overlay.querySelector('.i3d-panel__actions');
@@ -734,7 +816,11 @@ export class SeparadorGame extends MinigameBase {
   }
 
   onReset() {
-    if (this.actual) { this.scene.remove(this.actual.group); this.liberarGrumo(this.actual); this.actual = null; }
+    this.cerrarMenu();
+    this.pistas.limpiar();
+    this.destinoSugerido(null);
+    this.marcarContenedor(null);
+    if (this.actual) { [this.actual.group, this.actual.sustancia, this.actual.figura].forEach((o) => this.scene.remove(o)); this.liberarGrumo(this.actual); this.actual = null; }
     this.indice = 0;
     this.nitidez = 50;
     this.diario = [];
@@ -748,7 +834,9 @@ export class SeparadorGame extends MinigameBase {
   }
 
   onDispose() {
-    this.voz.dispose();
+    this.cerrarMenu();
+    this.pistas?.dispose();
+    this.guia?.dispose();
     this.pinsEl?.remove();
     this.pasosEl?.remove();
     this.waveEl?.remove();

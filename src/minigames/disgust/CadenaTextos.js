@@ -6,9 +6,9 @@ export const CADENA = {
   intro: {
     eyebrow: 'La Ciénaga Turbia · La Cadena',
     goal: 'Decide qué dejas pasar y dónde pones un límite',
-    hint: 'Estás en el centro de una red. Por los hilos llegan mensajes hacia ti. Los dañinos son oscuros y viscosos; otros solo son distintos. Cortar lo que no hace daño también ensucia el agua.',
-    keys: [['Arrastrar', 'cortar un hilo'], ['Mantener sobre tu nodo', 'poner un límite'], ['Arrastrar un paquete a la baliza', 'pedir ayuda (2 por ronda)'], ['Nada', 'dejar pasar']],
-    touch: [['Deslizar', 'cortar un hilo'], ['Mantener el dedo en tu nodo', 'poner un límite'], ['Arrastrar el paquete a la baliza', 'pedir ayuda']]
+    hint: 'Eres el nodo del centro. Por los hilos llegan mensajes hacia ti: los oscuros y pegajosos hacen daño; los translúcidos solo son distintos. Toca un mensaje y elige qué hacer con él. Empiezas con una práctica corta.',
+    keys: [['Tocar un mensaje', 'elegir: cortar, responder, pedir ayuda o dejar pasar'], ['Arrastrar cruzando un hilo', 'cortar (atajo)'], ['Mantener sobre tu nodo', 'responder (atajo)'], ['Arrastrar a la baliza', 'pedir ayuda (atajo)']],
+    touch: [['Tocar un mensaje', 'elegir qué hacer'], ['Deslizar cruzando un hilo', 'cortar'], ['Mantener el dedo en tu nodo', 'responder']]
   },
   hud: {
     claridad: 'Claridad del agua',
@@ -19,26 +19,47 @@ export const CADENA = {
     ronda: 'Ronda'
   },
   rondas: [
-    { titulo: 'Ronda 1 · Llega el primer mensaje', nota: 'Fíjate en la textura: lo dañino es oscuro y pegajoso. Lo raro es solo translúcido.' },
-    { titulo: 'Ronda 2 · Más hilos', nota: 'Hay más gente en la red. Lo que dejas pasar se replica.' },
-    { titulo: 'Ronda 3 · Se acelera', nota: 'Mantén el dedo sobre tu nodo para responder con un límite en vez de solo cortar.' },
-    { titulo: 'Ronda 4 · Segunda fila', nota: 'La red se abre a otra fila de nodos. Reserva la ayuda para lo grave.' },
-    { titulo: 'Ronda 5 · Habla de ti', nota: 'El último paquete habla de ti. Tienes las mismas opciones de siempre.' }
+    { titulo: 'Ronda 1 · Llega el primer mensaje' },
+    { titulo: 'Ronda 2 · Más hilos: lo que dejas pasar se replica' },
+    { titulo: 'Ronda 3 · Se acelera' },
+    { titulo: 'Ronda 4 · Segunda fila: guarda la ayuda para lo grave' },
+    { titulo: 'Ronda 5 · El último mensaje habla de ti' }
   ],
+  // Practica guiada (solo la primera vez): un mensaje cada vez, sin prisa.
+  // `hilo`: izquierda | derecha | frente. `pista`: corte | hold | baliza | null.
+  practica: {
+    inicio: 'Antes de empezar, una práctica corta: un mensaje cada vez y sin prisa.',
+    saltar: 'Saltar la práctica',
+    pasos: [
+      { id: 'rumor', tipo: 'dano', hilo: 'izquierda', pista: 'corte', icono: '✂️', texto: 'Un mensaje <b>dañino</b> (oscuro y pegajoso) espera en el hilo. <b>Arrastra cruzando el hilo</b> por delante de él para cortarlo, o <b>tócalo</b> y elige «Cortar».' },
+      { id: 'comida', tipo: 'trampa', hilo: 'derecha', pista: null, icono: '🫧', texto: 'Este es <b>translúcido</b>: solo es distinto, no hace daño. <b>No hagas nada</b> y deja que llegue.' },
+      { id: 'apodo', tipo: 'dano', hilo: 'frente', pista: 'hold', icono: '🗣️', texto: 'Otro dañino. Esta vez <b>mantén pulsado tu nodo</b>, el brillante del centro, y elige con qué palabras respondes.' },
+      { id: 'foto', tipo: 'dano', hilo: 'izquierda', pista: 'baliza', icono: '🕯️', texto: 'Este es grave. <b>Arrástralo hasta la baliza</b>, la figura con el farol, para pedir ayuda.' }
+    ],
+    fin: '¡Eso es todo! Ahora en serio: los mensajes no esperan. Empieza la ronda 1.'
+  },
+  // Guia fija durante las rondas
+  guia: {
+    ronda: 'Toca un mensaje y elige qué hacer con él · o usa los gestos de la práctica',
+    menu: '¿Qué haces con este mensaje?',
+    fin: 'Fin de la partida'
+  },
+  // Botones al tocar un mensaje
+  menu: { cortar: 'Cortar', responder: 'Responder', ayuda: 'Pedir ayuda', pasar: 'Dejar pasar' },
   avisos: {
-    cortado: 'Cortado: el paquete se disuelve',
-    dejoPasar: (n) => `Pasó y se replicó: ${n} personas más`,
-    grima: 'Te dio grima, pero nadie está haciendo daño',
-    grimaLargo: 'Eso no era un daño: era una diferencia. La señal de desagrado no siempre señala algo que hay que cortar.',
-    diferenciaPaso: 'Dejaste pasar algo que solo era distinto. Bien visto.',
+    cortado: 'Cortado: el mensaje se disuelve y el agua se aclara',
+    dejoPasar: (n) => `Llegó al centro y se replicó: ${n} personas más lo reciben. El agua se enturbia`,
+    dejasPasar: 'Lo dejas seguir. Si llega al centro, pasa al grupo',
+    grima: 'Te dio grima, pero nadie estaba haciendo daño: era una diferencia, no un daño',
+    diferenciaPaso: 'Dejaste pasar algo que solo era distinto. Bien visto',
     asertivo: 'Límite claro: los hilos vecinos se aclaran',
-    agresivo: 'Cortaste, pero la burla ensució otro hilo',
-    agresivoLargo: 'Responder con burla también ensucia: el paquete se fue, pero el agua se enturbió en otro hilo.',
-    evasivo: 'No cambió nada: el paquete sigue',
-    ayuda: 'Pediste ayuda: el paquete queda en buenas manos',
+    agresivo: 'Cortaste, pero la burla ensució otro hilo: responder con burla también enturbia',
+    evasivo: 'No cambió nada: el mensaje sigue su camino',
+    ayuda: 'Pediste ayuda: el mensaje queda en buenas manos',
     sinAyuda: 'Ya usaste las 2 ayudas de esta ronda',
-    termometro: 'Tu cuerpo ya te avisó: eso cruza algo que valoras.',
-    sobreTi: 'Este habla de ti. Tienes las mismas opciones.',
+    termometro: 'Tu cuerpo ya te avisó: eso cruza algo que valoras',
+    sobreTi: 'Este habla de ti. Tienes las mismas opciones',
+    nadieLlega: 'No hay ningún mensaje llegando ahora',
     finRonda: (r) => `Fin de la ronda ${r}`
   },
   eco: {

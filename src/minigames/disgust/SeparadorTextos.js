@@ -8,9 +8,23 @@ export const SEPARADOR = {
   intro: {
     eyebrow: 'La Ciénaga Turbia · El Separador',
     goal: 'Separa la conducta de la persona',
-    hint: 'Llegan escenas envueltas en una sustancia oscura. La sustancia es lo que hizo; la figura es quien lo hizo. Despega una de la otra (cuesta: insiste) y clasifica cada parte. Algunas escenas no traen daño, solo diferencia: esas van enteras a su contenedor.',
-    keys: [['Arrastrar sobre la escena', 'despegar la sustancia'], ['Arrastrar una parte a un contenedor', 'clasificar'], ['Sin reloj', 'tómate el tiempo que necesites']],
-    touch: [['Deslizar sobre la escena', 'despegar la sustancia'], ['Arrastrar a un contenedor', 'clasificar']]
+    hint: 'Llegan escenas envueltas en una sustancia oscura: la sustancia es lo que alguien hizo; la figura es quien lo hizo. Frota para despegarlas, y lleva cada parte a su contenedor. Algunas escenas no traen daño, solo diferencia. Sin reloj: abajo siempre pone qué toca hacer.',
+    keys: [['Frotar la burbuja', 'despegar la sustancia (insiste)'], ['Tocar una parte', 'elegir su contenedor'], ['Arrastrar una parte a un contenedor', 'clasificar'], ['Sin reloj', 'tómate el tiempo que necesites']],
+    touch: [['Frotar la burbuja', 'despegar la sustancia'], ['Tocar una parte', 'elegir su contenedor'], ['Arrastrar a un contenedor', 'clasificar']]
+  },
+  // Guia fija (abajo): que toca hacer en cada fase
+  guia: {
+    llega: 'Llega una escena desde la ciénaga…',
+    escuchar: 'Lee la escena y pulsa Continuar',
+    separar: '<b>Frota la burbuja</b>: arrastra sobre ella una y otra vez para despegar la sustancia oscura de la persona',
+    separando: 'Separado',
+    nadaQueSeparar: 'No se despega nada. Si crees que aquí no hay daño, <b>toca o arrastra la escena entera</b> hasta su contenedor',
+    conducta: 'Toca o arrastra la <b>sustancia oscura</b> hasta «Esto rechazo»',
+    persona: 'Ahora toca o arrastra a la <b>persona</b> hasta «Esta persona»',
+    dilema: 'Es un dilema: decide tú a dónde va cada parte. Toca o arrastra',
+    menu: (pieza) => `¿A dónde va ${pieza}?`,
+    piezas: { conducta: 'la sustancia oscura', persona: 'la persona', grumo: 'la escena entera' },
+    siguiente: 'Bien. Llega la siguiente escena…'
   },
   hud: { nitidez: 'Nitidez', grumo: 'Escena' },
   pasos: { escuchar: 'Escuchar', separar: 'Separar', clasificar: 'Clasificar', paso: 'Un paso real' },
@@ -22,7 +36,7 @@ export const SEPARADOR = {
   avisos: {
     separando: 'Insiste: la sustancia se resiste',
     separado: 'Separado: la conducta a un lado, la persona a otro',
-    nadaQueSeparar: 'No se despega nada. Quizá no hay nada que separar.',
+    nadaQueSeparar: 'No se despega nada. Quizá no hay nada que separar',
     nombra: '¿Cómo se llama lo que hizo?',
     personaVuelve: 'La persona vuelve limpia al grupo',
     aguaAclara: 'El agua se aclara',
@@ -32,7 +46,8 @@ export const SEPARADOR = {
     diferenciaSeparada: 'Intentaste despegar algo que no era daño: era una diferencia.',
     etiquetaBien: 'Nombrarlo le quita niebla',
     etiquetaOtra: 'Se parece, pero lo que hizo se llama de otra forma',
-    dilema: 'Aquí no hay una respuesta única. Lo importante es tu criterio.'
+    dilema: 'Aquí no hay una respuesta única. Lo importante es tu criterio.',
+    guardado: 'Guardado en tu diario de límites'
   },
   criterios: {
     pregunta: '¿Con qué criterio lo clasificaste?',
