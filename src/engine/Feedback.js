@@ -32,7 +32,9 @@ export class Feedback {
   _initParticles(count) {
     this.maxParticles = count;
     const geo = new THREE.TetrahedronGeometry(0.09, 0);
-    const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95, vertexColors: true });
+    // el color va por instancia (instanceColor). Con vertexColors la geometria
+    // sin atributo `color` multiplicaba por negro: todas las particulas salian oscuras
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95 });
     this.particleMesh = new THREE.InstancedMesh(geo, mat, count);
     this.particleMesh.frustumCulled = false;
     this.particleMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);

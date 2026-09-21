@@ -18,7 +18,10 @@
 
 import * as THREE from 'three';
 import { MinigameBase, prefersReducedMotion } from '../../engine/MinigameBase.js';
-import { createGround, createSky, createLights, GEO, scatterInstanced } from '../../engine/worldkit.js';
+import {
+  createGround, createSky, createLights, GEO, scatterInstanced,
+  makeSun, makeClouds, makeMountains, colorGroundByHeight, makeOutline
+} from '../../engine/worldkit.js';
 import { addReward, completeActivity, recordReevaluation, setInitialIntensity } from '../../data/gameState.js';
 
 const GOAL = 12;                  // niveles hasta la cima
@@ -125,6 +128,12 @@ export class FrustrationTowerGame extends MinigameBase {
     // z=12,5 se abre un agujero negro en el centro de la vista
     this.sky = createSky({ top: '#5a8fc7', bottom: '#d6e6f5', size: 160 });
     scene.add(this.sky);
+    // sol, nubes que derivan y una cordillera al fondo, fundida con la niebla
+    this.sunSprite = makeSun({ size: 34, position: [-78, 44, -110] });
+    scene.add(this.sunSprite);
+    this.clouds = makeClouds({ count: 8, radius: 80, height: 22, scale: 1.3, opacity: 0.9 });
+    scene.add(this.clouds);
+    scene.add(makeMountains({ count: 14, radius: 66, spread: 12, color: '#7b8798', height: 15, base: -3 }));
 
     this.lights = createLights({ sunColor: '#fff0d6', sunIntensity: 1.5, hemiSky: '#bcd6ee', hemiGround: '#6b5a48', hemiIntensity: 0.9, area: 26 });
     this.lights.userData.sun.position.set(-12, 24, 16);
@@ -132,25 +141,48 @@ export class FrustrationTowerGame extends MinigameBase {
     this.sun = this.lights.userData.sun;
 
     // meseta de piedra y valle alrededor
-    this.ground = createGround({ size: 120, segments: 40, color: '#8a7a5e', amplitude: 1.6, scale: 0.05, flatRadius: 9 });
+    this.ground = createGround({ size: 120, segments: 48, color: '#8a7a5e', amplitude: 1.6, scale: 0.05, flatRadius: 9 });
+    // valle verde abajo, roca clara en las lomas
+    colorGroundByHeight(this.ground, { low: '#6f8f52', high: '#a08a66', speckle: '#9db86a', amount: 0.3 });
     this.ground.position.y = -1.2;
     scene.add(this.ground);
-    const plateMat = new THREE.MeshStandardMaterial({ color: '#6d5a47', roughness: 1, flatShading: true });
+    const plateMat = new THREE.MeshStandardMaterial({ color: '#7a6853', roughness: 1, flatShading: true });
     const plate = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 5.2, 1.2, 8), plateMat);
     plate.position.y = -0.6;
     plate.receiveShadow = true;
     scene.add(plate);
+    // losa clara encima y un borde de piedras alrededor de la meseta
+    const slab = new THREE.Mesh(new THREE.CylinderGeometry(4.0, 4.2, 0.12, 8), new THREE.MeshStandardMaterial({ color: '#a89478', roughness: 1, flatShading: true }));
+    slab.position.y = 0.02;
+    slab.receiveShadow = true;
+    scene.add(slab);
+    scene.add(scatterInstanced(GEO.rock(), new THREE.MeshStandardMaterial({ color: '#8f8072', roughness: 1, flatShading: true }), 14, (i) => {
+      const a = (i / 14) * Math.PI * 2 + 0.2;
+      return { x: Math.cos(a) * 4.6, y: -0.05, z: Math.sin(a) * 4.6, ry: a * 3, scale: 0.35 + (i % 3) * 0.15 };
+    }));
+    // hierba en los prados
+    scene.add(scatterInstanced(GEO.grass(), new THREE.MeshStandardMaterial({ color: '#86b35a', roughness: 1, flatShading: true }), 220, (i) => {
+      const a = i * 2.399 + 1;
+      const r = 6 + (i % 40) * 0.62;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      return { x, y: this.ground.userData.heightAt(x, z) - 1.2 + 0.22, z, ry: i, scale: 0.8 + (i % 3) * 0.3 };
+    }));
 
-    // arbustos y rocas que se moveran con el viento
-    this.bushMat = new THREE.MeshStandardMaterial({ color: '#7f9a5a', roughness: 1, flatShading: true });
-    this.bushes = scatterInstanced(GEO.coneTree(), this.bushMat, 40, (i) => {
+    // pinos con tronco (dos verdes) y rocas alrededor
+    const treeAt = (i) => {
       const a = i * 2.399;
       const r = 8 + (i % 6) * 2.2;
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
-      return { x, y: this.ground.userData.heightAt(x, z) - 1.2 + 0.7, z, ry: a, scale: 0.6 + (i % 4) * 0.25 };
-    });
+      return { x, z, y: this.ground.userData.heightAt(x, z) - 1.2, s: 0.6 + (i % 4) * 0.25, a };
+    };
+    this.bushMat = new THREE.MeshStandardMaterial({ color: '#6f9a50', roughness: 1, flatShading: true });
+    const bushMat2 = new THREE.MeshStandardMaterial({ color: '#8bb266', roughness: 1, flatShading: true });
+    this.bushes = scatterInstanced(GEO.coneTree(), this.bushMat, 20, (i) => { const t = treeAt(i * 2); return { x: t.x, y: t.y + 0.95 * t.s + 0.35, z: t.z, ry: t.a, scale: t.s }; });
     scene.add(this.bushes);
+    scene.add(scatterInstanced(GEO.coneTree(), bushMat2, 20, (i) => { const t = treeAt(i * 2 + 1); return { x: t.x, y: t.y + 0.95 * t.s + 0.35, z: t.z, ry: t.a, scale: t.s }; }));
+    scene.add(scatterInstanced(GEO.trunk(), new THREE.MeshStandardMaterial({ color: '#6b4a2f', roughness: 1, flatShading: true }), 40, (i) => { const t = treeAt(i); return { x: t.x, y: t.y + 0.4 * t.s, z: t.z, ry: t.a, scale: t.s }; }));
     const rockMat = new THREE.MeshStandardMaterial({ color: '#7a6a58', roughness: 1, flatShading: true });
     scene.add(scatterInstanced(GEO.rock(), rockMat, 30, (i) => {
       const a = i * 1.7 + 0.4;
@@ -161,8 +193,8 @@ export class FrustrationTowerGame extends MinigameBase {
     }));
 
     // la cima: un mastil con bandera a la altura de la meta
-    this.blockMat = new THREE.MeshStandardMaterial({ color: '#d9a066', roughness: 0.8, flatShading: true });
-    this.blockMat2 = new THREE.MeshStandardMaterial({ color: '#c58a52', roughness: 0.8, flatShading: true });
+    this.blockMat = new THREE.MeshStandardMaterial({ color: '#e2a86c', roughness: 0.75, flatShading: true });
+    this.blockMat2 = new THREE.MeshStandardMaterial({ color: '#c98d55', roughness: 0.75, flatShading: true });
     this.smallMat = new THREE.MeshStandardMaterial({ color: '#e8c48a', roughness: 0.8, flatShading: true });
     this.helpMat = new THREE.MeshStandardMaterial({ color: '#9fd8c0', roughness: 0.8, flatShading: true });
     this.blockGeo = new THREE.BoxGeometry(1, BLOCK_H, BLOCK_D);
@@ -179,10 +211,11 @@ export class FrustrationTowerGame extends MinigameBase {
     scene.add(goalLine);
     this.goalLine = goalLine;
 
-    // bloque que se desliza
+    // bloque que se desliza (con contorno, como todos: aspecto de dibujo)
     this.slider.mesh = new THREE.Mesh(this.blockGeo, this.blockMat);
     this.slider.mesh.castShadow = true;
     this.slider.mesh.visible = false;
+    this.slider.mesh.add(makeOutline(this.blockGeo, { color: '#3a2412', opacity: 0.4 }));
     scene.add(this.slider.mesh);
 
     // la mano que ayuda: una manita de luz que aparece sobre el bloque
@@ -374,6 +407,7 @@ export class FrustrationTowerGame extends MinigameBase {
     const mesh = new THREE.Mesh(this.blockGeo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.add(makeOutline(this.blockGeo, { color: '#3a2412', opacity: 0.4 }));
     mesh.scale.set(overlap, 1, 1);
     mesh.position.set((left + right) / 2, this.topY + BLOCK_H / 2, 0);
     this.scene.add(mesh);
@@ -395,6 +429,7 @@ export class FrustrationTowerGame extends MinigameBase {
 
   spawnDebris(x, y, w, dir, vx) {
     const mesh = new THREE.Mesh(this.blockGeo, this.slider.mesh.material);
+    mesh.add(makeOutline(this.blockGeo, { color: '#3a2412', opacity: 0.4 }));
     mesh.scale.set(Math.max(0.1, w), 1, 1);
     mesh.position.set(x, y, 0);
     this.scene.add(mesh);
@@ -635,6 +670,9 @@ export class FrustrationTowerGame extends MinigameBase {
     sky.bottomColor.value.lerpColors(SKY.calm[1], SKY.tense[1], k);
     this.scene.fog.color.lerpColors(FOG.calm, FOG.tense, k);
     this.sun.intensity = 1.5 - k * 0.5;
+    this.clouds.userData.update(dt);
+    this.clouds.userData.material.color.setRGB(1 - k * 0.45, 1 - k * 0.47, 1 - k * 0.5);
+    this.sunSprite.material.opacity = 1 - k * 0.7;
     const wantY = Math.max(1.8, this.topY * 0.75 + 1.2);
     this.camTarget.y += (wantY - this.camTarget.y) * Math.min(1, dt * 2);
     this.camBase.y += ((wantY + 2.4) - this.camBase.y) * Math.min(1, dt * 2);

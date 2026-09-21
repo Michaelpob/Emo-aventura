@@ -10,7 +10,8 @@
 import * as THREE from 'three';
 import { MinigameBase } from '../../engine/MinigameBase.js';
 import {
-  createGround, createSky, createLights, GEO, scatterInstanced, makeAvatar, animateAvatar
+  createGround, createSky, createLights, GEO, scatterInstanced, makeAvatar, animateAvatar,
+  makeSun, makeClouds, makeMountains, colorGroundByHeight, makeOutline
 } from '../../engine/worldkit.js';
 import { addReward, completeActivity, recordReevaluation } from '../../data/gameState.js';
 
@@ -54,8 +55,15 @@ export class JoyOrbsGame extends MinigameBase {
   build() {
     const scene = this.scene;
     scene.fog = new THREE.FogExp2('#bfe3f5', 0.014);
-    this.sky = createSky({ top: '#4aa3d8', bottom: '#cfeaf5' });
+    // la esfera del cielo cabe dentro del plano lejano de la camara (220) aunque
+    // el jugador se aleje del centro: si no, se abre un agujero negro al fondo
+    this.sky = createSky({ top: '#4aa3d8', bottom: '#cfeaf5', size: 150 });
     scene.add(this.sky);
+    // sol, nubes y colinas azuladas al fondo
+    scene.add(makeSun({ size: 40, position: [62, 50, -128] }));
+    this.clouds = makeClouds({ count: 8, radius: 90, height: 24, scale: 1.4 });
+    scene.add(this.clouds);
+    scene.add(makeMountains({ count: 18, radius: 62, spread: 12, color: '#6fa3a8', height: 14, base: -3 }));
 
     this.ground = createGround({
       size: 110,
@@ -64,7 +72,19 @@ export class JoyOrbsGame extends MinigameBase {
       amplitude: 0.8,
       scale: 0.05
     });
+    // prado con dos verdes: mas oscuro en las hondonadas, mas claro en las lomas
+    colorGroundByHeight(this.ground, { low: '#6cae5c', high: '#93d374', speckle: '#b5e08a', amount: 0.35 });
+    // el prado empieza algo apagado y se ilumina con cada orbe (multiplica los colores por vertice)
+    this.ground.material.color.set('#d8e0d2');
     scene.add(this.ground);
+    // hierba baja, siempre presente
+    scene.add(scatterInstanced(GEO.grass(), new THREE.MeshStandardMaterial({ color: '#7cc466', roughness: 1, flatShading: true }), 320, (i) => {
+      const a = i * 2.399 + 0.7;
+      const r = 3 + (i % 60) * 0.5;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r - 4;
+      return { x, y: this.ground.userData.heightAt(x, z) + 0.22, z, ry: i, scale: 0.7 + (i % 3) * 0.3 };
+    }));
 
     this.controller.bounds = { minX: -30, maxX: 30, minZ: -34, maxZ: 30 };
     this.controller.setPosition(0, 2, 14);
@@ -102,16 +122,30 @@ export class JoyOrbsGame extends MinigameBase {
 
   buildPlatforms() {
     const mat = new THREE.MeshStandardMaterial({ color: '#ffd9a0', roughness: 0.8, flatShading: true });
-    const edgeMat = new THREE.MeshStandardMaterial({ color: '#e59d5b', roughness: 0.9, flatShading: true });
+    const grassMat = new THREE.MeshStandardMaterial({ color: '#8fd473', roughness: 0.9, flatShading: true });
+    const edgeMat = new THREE.MeshStandardMaterial({ color: '#c98a56', roughness: 0.9, flatShading: true });
+    const tuftGeo = GEO.grass();
 
-    PLATFORMS.forEach(([x, y, z, w, d]) => {
+    PLATFORMS.forEach(([x, y, z, w, d], pi) => {
       const group = new THREE.Group();
       const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.4, d), mat);
       top.receiveShadow = true;
       top.castShadow = true;
+      top.add(makeOutline(top.geometry, { color: '#7a4a22', opacity: 0.35 }));
       group.add(top);
+      // tapa de hierba y unos penachos en las esquinas
+      const lawn = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, 0.1, d * 0.92), grassMat);
+      lawn.position.y = 0.24;
+      group.add(lawn);
+      for (let k = 0; k < 4; k += 1) {
+        const tuft = new THREE.Mesh(tuftGeo, grassMat);
+        tuft.position.set((k % 2 ? 1 : -1) * (w / 2 - 0.5), 0.5, (k < 2 ? 1 : -1) * (d / 2 - 0.5));
+        tuft.rotation.y = k + pi;
+        group.add(tuft);
+      }
       const skirt = new THREE.Mesh(new THREE.BoxGeometry(w * 0.82, 0.7, d * 0.82), edgeMat);
       skirt.position.y = -0.5;
+      skirt.add(makeOutline(skirt.geometry, { color: '#7a4a22', opacity: 0.3 }));
       group.add(skirt);
       group.position.set(x, y, z);
       this.scene.add(group);
@@ -135,12 +169,19 @@ export class JoyOrbsGame extends MinigameBase {
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(p[0], p[1], p[2]);
+      // halo que gira y haz vertical: se ven desde lejos
+      const halo = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.72, 24), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, opacity: 0.55, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      halo.rotation.x = Math.PI / 2;
+      mesh.add(halo);
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.3, 3.2, 8, 1, true), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      beam.position.y = 1.6;
+      mesh.add(beam);
       this.scene.add(mesh);
       const light = new THREE.PointLight('#ffd166', 1.1, 7, 2);
       light.position.copy(mesh.position);
       this.scene.add(light);
       this.orbs.push({
-        mesh, light, index: i, taken: false,
+        mesh, light, halo, index: i, taken: false,
         base: new THREE.Vector3(p[0], p[1], p[2])
       });
     });
@@ -158,19 +199,30 @@ export class JoyOrbsGame extends MinigameBase {
     }
     this.sceneSpots = spots;
 
-    const flowerMat = new THREE.MeshStandardMaterial({ color: '#ff7eb6', roughness: 0.85, flatShading: true });
+    const flowerMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.85, flatShading: true });
     const treeMat = new THREE.MeshStandardMaterial({ color: '#5fbb6a', roughness: 0.9, flatShading: true });
+    const trunkMat = new THREE.MeshStandardMaterial({ color: '#6b4a2f', roughness: 1, flatShading: true });
     this.flowers = scatterInstanced(GEO.crystal(), flowerMat, 140, (i) => ({
       x: spots[i].x, y: spots[i].y + 0.3, z: spots[i].z, ry: i, scale: 0
     }));
+    // cuatro colores de flor
+    const petals = [new THREE.Color('#ff7eb6'), new THREE.Color('#ffd166'), new THREE.Color('#c9a8ff'), new THREE.Color('#ffffff')];
+    for (let i = 0; i < 140; i += 1) this.flowers.setColorAt(i, petals[i % 4]);
+    if (this.flowers.instanceColor) this.flowers.instanceColor.needsUpdate = true;
+    const treeSpot = (i) => spots[(i * 3 + 11) % spots.length];
     this.trees = scatterInstanced(GEO.coneTree(), treeMat, 70, (i) => {
-      const s = spots[(i * 3 + 11) % spots.length];
+      const s = treeSpot(i);
       return { x: s.x, y: s.y + 1.1, z: s.z, ry: i * 1.3, scale: 0 };
     });
-    this.scene.add(this.flowers, this.trees);
+    this.trunks = scatterInstanced(GEO.trunk(), trunkMat, 70, (i) => {
+      const s = treeSpot(i);
+      return { x: s.x, y: s.y + 0.4, z: s.z, ry: i * 1.3, scale: 0 };
+    });
+    this.scene.add(this.flowers, this.trees, this.trunks);
     this.sceneryRefs = [
-      { mesh: this.flowers, get: (i) => spots[i], yOff: 0.3, max: 0.75 },
-      { mesh: this.trees, get: (i) => spots[(i * 3 + 11) % spots.length], yOff: 1.1, max: 1.4 }
+      { mesh: this.flowers, get: (i) => spots[i], yOff: 0.3, max: 0.6 },
+      { mesh: this.trees, get: (i) => treeSpot(i), yOff: 1.1, max: 1.4, key: 'gt' },
+      { mesh: this.trunks, get: (i) => treeSpot(i), yOff: 0.4, max: 1.4, key: 'gk' }
     ];
     this.growing = [];
     this.grown = 0;
@@ -242,7 +294,7 @@ export class JoyOrbsGame extends MinigameBase {
     let added = 0;
     for (const ref of this.sceneryRefs) {
       for (let i = 0; i < ref.mesh.count && added < perOrb; i += 1) {
-        const key = `g${ref.yOff}`;
+        const key = ref.key ?? `g${ref.yOff}`;
         const s = ref.get(i);
         if (!s || s[key]) continue;
         s[key] = true;
@@ -264,7 +316,7 @@ export class JoyOrbsGame extends MinigameBase {
       p > 0.66 ? '#37b6e8' : p > 0.33 ? '#41ace0' : '#4aa3d8',
       p > 0.66 ? '#fff2c4' : p > 0.33 ? '#e2efdc' : '#cfeaf5'
     );
-    this.feedback.tweenColor(this.ground.material.color, p > 0.5 ? '#8fd473' : '#86c86e', 2);
+    this.feedback.tweenColor(this.ground.material.color, p > 0.5 ? '#ffffff' : '#ecf2e6', 2);
   }
 
   addLayer(name) {
@@ -300,12 +352,18 @@ export class JoyOrbsGame extends MinigameBase {
       this.comboBar.show(false);
     }
 
+    this.clouds.userData.update(dt);
+    // polen que flota cerca del jugador
+    if (Math.random() < 0.25) this.feedback.drizzle({ x: this.controller.position.x, y: this.controller.position.y + 1.5, z: this.controller.position.z }, 4, { color: '#fff3c4', life: 2.4, speed: 0.3, gravity: 0.15, size: 0.5 });
+
     // orbes: flotan, giran y se recogen por contacto
     const p = this.controller.position;
     for (let i = 0; i < this.orbs.length; i += 1) {
       const orb = this.orbs[i];
       if (orb.taken) continue;
       orb.mesh.rotation.y += dt * 1.6;
+      orb.halo.rotation.z += dt * 0.9;
+      orb.halo.material.opacity = 0.4 + Math.sin(this.time * 3 + i) * 0.15;
       orb.mesh.position.y = orb.base.y + Math.sin(this.time * 2 + i) * 0.22;
       orb.light.position.y = orb.mesh.position.y;
       const dx = orb.mesh.position.x - p.x;
@@ -361,7 +419,7 @@ export class JoyOrbsGame extends MinigameBase {
     this.sceneryRefs.forEach((ref) => {
       for (let i = 0; i < ref.mesh.count; i += 1) {
         const s = ref.get(i);
-        if (s) delete s[`g${ref.yOff}`];
+        if (s) delete s[ref.key ?? `g${ref.yOff}`];
         m.makeScale(0, 0, 0);
         ref.mesh.setMatrixAt(i, m);
       }
@@ -369,7 +427,7 @@ export class JoyOrbsGame extends MinigameBase {
     });
     this.sky.userData.setColors('#4aa3d8', '#cfeaf5');
     this.scene.fog.density = 0.014;
-    this.ground.material.color.set('#7fc06a');
+    this.ground.material.color.set('#d8e0d2');
     this.sun.intensity = 1.9;
     this.comboBar.show(false);
     this.controller.setPosition(0, 2, 14);

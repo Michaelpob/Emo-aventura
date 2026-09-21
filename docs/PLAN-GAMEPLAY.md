@@ -611,6 +611,29 @@ cámara fija: la esfera del cielo (210 m) quedaba más allá del plano lejano de
 la cámara (220) cuando la cámara está a más de 10 m del centro.
 
 
+## Ajuste · La torre y el valle, con más vida (y dos arreglos globales)
+
+La Isla de la Frustración se queda con «La torre» y «El valle de los orbes»
+(los dos mini-juegos de la Máquina Terca y el Volcán se descartaron). Mejora
+visual sin tocar la lógica: helpers nuevos en `worldkit.js` (`makeSun`,
+`makeClouds`, `makeMountains`, `colorGroundByHeight`, `makeOutline`).
+
+- Torre: prado por vértices (verde abajo, roca clara arriba), pinos con
+  tronco y dos verdes, hierba, losa y piedras en el borde de la meseta,
+  cordillera al fondo, sol y nubes que derivan y se oscurecen con la
+  frustración; contorno oscuro en cada bloque (aspecto de dibujo).
+- Valle: prado con dos verdes que se ilumina con cada orbe, hierba baja,
+  flores de cuatro colores, árboles con tronco que brotan con la copa,
+  plataformas con tapa de hierba y penachos, halo y haz de luz en cada orbe,
+  colinas, sol, nubes y polen flotando. La esfera del cielo pasa a 150 m: con
+  210 m quedaba fuera del plano lejano de la cámara al alejarse del centro y
+  se veía un agujero negro entre las plataformas.
+- Global: las partículas de `Feedback` salían negras en todas las islas (el
+  material usaba `vertexColors` sin atributo `color`; ahora el color va solo
+  por instancia). Los avisos del centro (`say`) duran como mínimo 1,6 s +
+  0,4 s por palabra. «Reducir movimiento» en el menú de pausa.
+
+
 ## Ajuste · Recarga automática al publicar
 
 GitHub Pages deja cachear el `index.html` diez minutos y los móviles lo

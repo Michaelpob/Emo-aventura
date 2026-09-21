@@ -514,6 +514,7 @@ export class MinigameBase {
           <button class="i3d-btn i3d-btn--primary" type="button" data-resume>Seguir</button>
           <button class="i3d-btn" type="button" data-restart>Reiniciar</button>
           <button class="i3d-btn" type="button" data-how>Cómo se juega</button>
+          <button class="i3d-btn" type="button" data-motion aria-pressed="${gameState.settings.reduceMotion ? 'true' : 'false'}">Reducir movimiento: ${gameState.settings.reduceMotion ? 'sí' : 'no'}</button>
           <button class="i3d-btn" type="button" data-leave>Salir al mapa</button>
         </div>
         <p class="i3d-panel__hint">ESC pausa · F3 rendimiento</p>
@@ -521,6 +522,13 @@ export class MinigameBase {
     `;
     const q = (s) => this.el.overlay.querySelector(s);
     q('[data-resume]').focus({ preventScroll: true });
+    // accesibilidad: sin temblores de camara ni vibraciones (se guarda para todas las islas)
+    q('[data-motion]').addEventListener('click', () => {
+      const on = !gameState.settings.reduceMotion;
+      setSetting('reduceMotion', on);
+      q('[data-motion]').textContent = `Reducir movimiento: ${on ? 'sí' : 'no'}`;
+      q('[data-motion]').setAttribute('aria-pressed', String(on));
+    });
     q('[data-resume]').addEventListener('click', () => this.togglePause(false));
     q('[data-restart]').addEventListener('click', () => { this.togglePause(false); this.reset(); });
     q('[data-how]').addEventListener('click', () => {
@@ -599,10 +607,16 @@ export class MinigameBase {
 
   bar(id) { return this.bars.get(id); }
 
-  /** Texto brevisimo en el centro (3-5 palabras). Se desvanece solo. */
+  /**
+   * Texto brevisimo en el centro (3-5 palabras). Se desvanece solo, pero
+   * nunca antes de poder leerlo: 1,6 s + 0,4 s por palabra como minimo.
+   * ms = 0 lo deja fijo hasta el siguiente aviso o clearSay().
+   */
   say(text, ms = 1600) {
     this.el.center.innerHTML = `<p class="i3d-flash">${text}</p>`;
     if (ms) {
+      const words = String(text).replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+      ms = Math.max(ms, 1600 + words * 400);
       const t = setTimeout(() => {
         if (this.el.center.textContent === text) this.el.center.innerHTML = '';
       }, ms);

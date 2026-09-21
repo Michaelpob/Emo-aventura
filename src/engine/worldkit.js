@@ -157,6 +157,110 @@ export function createSky({ top = '#0d1b2a', bottom = '#3d5a80', size = 210 } = 
   return mesh;
 }
 
+/* ------------------------------------------------- decorado compartido */
+
+/** Sol: un sprite con degradado radial, muy lejos, sin niebla */
+export function makeSun({ color = '#fff6dc', halo = '#ffdea0', size = 46, position = [-12, 22, -150] } = {}) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const g = ctx.createRadialGradient(64, 64, 6, 64, 64, 64);
+  g.addColorStop(0, color);
+  g.addColorStop(0.35, halo);
+  g.addColorStop(1, 'rgba(255,200,140,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sun = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  sun.position.set(position[0], position[1], position[2]);
+  sun.scale.setScalar(size);
+  return sun;
+}
+
+/**
+ * Nubes low-poly (tres esferas aplastadas) en anillo, muy lejos y muy lentas.
+ * Devuelve el grupo; `group.userData.update(dt)` las hace derivar.
+ */
+export function makeClouds({ count = 7, radius = 95, height = 26, scale = 1.4, color = '#ffffff', opacity = 0.85, speed = 0.006 } = {}) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity, fog: false });
+  const geo = new THREE.SphereGeometry(2.2, 8, 6);
+  const clouds = [];
+  for (let i = 0; i < count; i += 1) {
+    const c = new THREE.Group();
+    [[0, 0, 0, 1], [1.6, -0.2, 0.4, 0.75], [-1.5, -0.25, -0.3, 0.7]].forEach(([x, y, z, sc]) => {
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(x * 2, y * 2, z * 2);
+      m.scale.set(sc * 1.6, sc * 0.55, sc);
+      c.add(m);
+    });
+    const a = (i / count) * Math.PI * 2 + 0.4;
+    c.position.set(Math.cos(a) * radius, height + (i % 3) * 5, Math.sin(a) * radius);
+    c.userData.a = a;
+    c.scale.setScalar(scale + (i % 3) * 0.4);
+    group.add(c);
+    clouds.push(c);
+  }
+  group.userData.material = mat;
+  group.userData.update = (dt) => {
+    clouds.forEach((c) => {
+      c.userData.a += dt * speed;
+      c.position.x = Math.cos(c.userData.a) * radius;
+      c.position.z = Math.sin(c.userData.a) * radius;
+    });
+  };
+  return group;
+}
+
+/** Cordillera al fondo: conos en anillo, se funden con la niebla */
+export function makeMountains({ count = 16, radius = 70, spread = 14, color = '#6f7f8a', height = 18, base = -4 } = {}) {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 1, flatShading: true });
+  return scatterInstanced(new THREE.ConeGeometry(9, height, 6), mat, count, (i) => {
+    const a = (i / count) * Math.PI * 2 + (i % 2) * 0.17;
+    const r = radius + (i % 3) * spread;
+    return { x: Math.cos(a) * r, y: base + height / 2 - (i % 3) * 2, z: Math.sin(a) * r, ry: i * 0.7, scale: 0.75 + (i % 4) * 0.28, scaleY: 0.9 + (i % 3) * 0.35 };
+  });
+}
+
+/**
+ * Pinta el terreno por vertices segun la altura: color bajo, alto y una pizca
+ * de variacion para que no parezca plastico. Hay que crear el suelo antes.
+ */
+export function colorGroundByHeight(ground, { low = '#5f8a4a', high = '#8fcf6c', speckle = '#a6d98a', amount = 0.35 } = {}) {
+  const geo = ground.geometry;
+  const pos = geo.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const cLow = new THREE.Color(low);
+  const cHigh = new THREE.Color(high);
+  const cSpk = new THREE.Color(speckle);
+  let min = Infinity;
+  let max = -Infinity;
+  for (let i = 0; i < pos.count; i += 1) { const y = pos.getY(i); if (y < min) min = y; if (y > max) max = y; }
+  const span = Math.max(0.001, max - min);
+  const c = new THREE.Color();
+  for (let i = 0; i < pos.count; i += 1) {
+    const t = (pos.getY(i) - min) / span;
+    c.copy(cLow).lerp(cHigh, t);
+    if ((i * 7) % 5 === 0) c.lerp(cSpk, amount);
+    colors[i * 3] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  ground.material.vertexColors = true;
+  ground.material.color.set('#ffffff');
+  ground.material.needsUpdate = true;
+  return ground;
+}
+
+/** Contorno oscuro de una caja (aspecto de dibujo): lineas de sus aristas */
+export function makeOutline(geometry, { color = '#3a2a1a', opacity = 0.35 } = {}) {
+  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+  return new THREE.LineSegments(new THREE.EdgesGeometry(geometry), mat);
+}
+
 /* ------------------------------------------------------------------ luces */
 
 /** Una sola luz con sombras por escena, mapa 1024 */
