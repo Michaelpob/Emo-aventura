@@ -62,11 +62,11 @@ export const islands = [
   {
     id: 'disgust',
     name: 'Desagrado',
-    displayName: 'Guardianes del Desagrado',
+    displayName: 'La Cienaga Turbia',
     emoji: '🤢',
-    subtitle: 'Isla en construccion: pronto tendra sus nuevos juegos.',
+    subtitle: 'Rechazo social y moral: una red por la que corre un rumor y un taller para separar la conducta de la persona.',
     chapter: 3,
-    reward: 'Semilla de Aceptacion',
+    reward: 'Tijera de Limites y Balanza del Criterio',
     palette: {
       land: '#6ab86a',
       accent: '#3a8a3a',
@@ -77,7 +77,7 @@ export const islands = [
     position: [-4.07, 0, 2.35],
     radius: 1.2,
     height: 0.36,
-    minigame: 'coming-soon'
+    minigame: 'disgust-cienaga'
   },
   {
     id: 'frustration',
@@ -138,5 +138,6 @@ export const minigameLabels = {
   'joy-valley': 'Valle de la Luz',
   'volcano-control': 'Control del Volcan',
   'guided-breathing': 'Respiracion Guiada',
+  'disgust-cienaga': 'La Cienaga Turbia',
   'coming-soon': 'En construccion'
 };

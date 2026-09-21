@@ -1,0 +1,109 @@
+/* ISLA DEL DESAGRADO · «La Cienaga Turbia»
+   Estilos propios (dg-*) sobre la base i3d-* de las islas 3D.
+   Paleta: verdes acidos y ocres, morado apagado para la niebla, blanco frio
+   para lo que se aclara. Contraste minimo 4.5:1 en todo el texto. */
+
+:root {
+  --dg-frio: #e8f1ee;
+  --dg-musgo: #a8d86e;
+  --dg-ocre: #d9b56a;
+  --dg-morado: #8a6ab0;
+  --dg-tinta: rgba(10, 16, 14, 0.94);
+}
+
+/* ------------------------------------------------ flujo de la isla (DOM) */
+.dg-flow { background: #0d1410; }
+.dg-flow .i3d__overlay { padding: 12px; overflow-y: auto; }
+.dg-flow__card { width: min(560px, 100%); text-align: left; }
+.dg-flow__card h3 { text-align: left; font-size: 1.45rem; }
+.dg-flow__card .i3d-intro__eyebrow { text-align: left; color: var(--dg-musgo); }
+.dg-flow__hint { margin: 0 0 10px; font-size: 0.92rem; line-height: 1.5; color: rgba(255, 255, 255, 0.82); }
+.dg-flow__hint--left { text-align: left; }
+.dg-flow__idea { margin: 0 0 10px; padding: 8px 12px; color: var(--dg-frio); border-left: 3px solid var(--dg-musgo); background: rgba(168, 216, 110, 0.08); border-radius: 6px; font-weight: 700; font-size: 0.95rem; line-height: 1.45; }
+.dg-flow__valores { margin: 0 0 14px; font-size: 0.88rem; color: rgba(255, 255, 255, 0.75); }
+.dg-flow__valores em { color: var(--dg-frio); font-style: normal; font-weight: 700; }
+.dg-flow__menu-titulo { margin: 8px 0 4px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dg-ocre); }
+.dg-flow__acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+.dg-link { padding: 0; border: 0; background: none; color: var(--dg-musgo); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+.dg-juegos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0 12px; }
+.dg-juego { display: grid; gap: 6px; padding: 16px 16px 14px; border: 2px solid rgba(255, 255, 255, 0.16); border-radius: 16px; background: rgba(255, 255, 255, 0.06); color: #fff; text-align: left; cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; }
+.dg-juego:hover, .dg-juego:focus-visible { transform: translateY(-2px); border-color: var(--dg-musgo); background: rgba(168, 216, 110, 0.12); }
+.dg-juego strong { font-size: 1.2rem; }
+.dg-juego__sub { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dg-ocre); }
+.dg-juego.is-done .dg-juego__sub { color: var(--dg-musgo); }
+.dg-juego__desc { font-size: 0.88rem; line-height: 1.45; color: rgba(255, 255, 255, 0.78); }
+
+.dg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 14px; }
+.dg-pick { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 12px; border: 2px solid rgba(255, 255, 255, 0.16); border-radius: 12px; background: rgba(255, 255, 255, 0.06); color: #fff; text-align: left; cursor: pointer; transition: border-color 140ms ease, background 140ms ease; }
+.dg-pick b { font-size: 1.3rem; }
+.dg-pick span { display: grid; gap: 2px; font-weight: 700; font-size: 0.92rem; }
+.dg-pick small { font-weight: 500; font-size: 0.76rem; color: rgba(255, 255, 255, 0.7); }
+.dg-pick.is-on { border-color: var(--dg-musgo); background: rgba(168, 216, 110, 0.16); }
+.dg-pick.is-on::after { content: '✓'; margin-left: auto; color: var(--dg-musgo); font-weight: 900; }
+
+/* -------------------------------------------------------- HUD compartido */
+.dg-tools { top: 68px; }
+.dg-tool--info { cursor: default; }
+.dg-tool--info:hover { background: rgba(8, 16, 22, 0.72); }
+.dg-cards { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.dg-card { position: absolute; left: 0; top: 0; width: max-content; max-width: min(300px, 60vw); padding: 8px 12px; border-radius: 12px; font-size: 0.86rem; line-height: 1.35; font-weight: 600; will-change: transform; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4); }
+.dg-card--dano { background: rgba(38, 28, 52, 0.94); color: #efe6f5; border: 1px solid rgba(138, 106, 176, 0.6); }
+.dg-card--dano::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 12px; height: 12px; background: inherit; border-right: 1px solid rgba(138, 106, 176, 0.6); border-bottom: 1px solid rgba(138, 106, 176, 0.6); transform: translateX(-50%) rotate(45deg); }
+.dg-card--trampa { background: rgba(232, 241, 238, 0.88); color: #1d2a26; border: 1px solid rgba(255, 255, 255, 0.7); }
+.dg-card--ti { border-color: var(--dg-ocre); box-shadow: 0 0 0 3px rgba(217, 181, 106, 0.35), 0 10px 24px rgba(0, 0, 0, 0.4); }
+.dg-card[hidden] { display: none; }
+
+.dg-pin { position: absolute; left: 0; top: 0; width: max-content; max-width: 180px; padding: 6px 10px; border-radius: 10px; background: var(--dg-tinta); color: #fff; text-align: center; font-size: 0.78rem; line-height: 1.25; border: 1px solid rgba(255, 255, 255, 0.2); will-change: transform; }
+.dg-pin strong { display: block; font-size: 0.86rem; }
+.dg-pin small { color: rgba(255, 255, 255, 0.72); }
+.dg-pin--rechazo { border-color: var(--dg-morado); }
+.dg-pin--persona { border-color: var(--dg-ocre); }
+.dg-pin--diferencia { border-color: var(--dg-frio); }
+
+.dg-pasos { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 999px; background: rgba(8, 16, 22, 0.72); font-size: 0.74rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.45); white-space: nowrap; }
+.dg-pasos span.is-done { color: rgba(255, 255, 255, 0.8); }
+.dg-pasos span.is-on { color: var(--dg-ocre); }
+.dg-pasos i { font-style: normal; opacity: 0.4; }
+
+/* --------------------------------------------------------- paneles (DOM) */
+.dg-panel { width: min(560px, 100%); }
+.dg-panel--abajo { align-self: end; margin-bottom: 18px; }
+.dg-escena { margin: 4px 0 12px; font-size: 1.05rem; line-height: 1.55; color: #fff; }
+.dg-sub { margin: 10px 0 6px; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dg-ocre); }
+.dg-sub em { font-style: normal; color: #fff; text-transform: none; letter-spacing: 0; font-weight: 700; }
+.dg-lista { margin: 0 0 8px; padding-left: 20px; line-height: 1.5; }
+.dg-lista li + li { margin-top: 6px; }
+.dg-lista--fina { font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); }
+.dg-lista--fina em { color: var(--dg-frio); }
+.dg-diario b { color: var(--dg-musgo); }
+
+.dg-eco { width: min(520px, 100%); text-align: left; }
+.dg-eco h3 { text-align: left; font-size: 1.05rem; margin: 10px 0 8px; }
+.dg-eco__msg { margin: 6px 0 0; padding: 10px 14px; border-radius: 10px; background: rgba(38, 28, 52, 0.85); border: 1px solid rgba(138, 106, 176, 0.5); font-size: 0.95rem; line-height: 1.4; }
+.dg-eco__opciones { display: grid; gap: 8px; }
+.dg-eco__btn { min-height: 48px; padding: 10px 14px; border: 2px solid rgba(255, 255, 255, 0.16); border-radius: 12px; background: rgba(255, 255, 255, 0.06); color: #fff; text-align: left; font-size: 0.95rem; line-height: 1.35; cursor: pointer; transition: border-color 140ms ease, background 140ms ease; }
+.dg-eco__btn:hover, .dg-eco__btn:focus-visible { border-color: var(--dg-musgo); background: rgba(168, 216, 110, 0.12); }
+
+.dg-etiquetas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dg-etiqueta { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 8px 12px; border: 2px solid rgba(255, 255, 255, 0.16); border-radius: 12px; background: rgba(255, 255, 255, 0.06); color: #fff; text-align: left; cursor: pointer; }
+.dg-etiqueta b { font-size: 1.25rem; }
+.dg-etiqueta span { display: grid; gap: 2px; font-weight: 700; font-size: 0.9rem; }
+.dg-etiqueta small { font-weight: 500; font-size: 0.74rem; color: rgba(255, 255, 255, 0.7); }
+.dg-etiqueta:hover, .dg-etiqueta:focus-visible { border-color: var(--dg-morado); background: rgba(138, 106, 176, 0.16); }
+
+.dg-acciones { display: grid; gap: 8px; }
+.dg-accion { min-height: 48px; padding: 10px 14px; border: 2px solid rgba(255, 255, 255, 0.16); border-radius: 12px; background: rgba(255, 255, 255, 0.06); color: #fff; text-align: left; font-weight: 700; cursor: pointer; }
+.dg-accion:hover, .dg-accion:focus-visible { border-color: var(--dg-ocre); background: rgba(217, 181, 106, 0.14); }
+
+@media (max-width: 640px) {
+  .dg-juegos, .dg-grid, .dg-etiquetas { grid-template-columns: 1fr; }
+  .dg-tools { top: 60px; }
+  .dg-pasos { top: 52px; font-size: 0.66rem; }
+  .dg-card { max-width: 70vw; font-size: 0.8rem; }
+  .dg-pin { max-width: 120px; font-size: 0.7rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dg-juego, .dg-pick, .dg-eco__btn { transition: none; }
+}

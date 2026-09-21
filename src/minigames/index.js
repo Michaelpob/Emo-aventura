@@ -15,6 +15,7 @@ import { SurpriseObserveGame } from './surprise/SurpriseObserveGame.js';
 import { FrustrationTowerGame } from './frustration/FrustrationTowerGame.js';
 import { CalmLakeGame } from './calm/CalmLakeGame.js';
 import { FrustrationIslandFlow } from './frustration/FrustrationIslandFlow.js';
+import { DisgustIslandFlow } from './disgust/DisgustIslandFlow.js';
 
 export const minigameRegistry = {
   // Islas 3D jugables
@@ -29,6 +30,7 @@ export const minigameRegistry = {
   'frustration-tower-valley': FrustrationIslandFlow,   // torre (nivel 1) + valle de los orbes (nivel 2)
   'frustration-tower': FrustrationTowerGame,
   'calm-lake': CalmLakeGame,           // solo la torre
+  'disgust-cienaga': DisgustIslandFlow, // La Cadena + El Separador (menu de la isla)
   'surprise-observe': SurpriseObserveGame,
   // EMO-AVENTURA (2D, en migracion a 3D)
   'fear-island': FearIslandGame,

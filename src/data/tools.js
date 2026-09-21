@@ -217,6 +217,24 @@ export const TOOLS = {
     strategy: 'Respiracion y atencion a los sonidos',
     description: 'Recuerda el lago quieto, las voces del bosque que llegan cuando te paras y tu melodia: respirar despacio y escuchar bajan el ritmo.',
     order: 24
+  },
+  'tijera-limites': {
+    id: 'tijera-limites',
+    icon: '✂️',
+    name: 'Tijera de Limites',
+    emotion: 'Desagrado',
+    strategy: 'Poner limites en caliente',
+    description: 'Cortar lo que hace dano, responder sin burla y pedir ayuda para lo grave. Lo que solo es distinto se deja pasar.',
+    order: 25
+  },
+  'balanza-criterio': {
+    id: 'balanza-criterio',
+    icon: '⚖️',
+    name: 'Balanza del Criterio',
+    emotion: 'Desagrado',
+    strategy: 'Separar la conducta de la persona',
+    description: 'Se rechaza lo que alguien hizo, no a quien lo hizo. Y antes de rechazar, mirar si hay un dano o solo una diferencia.',
+    order: 26
   }
 };
 
@@ -225,7 +243,7 @@ export const TOOL_LIST = Object.values(TOOLS).sort((a, b) => a.order - b.order);
 export const BADGES = {
   fear: { id: 'fear', icon: '🕯️', name: 'Guardian del Miedo', island: 'Isla del Miedo' },
   anger: { id: 'anger', icon: '🌋', name: 'Guardian de la Ira', island: 'Al rojo vivo' },
-  disgust: { id: 'disgust', icon: '🍃', name: 'Guardian del Desagrado', island: 'Guardianes del Desagrado' },
+  disgust: { id: 'disgust', icon: '🍃', name: 'Guardian del Desagrado', island: 'La Cienaga Turbia' },
   sadness: { id: 'sadness', icon: '💧', name: 'Guardian de la Tristeza', island: 'La casa en marcha' },
   frustration: { id: 'frustration', icon: '🧗', name: 'Guardian de la Frustración', island: 'La torre y el valle' },
   calm: { id: 'calm', icon: '🪶', name: 'Guardian de la Calma', island: 'El lago sereno' }
