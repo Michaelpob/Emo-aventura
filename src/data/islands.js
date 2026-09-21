@@ -64,7 +64,7 @@ export const islands = [
     name: 'Desagrado',
     displayName: 'Guardianes del Desagrado',
     emoji: '🤢',
-    subtitle: 'Reconoce el desagrado, mide su intensidad y elige como responder.',
+    subtitle: 'Isla en construccion: pronto tendra sus nuevos juegos.',
     chapter: 3,
     reward: 'Semilla de Aceptacion',
     palette: {
@@ -77,7 +77,7 @@ export const islands = [
     position: [-4.07, 0, 2.35],
     radius: 1.2,
     height: 0.36,
-    minigame: 'disgust-territory'
+    minigame: 'coming-soon'
   },
   {
     id: 'frustration',
@@ -130,16 +130,13 @@ export const minigameLabels = {
   'sadness-days': 'Un dia a la vez',
   'sadness-restore': 'El mundo que vuelve',
   'joy-orbs': 'Valle de la Luz',
-  'disgust-sort': 'Guardianes del Desagrado',
-  'disgust-territory': 'Guardianes del Desagrado',
   'frustration-tower-valley': 'La torre · El valle',
   'frustration-tower': 'La torre',
   'calm-lake': 'El lago sereno',
   'surprise-observe': 'El jardin que cambia',
   'fear-island': 'Isla del Miedo',
   'joy-valley': 'Valle de la Luz',
-  'disgust-guardians': 'Guardianes del Desagrado',
   'volcano-control': 'Control del Volcan',
   'guided-breathing': 'Respiracion Guiada',
-  'coming-soon': 'Prototipo listo para ampliar'
+  'coming-soon': 'En construccion'
 };

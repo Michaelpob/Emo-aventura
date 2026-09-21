@@ -3,7 +3,6 @@ import { BreathingCalmGame } from './BreathingCalmGame.js';
 import { ComingSoonGame } from './ComingSoonGame.js';
 import { FearIslandGame } from './fear/FearIslandGame.js';
 import { JoyValleyGame } from './joy/JoyValleyGame.js';
-import { DisgustGuardiansGame } from './disgust/DisgustGuardiansGame.js';
 import { AngerVolcanoGame } from './anger/AngerVolcanoGame.js';
 import { AngerLavaGame } from './anger/AngerLavaGame.js';
 import { FearNightGame } from './fear/FearNightGame.js';
@@ -12,8 +11,6 @@ import { SadnessRestoreGame } from './sadness/SadnessRestoreGame.js';
 import { SadnessDaysGame } from './sadness/SadnessDaysGame.js';
 import { SadnessHouseGame } from './sadness/SadnessHouseGame.js';
 import { JoyOrbsGame } from './joy/JoyOrbsGame.js';
-import { DisgustSortGame } from './disgust/DisgustSortGame.js';
-import { DisgustTerritoryGame } from './disgust/DisgustTerritoryGame.js';
 import { SurpriseObserveGame } from './surprise/SurpriseObserveGame.js';
 import { FrustrationTowerGame } from './frustration/FrustrationTowerGame.js';
 import { CalmLakeGame } from './calm/CalmLakeGame.js';
@@ -29,8 +26,6 @@ export const minigameRegistry = {
   'sadness-days': SadnessDaysGame,
   'sadness-restore': SadnessRestoreGame,
   'joy-orbs': JoyOrbsGame,
-  'disgust-sort': DisgustSortGame,
-  'disgust-territory': DisgustTerritoryGame,
   'frustration-tower-valley': FrustrationIslandFlow,   // torre (nivel 1) + valle de los orbes (nivel 2)
   'frustration-tower': FrustrationTowerGame,
   'calm-lake': CalmLakeGame,           // solo la torre
@@ -38,7 +33,6 @@ export const minigameRegistry = {
   // EMO-AVENTURA (2D, en migracion a 3D)
   'fear-island': FearIslandGame,
   'joy-valley': JoyValleyGame,
-  'disgust-guardians': DisgustGuardiansGame,
   // Isla del Enojo (minijuego existente, sin cambios)
   'guided-breathing': BreathingCalmGame,
   'volcano-control': VolcanoControlGame,

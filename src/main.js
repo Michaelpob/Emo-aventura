@@ -3,7 +3,6 @@ import './styles/emo.css';
 import './styles/animations.css';
 import './styles/fear.css';
 import './styles/joy.css';
-import './styles/disgust.css';
 import './styles/island3d.css';
 import './styles/fear-house.css';
 import './styles/calm.css';
