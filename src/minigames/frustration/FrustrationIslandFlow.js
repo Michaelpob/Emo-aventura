@@ -33,12 +33,13 @@ class FrustrationValleyGame extends JoyOrbsGame {
     await this.showIntro({
       eyebrow: 'La torre · El valle',
       goal: 'Recoge los 12 orbes de luz',
-      hint: 'Ya pasaste lo difícil. Esto es lo que hay detrás de la torre: un valle abierto donde no hay ráfagas ni bloques que se caen. No hay que pulsar nada: los orbes se recogen al tocarlos. Si encadenas varios sin tocar el suelo, suman combo.',
+      hint: 'Ya pasaste lo difícil. Esto es lo que hay detrás de la torre: un valle abierto donde no hay ráfagas ni bloques que se caen. No hay que pulsar nada: los orbes se recogen al tocarlos. La luz más alta te marca el siguiente y el aro brillante, dónde saltar. Si encadenas varios sin tocar el suelo, suman combo.',
       keys: [['W A S D', 'moverte'], ['Espacio', 'saltar'], ['Shift', 'correr'], ['Ratón', 'girar la cámara']],
       touch: [['Joystick', 'moverte'], ['⤒', 'saltar'], ['Arrastra', 'girar la cámara']]
     });
+    this.preloadSounds();
     this.ambient = this.audio.ambient('wind', { volume: 0.18, rate: 1.2 });
-    this.say('RECOGE LOS ORBES', 2400);
+    this.say('SIGUE LA LUZ MÁS ALTA', 2400);
   }
 
   get completionPayload() {

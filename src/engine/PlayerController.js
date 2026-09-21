@@ -51,6 +51,8 @@ export class PlayerController {
     this.yaw = 0;
     this.pitch = 0;
     this.onGround = false;
+    this.airTime = 0;             // segundos desde que se dejo el suelo sin saltar
+    this.jumpBuffer = 0;          // salto pedido justo antes de tocar el suelo
     this.enabled = true;
     this.frozen = false;          // durante una actividad (respiracion, dialogo)
     this.speedScale = 1;          // la emocion puede frenar al jugador
@@ -232,10 +234,19 @@ export class PlayerController {
 
   /* ------------------------------------------------------------ movimiento */
 
+  /**
+   * Salto tolerante: vale tambien justo despues de salir de un borde
+   * («coyote», 0,14 s) y si se pulsa un instante antes de aterrizar (se
+   * guarda y se salta al tocar suelo). Saltar de plataforma en plataforma
+   * deja de exigir el frame exacto sin volverse trivial.
+   */
   tryJump() {
-    if (this.frozen || !this.onGround) return;
+    if (this.frozen) return;
+    if (!this.onGround && this.airTime > 0.14) { this.jumpBuffer = 0.14; return; }
     this.velocity.y = this.cfg.jumpSpeed;
     this.onGround = false;
+    this.airTime = 1;
+    this.jumpBuffer = 0;
     this.emit('jump');
   }
 
@@ -331,8 +342,12 @@ export class PlayerController {
       if (this.velocity.y < -1 && wasAir) this.emit('land', Math.abs(this.velocity.y));
       this.velocity.y = 0;
       this.onGround = true;
+      this.airTime = 0;
+      if (this.jumpBuffer > 0) { this.jumpBuffer = 0; this.tryJump(); }
     } else {
       this.onGround = false;
+      this.airTime += dt;
+      this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
     }
 
     // limites invisibles del mapa

@@ -15,25 +15,28 @@ import {
 } from '../../engine/worldkit.js';
 import { addReward, completeActivity, recordReevaluation } from '../../data/gameState.js';
 
-// Plataformas: [x, y, z, ancho, fondo]
+// Plataformas: [x, y, z, ancho, fondo]. Un camino en zigzag que sube: cada
+// salto pide como mucho 3,5 m de hueco entre bordes y 1,4 m de subida, con el
+// salto tolerante del controlador. Se complica un poco al subir, no mucho.
 const PLATFORMS = [
-  [0, 1.6, -6, 5, 5],
-  [-7, 3.1, -11, 4, 4],
-  [6, 3.6, -12, 4, 4],
-  [0, 5.2, -17, 5, 5],
-  [-10, 4.4, -19, 3.6, 3.6],
-  [10, 5.0, -20, 3.6, 3.6],
-  [0, 7.0, -24, 6, 6],
-  [-6, 2.4, 4, 4, 4],
-  [7, 2.8, 6, 4, 4],
-  [0, 4.2, 10, 5, 5]
+  [0, 1.4, 8, 6, 6],
+  [6, 2.4, 2, 5, 5],
+  [9, 3.4, -3, 5, 5],
+  [4, 4.4, -8, 5, 5],
+  [-3, 5.2, -11, 5, 5],
+  [-9, 4.2, -5, 5, 5],
+  [-11, 5.6, -13, 5, 5],
+  [-5, 6.6, -19, 5, 5],
+  [3, 7.4, -23, 6, 6],
+  [0, 8.6, -30, 7, 7]
 ];
 
-// Orbes: sobre plataformas y en el aire, para premiar el salto encadenado
+// Orbes, en el orden del camino: uno sobre cada plataforma y dos en el aire,
+// en mitad de un salto, para premiar encadenar. La luz alta señala el siguiente.
 const ORBS = [
-  [0, 3.0, -6], [-7, 4.6, -11], [6, 5.1, -12], [0, 6.8, -17],
-  [-10, 5.9, -19], [10, 6.5, -20], [0, 8.6, -24], [-6, 3.9, 4],
-  [7, 4.3, 6], [0, 5.8, 10], [3, 4.4, -9], [-3.5, 4.9, -14]
+  [0, 3.0, 8], [6, 4.0, 2], [9, 5.0, -3], [6.5, 5.6, -5.5],
+  [4, 6.0, -8], [-3, 6.8, -11], [-9, 5.8, -5], [-11, 7.2, -13],
+  [-5, 8.2, -19], [-1, 8.8, -21], [3, 9.0, -23], [0, 10.2, -30]
 ];
 
 const LAYERS = ['pad', 'chime', 'water', 'wind'];
@@ -90,7 +93,7 @@ export class JoyOrbsGame extends MinigameBase {
     this.controller.setPosition(0, 2, 14);
     this.controller.cfg.walkSpeed = 5.2;
     this.controller.cfg.runSpeed = 8.6;
-    this.controller.cfg.jumpSpeed = 7.6;
+    this.controller.cfg.jumpSpeed = 8.2;
     this.controller.cfg.gravity = -17;
 
     this.lights = createLights({
@@ -118,6 +121,36 @@ export class JoyOrbsGame extends MinigameBase {
     this.setObjective(ORBS.length, '●');
     this.comboBar = this.addBar('combo', { icon: '✨', color: '#ffd166', value: 0 });
     this.comboBar.show(false);
+
+    // aro que marca donde esta el siguiente orbe (en el suelo o en su plataforma)
+    this.guideRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.9, 1.25, 32),
+      new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, opacity: 0.7, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    this.guideRing.rotation.x = -Math.PI / 2;
+    this.scene.add(this.guideRing);
+    this.pointNext();
+  }
+
+  /** El siguiente orbe del camino: haz alto y brillante; los demas, tenues */
+  pointNext() {
+    const next = this.orbs.find((o) => !o.taken) ?? null;
+    this.nextOrb = next;
+    this.orbs.forEach((o) => {
+      const isNext = o === next;
+      o.beam.scale.set(isNext ? 1.6 : 0.7, isNext ? 3.2 : 0.8, isNext ? 1.6 : 0.7);
+      o.beam.material.opacity = isNext ? 0.42 : 0.12;
+      o.halo.scale.setScalar(isNext ? 1.5 : 1);
+    });
+    if (!next) { this.guideRing.visible = false; return; }
+    this.guideRing.visible = true;
+    // el aro se apoya en la plataforma bajo el orbe, o en el suelo
+    const b = next.base;
+    let y = this.ground.userData.heightAt(b.x, b.z) + 0.05;
+    for (const p of this.platforms) {
+      if (b.x >= p.minX && b.x <= p.maxX && b.z >= p.minZ && b.z <= p.maxZ) y = Math.max(y, p.top + 0.12);
+    }
+    this.guideRing.position.set(b.x, y, b.z);
   }
 
   buildPlatforms() {
@@ -153,7 +186,7 @@ export class JoyOrbsGame extends MinigameBase {
       this.platforms.push({
         minX: x - w / 2, maxX: x + w / 2,
         minZ: z - d / 2, maxZ: z + d / 2,
-        top: y + 0.2,
+        top: y + 0.3,           // la tapa de hierba
         group,
         baseY: y,
         phase: x * 0.3 + z * 0.2
@@ -177,11 +210,8 @@ export class JoyOrbsGame extends MinigameBase {
       beam.position.y = 1.6;
       mesh.add(beam);
       this.scene.add(mesh);
-      const light = new THREE.PointLight('#ffd166', 1.1, 7, 2);
-      light.position.copy(mesh.position);
-      this.scene.add(light);
       this.orbs.push({
-        mesh, light, halo, index: i, taken: false,
+        mesh, halo, beam, index: i, taken: false,
         base: new THREE.Vector3(p[0], p[1], p[2])
       });
     });
@@ -244,12 +274,18 @@ export class JoyOrbsGame extends MinigameBase {
     await this.showIntro({
       eyebrow: 'Valle de la Luz',
       goal: 'Recoge los 12 orbes de luz',
-      hint: 'No hay que pulsar nada: se recogen al tocarlos. Si encadenas varios sin tocar el suelo, suman combo.',
+      hint: 'No hay que pulsar nada: se recogen al tocarlos. La luz más alta te marca el siguiente orbe y el aro brillante, dónde saltar. Si encadenas varios sin tocar el suelo, suman combo.',
       keys: [['W A S D', 'moverte'], ['Espacio', 'saltar'], ['Shift', 'correr'], ['Ratón', 'girar la cámara']],
       touch: [['Joystick', 'moverte'], ['⤒', 'saltar'], ['Arrastra', 'girar la cámara']]
     });
+    this.preloadSounds();
     this.ambient = this.audio.ambient('wind', { volume: 0.18, rate: 1.2 });
-    this.say('RECOGE LOS ORBES', 2400);
+    this.say('SIGUE LA LUZ MÁS ALTA', 2400);
+  }
+
+  /** Los sonidos se generan la primera vez que suenan: mejor ahora que en mitad de un salto */
+  preloadSounds() {
+    ['interact', 'collect', 'success', 'step', 'stepRun', 'chime', ...LAYERS].forEach((n) => this.audio.buffer(n));
   }
 
   /* =============================================================== recoger */
@@ -257,8 +293,8 @@ export class JoyOrbsGame extends MinigameBase {
   collectOrb(orb) {
     orb.taken = true;
     orb.mesh.visible = false;
-    orb.light.visible = false;
     this.collected += 1;
+    this.pointNext();
 
     // combo: solo cuenta si el jugador esta en el aire
     if (!this.controller.onGround) {
@@ -333,7 +369,9 @@ export class JoyOrbsGame extends MinigameBase {
       count: 46, color: '#ffe9a8', speed: 5.5, life: 2.2, gravity: -1
     });
     this.later(() => {
-      const p = new THREE.Vector3(0, this.ground.userData.heightAt(0, 18), 18);
+      // el portal se abre en la cima, junto al ultimo orbe
+      const top = PLATFORMS[PLATFORMS.length - 1];
+      const p = new THREE.Vector3(top[0], top[1] + 0.3, top[2] - 2.2);
       this.openPortal(p, { color: '#ffd166', label: 'Seguir camino' });
       this.say('CRUZA EL PORTAL', 2000);
     }, 1800);
@@ -364,8 +402,8 @@ export class JoyOrbsGame extends MinigameBase {
       orb.mesh.rotation.y += dt * 1.6;
       orb.halo.rotation.z += dt * 0.9;
       orb.halo.material.opacity = 0.4 + Math.sin(this.time * 3 + i) * 0.15;
+      if (orb === this.nextOrb) orb.beam.material.opacity = 0.34 + Math.sin(this.time * 4) * 0.12;
       orb.mesh.position.y = orb.base.y + Math.sin(this.time * 2 + i) * 0.22;
-      orb.light.position.y = orb.mesh.position.y;
       const dx = orb.mesh.position.x - p.x;
       const dy = orb.mesh.position.y - (p.y + 1.1);
       const dz = orb.mesh.position.z - p.z;
@@ -376,6 +414,11 @@ export class JoyOrbsGame extends MinigameBase {
     for (let i = 0; i < this.platforms.length; i += 1) {
       const pl = this.platforms[i];
       pl.group.position.y = pl.baseY + Math.sin(this.time * 0.8 + pl.phase) * 0.12;
+    }
+    if (this.guideRing.visible) {
+      const s = 1 + Math.sin(this.time * 3.5) * 0.12;
+      this.guideRing.scale.set(s, s, 1);
+      this.guideRing.material.opacity = 0.5 + Math.sin(this.time * 3.5) * 0.25;
     }
 
     // brote de la vegetacion
@@ -413,8 +456,8 @@ export class JoyOrbsGame extends MinigameBase {
     this.orbs.forEach((o) => {
       o.taken = false;
       o.mesh.visible = true;
-      o.light.visible = true;
     });
+    this.pointNext();
     const m = new THREE.Matrix4();
     this.sceneryRefs.forEach((ref) => {
       for (let i = 0; i < ref.mesh.count; i += 1) {

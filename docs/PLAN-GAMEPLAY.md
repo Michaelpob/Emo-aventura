@@ -634,6 +634,24 @@ visual sin tocar la lógica: helpers nuevos en `worldkit.js` (`makeSun`,
   0,4 s por palabra. «Reducir movimiento» en el menú de pausa.
 
 
+## Ajuste · El valle: sin tirones, saltos más amables y la luz que guía
+
+- **Tirones al recoger y al saltar.** Cada orbe tenía su propia luz puntual
+  (12 luces): encarecían todos los materiales y, al apagarse una al recoger,
+  three.js recompilaba los shaders. Fuera las luces: el orbe brilla con su
+  emisivo, el halo y el haz. Los sonidos (salto, recoger, capas de música) se
+  generan ahora al entrar, no la primera vez que suenan.
+- **Saltar de una a otra.** Nuevo camino en zigzag que sube: ningún salto pide
+  más de 3,5 m de hueco ni 1,4 m de subida; impulso de salto 8,2. El
+  controlador gana **salto tolerante** para todas las islas: vale hasta 0,14 s
+  después de salir de un borde y, si se pulsa justo antes de aterrizar, se
+  salta al tocar suelo. Sigue habiendo que correr en los dos saltos largos.
+- **Cuál es la siguiente.** Los orbes van en orden de camino: el siguiente
+  tiene el haz alto y brillante (los demás, tenues) y un aro dorado late en su
+  plataforma. Dos orbes quedan en el aire, en mitad de un salto. El portal se
+  abre en la cima, junto al último orbe.
+
+
 ## Ajuste · Recarga automática al publicar
 
 GitHub Pages deja cachear el `index.html` diez minutos y los móviles lo
