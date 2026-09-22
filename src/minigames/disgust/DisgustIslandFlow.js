@@ -1,20 +1,18 @@
-// ISLA DEL DESAGRADO · «La Cienaga Turbia» · flujo de la isla
-// Secuencia de la isla: identificacion (que me revuelve, como lo noto, con que
-// intensidad llego) → menu con DOS minijuegos independientes y sin orden
-// (La Cadena / El Separador; cada uno cierra con su reevaluacion y feedback)
-// → diario de limites → cierre de la isla cuando los dos estan completados.
+// ISLA DEL DESAGRADO · menu de la isla
+// Dos minijuegos independientes, cada uno con su propia entrada y su propio
+// final: «Las cuatro cuevas del desagrado» (nivel 1) y «El espejo de las
+// señales» (nivel 2). Se juegan en cualquier orden; al terminar cada uno se
+// vuelve aqui. Cuando los dos estan completados se cierra la isla.
 //
-// Mismo contrato que un minijuego (mount / dispose / onComplete / onExit), asi
-// que EmotionIslandApp no distingue esta isla de las demas. Nunca hay dos
-// minijuegos vivos a la vez.
+// Mismo contrato que un minijuego (mount / dispose / onComplete / onExit),
+// asi que EmotionIslandApp no distingue esta isla de las demas.
 
-import { CadenaGame } from './CadenaGame.js';
-import { SeparadorGame } from './SeparadorGame.js';
-import { ISLA, CONDUCTAS, INTENSIDADES } from './IslaTextos.js';
-import {
-  completeActivity, getIslandLevels, getIslandData, setIslandData, setInitialIntensity
-} from '../../data/gameState.js';
-import { escapar } from './cienaga.js';
+import { DisgustCavesGame } from './DisgustCavesGame.js';
+import { DisgustMirrorGame } from './DisgustMirrorGame.js';
+import { ISLA, CUEVAS, RESPUESTAS } from './DesagradoTextos.js';
+import { completeActivity, getIslandLevels, setIslandLevel } from '../../data/gameState.js';
+import { leerDesagrado, resumenCuevas, confusionesOrdenadas } from './desagradoStore.js';
+import { escapar } from './desagradoUi.js';
 
 const ISLAND = 'disgust';
 
@@ -27,22 +25,10 @@ export class DisgustIslandFlow {
     this.onExit = onExit;
     this.current = null;
     this.panel = null;
-    this.timers = new Set();
     this.disposed = false;
   }
 
-  /* ============================================================== montaje */
-
-  mount() {
-    const datos = getIslandData(ISLAND);
-    if (!datos.valores?.length) this.identificar();
-    else this.menu();
-  }
-
-  later(fn, ms) {
-    const t = setTimeout(() => { this.timers.delete(t); if (!this.disposed) fn(); }, ms);
-    this.timers.add(t);
-  }
+  mount() { this.menu(); }
 
   gameOpts(extra = {}) {
     return {
@@ -55,12 +41,12 @@ export class DisgustIslandFlow {
     };
   }
 
-  /** Pantalla propia de la isla (menu, identificacion, diario, cierre) */
+  /** Pantalla propia de la isla (menu, resumen, cierre) */
   pantalla(html, { clase = '' } = {}) {
     this.cerrarPantalla();
     const panel = document.createElement('div');
-    panel.className = `i3d dg-flow ${clase}`.trim();
-    panel.innerHTML = `<div class="i3d__overlay"><div class="i3d-intro dg-flow__intro"><div class="i3d-intro__card dg-flow__card" role="dialog" aria-modal="true" aria-label="${escapar(ISLA.nombre)}">${html}</div></div></div>`;
+    panel.className = `i3d dc-flow ${clase}`.trim();
+    panel.innerHTML = `<div class="i3d__overlay"><div class="i3d-intro dc-flow__intro"><div class="i3d-intro__card dc-flow__card" role="dialog" aria-modal="true" aria-label="${escapar(ISLA.nombre)}">${html}</div></div></div>`;
     this.host.appendChild(panel);
     this.panel = panel;
     return panel;
@@ -71,120 +57,55 @@ export class DisgustIslandFlow {
     this.panel = null;
   }
 
-  /* ======================================================= identificacion */
-
-  identificar() {
-    const datos = getIslandData(ISLAND);
-    const valores = new Set(datos.valores ?? []);
-    const senales = new Set(datos.senales ?? []);
-    const I = ISLA.identificacion;
-
-    const paso1 = () => {
-      const p = this.pantalla(`
-        <p class="i3d-intro__eyebrow">${I.eyebrow}</p>
-        <h3>${I.valores.titulo}</h3>
-        <p class="dg-flow__hint">${I.valores.sub}</p>
-        <div class="dg-grid">${CONDUCTAS.map((c) => `
-          <button class="dg-pick ${valores.has(c.id) ? 'is-on' : ''}" type="button" data-v="${c.id}" aria-pressed="${valores.has(c.id)}"><b>${c.icono}</b><span>${c.nombre}<small>${c.detalle}</small></span></button>`).join('')}</div>
-        <div class="i3d-panel__actions">
-          <button class="i3d-btn i3d-btn--primary" type="button" data-next ${valores.size < 2 ? 'disabled' : ''}>${I.valores.continuar}</button>
-          <button class="i3d-btn" type="button" data-leave>${ISLA.menu.salir}</button>
-        </div>`);
-      const next = p.querySelector('[data-next]');
-      p.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => {
-        const id = b.dataset.v;
-        if (valores.has(id)) valores.delete(id); else valores.add(id);
-        b.classList.toggle('is-on', valores.has(id));
-        b.setAttribute('aria-pressed', String(valores.has(id)));
-        next.disabled = valores.size < 2;
-        next.textContent = valores.size < 2 ? I.valores.minimo : I.valores.continuar;
-      }));
-      next.addEventListener('click', () => paso2());
-      p.querySelector('[data-leave]').addEventListener('click', () => this.onExit?.());
-    };
-
-    const paso2 = () => {
-      const p = this.pantalla(`
-        <p class="i3d-intro__eyebrow">${I.eyebrow}</p>
-        <h3>${I.senales.titulo}</h3>
-        <p class="dg-flow__hint">${I.senales.sub}</p>
-        <div class="dg-grid">${I.senales.lista.map((s) => `
-          <button class="dg-pick ${senales.has(s.id) ? 'is-on' : ''}" type="button" data-s="${s.id}" aria-pressed="${senales.has(s.id)}"><b>${s.icono}</b><span>${s.texto}</span></button>`).join('')}</div>
-        <div class="i3d-panel__actions">
-          <button class="i3d-btn i3d-btn--primary" type="button" data-next>${I.senales.continuar}</button>
-        </div>`);
-      p.querySelectorAll('[data-s]').forEach((b) => b.addEventListener('click', () => {
-        const id = b.dataset.s;
-        if (senales.has(id)) senales.delete(id); else senales.add(id);
-        b.classList.toggle('is-on', senales.has(id));
-        b.setAttribute('aria-pressed', String(senales.has(id)));
-      }));
-      p.querySelector('[data-next]').addEventListener('click', () => paso3());
-    };
-
-    const paso3 = () => {
-      const p = this.pantalla(`
-        <p class="i3d-intro__eyebrow">${I.eyebrow}</p>
-        <h3>${I.intensidad.titulo}</h3>
-        <p class="dg-flow__hint">${I.intensidad.sub}</p>
-        <div class="i3d-choice">${INTENSIDADES.map((i) => `
-          <button class="i3d-choice__btn" type="button" data-i="${i.id}" style="--c:${i.color}"><strong>${i.label}</strong><span>${i.text}</span></button>`).join('')}</div>`);
-      p.querySelectorAll('[data-i]').forEach((b) => b.addEventListener('click', () => {
-        const intensidad = b.dataset.i;
-        setIslandData(ISLAND, { valores: [...valores], senales: [...senales], intensidad });
-        setInitialIntensity(intensidad);
-        completeActivity('disgust-identificacion', 5);
-        this.menu({ recienIdentificado: true });
-      }));
-    };
-
-    paso1();
-  }
-
   /* ================================================================ menu */
 
-  menu({ recienIdentificado = false } = {}) {
+  menu() {
     const niveles = getIslandLevels(ISLAND);
-    const datos = getIslandData(ISLAND);
     const M = ISLA.menu;
     const tarjeta = (id, t, hecho) => `
-      <button class="dg-juego ${hecho ? 'is-done' : ''}" type="button" data-juego="${id}">
-        <span class="dg-juego__sub">${t.sub}${hecho ? ` · ✓ ${M.jugado}` : ''}</span>
+      <button class="dc-juego ${hecho ? 'is-done' : ''}" type="button" data-juego="${id}">
+        <span class="dc-juego__sub">${t.sub}${hecho ? ` · ✓ ${M.jugado}` : ''}</span>
         <strong>${t.titulo}</strong>
-        <span class="dg-juego__desc">${t.desc}</span>
+        <span class="dc-juego__desc">${t.desc}</span>
       </button>`;
-    const valores = (datos.valores ?? []).map((id) => CONDUCTAS.find((c) => c.id === id)?.nombre.toLowerCase()).filter(Boolean);
     const p = this.pantalla(`
       <p class="i3d-intro__eyebrow">${ISLA.eyebrow}</p>
       <h3>${ISLA.nombre}</h3>
-      <p class="dg-flow__hint">${recienIdentificado ? ISLA.identificacion.listo + ' ' : ''}${ISLA.intro}</p>
-      <p class="dg-flow__idea">${ISLA.idea}</p>
-      <p class="dg-flow__menu-titulo">${M.titulo}</p>
-      <p class="dg-flow__hint">${M.sub}</p>
-      <div class="dg-juegos">
-        ${tarjeta('cadena', M.cadena, niveles.level1)}
-        ${tarjeta('separador', M.separador, niveles.level2)}
+      <p class="dc-flow__hint">${ISLA.intro}</p>
+      <p class="dc-flow__menu-titulo">${M.titulo}</p>
+      <p class="dc-flow__hint">${M.sub}</p>
+      <div class="dc-juegos">
+        ${tarjeta('cuevas', M.cuevas, niveles.level1)}
+        ${tarjeta('espejo', M.espejo, niveles.level2)}
       </div>
-      ${valores.length ? `<p class="dg-flow__valores">Lo que te revuelve: <em>${escapar(valores.join(', '))}</em> · <button class="dg-link" type="button" data-cambiar>${M.repetirIdentificacion}</button></p>` : ''}
-      <div class="i3d-panel__actions dg-flow__acciones">
-        <button class="i3d-btn" type="button" data-diario>📔 ${M.diario}</button>
+      <div class="i3d-panel__actions dc-flow__acciones">
+        <button class="i3d-btn" type="button" data-resumen>📋 ${M.resumen}</button>
         <button class="i3d-btn" type="button" data-leave>${M.salir}</button>
-      </div>`, { clase: 'dg-flow--menu' });
+      </div>`, { clase: 'dc-flow--menu' });
     p.querySelectorAll('[data-juego]').forEach((b) => b.addEventListener('click', () => this.startGame(b.dataset.juego)));
-    p.querySelector('[data-diario]').addEventListener('click', () => this.diario());
+    p.querySelector('[data-resumen]').addEventListener('click', () => this.resumen());
     p.querySelector('[data-leave]').addEventListener('click', () => this.onExit?.());
-    p.querySelector('[data-cambiar]')?.addEventListener('click', () => this.identificar());
     p.querySelector('[data-juego]').focus({ preventScroll: true });
   }
 
-  diario() {
-    const entradas = getIslandData(ISLAND).diario ?? [];
+  /** Lo que el jugador ha respondido hasta ahora (localStorage) */
+  resumen() {
+    const datos = leerDesagrado();
+    const r = resumenCuevas(datos);
+    const conf = confusionesOrdenadas(datos);
+    const etiqueta = (id) => RESPUESTAS.find((x) => x.id === id)?.etiqueta ?? id;
+    const cuevas = r.total
+      ? `<p class="dc-resumen">De ${r.total} elementos, <b>${r.desagrado ?? 0}</b> te generaron desagrado, <b>${r.indiferente ?? 0}</b> te dieron igual y <b>${r.agrado ?? 0}</b> te agradaron.</p>
+         <ul class="dc-lista">${CUEVAS.map((c) => { const lista = datos.cuevas.respuestas.filter((x) => x.cueva === c.id); return lista.length ? `<li><b>${c.icono} ${escapar(c.corto)}</b>: ${lista.map((x) => `${escapar(c.elementos.find((e) => e.id === x.elemento)?.nombre ?? x.elemento)} → <em>${escapar(etiqueta(x.respuesta))}</em>`).join(' · ')}</li>` : ''; }).join('')}</ul>`
+      : '<p class="dc-flow__hint">Todavía no has entrado en las cuevas.</p>';
+    const espejo = datos.espejo.rondas.length
+      ? `<p class="dc-resumen">Reconociste <b>${datos.espejo.aciertos}</b> de ${datos.espejo.total} señales de desagrado. ${conf.length ? `Confusiones: ${conf.map(([e, n]) => `${e} (${n})`).join(', ')}.` : 'Sin confusiones con otras emociones.'}</p>`
+      : '<p class="dc-flow__hint">Todavía no has mirado el espejo.</p>';
     const p = this.pantalla(`
       <p class="i3d-intro__eyebrow">${ISLA.eyebrow}</p>
-      <h3>📔 ${ISLA.diario.titulo}</h3>
-      ${entradas.length
-        ? `<ul class="dg-lista dg-lista--fina dg-diario">${entradas.map((e) => `<li><em>${escapar(e.escena)}</em>${e.conducta ? ` · ${escapar(CONDUCTAS.find((c) => c.id === e.conducta)?.nombre ?? e.conducta)}` : ''}<br><b>${escapar(e.accion)}</b></li>`).join('')}</ul><p class="dg-flow__hint">${ISLA.diario.cierre}</p>`
-        : `<p class="dg-flow__hint">${ISLA.diario.vacio}</p>`}
+      <h3>📋 ${ISLA.menu.resumen}</h3>
+      <p class="dc-flow__menu-titulo">${ISLA.menu.cuevas.titulo}</p>${cuevas}
+      <p class="dc-flow__menu-titulo">${ISLA.menu.espejo.titulo}</p>${espejo}
       <div class="i3d-panel__actions"><button class="i3d-btn i3d-btn--primary" type="button" data-back>Volver</button></div>`);
     p.querySelector('[data-back]').addEventListener('click', () => this.menu());
   }
@@ -193,7 +114,7 @@ export class DisgustIslandFlow {
 
   startGame(id) {
     this.cerrarPantalla();
-    const Game = id === 'cadena' ? CadenaGame : SeparadorGame;
+    const Game = id === 'cuevas' ? DisgustCavesGame : DisgustMirrorGame;
     this.current = new Game(this.gameOpts({
       onComplete: () => this.gameDone(),
       onMenu: () => this.backToMenu()
@@ -211,41 +132,31 @@ export class DisgustIslandFlow {
     this.current?.dispose();
     this.current = null;
     const niveles = getIslandLevels(ISLAND);
-    if (niveles.level1 && niveles.level2 && !getIslandData(ISLAND).cerrada) this.cerrarIsla();
+    if (niveles.level1 && niveles.level2 && !niveles.cerrada) this.cerrarIsla();
     else this.menu();
   }
 
   /* ============================================================== cierre */
 
   cerrarIsla() {
-    const entradas = getIslandData(ISLAND).diario ?? [];
     const p = this.pantalla(`
       <p class="i3d-intro__eyebrow">${ISLA.eyebrow}</p>
       <h3>${ISLA.cierre.titulo}</h3>
-      ${ISLA.cierre.lineas.map((l) => `<p class="dg-flow__hint dg-flow__hint--left">${l}</p>`).join('')}
-      ${entradas.length ? `<p class="dg-flow__menu-titulo">📔 ${ISLA.diario.titulo}</p><ul class="dg-lista dg-lista--fina dg-diario">${entradas.map((e) => `<li><em>${escapar(e.escena)}</em><br><b>${escapar(e.accion)}</b></li>`).join('')}</ul>` : ''}
+      ${ISLA.cierre.lineas.map((l) => `<p class="dc-flow__hint">${l}</p>`).join('')}
+      <p class="dc-resumen">${ISLA.cierre.mensaje}</p>
       <div class="i3d-panel__actions"><button class="i3d-btn i3d-btn--primary" type="button" data-ok>Continuar</button></div>`);
     p.querySelector('[data-ok]').addEventListener('click', () => {
-      setIslandData(ISLAND, { cerrada: true });
+      const niveles = getIslandLevels(ISLAND);
+      niveles.cerrada = true;
+      setIslandLevel(ISLAND, 2, true);           // guarda (setIslandLevel persiste el objeto)
       completeActivity('disgust-isla', 10);
       this.cerrarPantalla();
-      this.onComplete?.({
-        islandId: ISLAND,
-        success: true,
-        emoAventura: true,
-        badge: ISLAND,
-        title: ISLA.nombre,
-        message: ISLA.cierre.mensaje
-      });
+      this.onComplete?.({ islandId: ISLAND, success: true, emoAventura: true, badge: ISLAND, title: ISLA.nombre, message: ISLA.cierre.mensaje });
     });
   }
 
-  /* ============================================================ limpieza */
-
   dispose() {
     this.disposed = true;
-    this.timers.forEach((t) => clearTimeout(t));
-    this.timers.clear();
     this.current?.dispose();
     this.current = null;
     this.cerrarPantalla();

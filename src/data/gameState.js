@@ -40,8 +40,6 @@ function baseState() {
     fear: { level1: false, level2: false },
     // Otras islas con varios niveles (frustracion: torre -> valle)
     levels: {},
-    // Datos propios de cada isla (desagrado: valores, senales, diario de limites)
-    islandData: {},
     settings: { sound: true, reduceMotion: false }
   };
 }
@@ -95,7 +93,6 @@ export function loadProgress() {
       // conservan: se enciende salvo que el jugador lo haya apagado a mano.
       if (!gameState.settings.soundChosen) gameState.settings.sound = true;
       if (!gameState.levels || typeof gameState.levels !== 'object') gameState.levels = {};
-      if (!gameState.islandData || typeof gameState.islandData !== 'object') gameState.islandData = {};
     }
   } catch (err) {
     console.warn('[emo-aventura] no se pudo leer el progreso, se inicia limpio', err);
@@ -245,19 +242,6 @@ export function setIslandLevel(islandId, level, done = true) {
   levels[`level${level}`] = !!done;
   saveProgress();
   return levels;
-}
-
-/** Datos libres de una isla (por ejemplo, lo que el jugador declaro valorar) */
-export function getIslandData(islandId) {
-  if (!gameState.islandData) gameState.islandData = {};
-  if (!gameState.islandData[islandId]) gameState.islandData[islandId] = {};
-  return gameState.islandData[islandId];
-}
-
-export function setIslandData(islandId, patch) {
-  Object.assign(getIslandData(islandId), patch);
-  saveProgress();
-  return gameState.islandData[islandId];
 }
 
 export function allIslandsCompleted() {

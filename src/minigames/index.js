@@ -30,7 +30,7 @@ export const minigameRegistry = {
   'frustration-tower-valley': FrustrationIslandFlow,   // torre (nivel 1) + valle de los orbes (nivel 2)
   'frustration-tower': FrustrationTowerGame,
   'calm-lake': CalmLakeGame,           // solo la torre
-  'disgust-cienaga': DisgustIslandFlow, // La Cadena + El Separador (menu de la isla)
+  'disgust-cuevas': DisgustIslandFlow, // Las cuatro cuevas + El espejo de las senales (menu de la isla)
   'surprise-observe': SurpriseObserveGame,
   // EMO-AVENTURA (2D, en migracion a 3D)
   'fear-island': FearIslandGame,

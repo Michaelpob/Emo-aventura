@@ -62,11 +62,11 @@ export const islands = [
   {
     id: 'disgust',
     name: 'Desagrado',
-    displayName: 'La Cienaga Turbia',
+    displayName: 'Las Cuevas del Desagrado',
     emoji: '🤢',
-    subtitle: 'Rechazo social y moral: una red por la que corre un rumor y un taller para separar la conducta de la persona.',
+    subtitle: 'Dos minijuegos: descubre que te genera desagrado a ti en las cuatro cuevas de los sentidos y aprende a reconocer sus senales en el espejo.',
     chapter: 3,
-    reward: 'Tijera de Limites y Balanza del Criterio',
+    reward: 'Semilla de Aceptacion y Estrella del Presente',
     palette: {
       land: '#6ab86a',
       accent: '#3a8a3a',
@@ -77,7 +77,7 @@ export const islands = [
     position: [-4.07, 0, 2.35],
     radius: 1.2,
     height: 0.36,
-    minigame: 'disgust-cienaga'
+    minigame: 'disgust-cuevas'
   },
   {
     id: 'frustration',
@@ -138,6 +138,6 @@ export const minigameLabels = {
   'joy-valley': 'Valle de la Luz',
   'volcano-control': 'Control del Volcan',
   'guided-breathing': 'Respiracion Guiada',
-  'disgust-cienaga': 'La Cienaga Turbia',
+  'disgust-cuevas': 'Las Cuevas del Desagrado',
   'coming-soon': 'En construccion'
 };
