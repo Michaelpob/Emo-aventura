@@ -18,7 +18,15 @@ export class EmotionIslandApp {
     this.root = root;
     this.state = 'start';
     loadProgress();
-    const legacy = JSON.parse(window.localStorage.getItem('emotion-islands-progress') ?? '[]');
+    // el progreso legado se lee a prueba de fallos, como las demas claves: si
+    // llegara corrupto, la aventura arranca igual en vez de quedarse en blanco
+    let legacy = [];
+    try {
+      const raw = JSON.parse(window.localStorage.getItem('emotion-islands-progress') ?? '[]');
+      if (Array.isArray(raw)) legacy = raw;
+    } catch (err) {
+      console.warn('[emo-aventura] progreso legado ilegible, se ignora', err);
+    }
     this.completed = new Set([...legacy, ...gameState.completedIslands]);
     this.currentMinigame = null;
     this.player = getPlayer();
