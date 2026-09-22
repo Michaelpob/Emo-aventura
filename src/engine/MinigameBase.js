@@ -488,6 +488,9 @@ export class MinigameBase {
   resume() { this.togglePause(false); }
 
   togglePause(on) {
+    // la respiracion guiada no se puede pausar: su capa tapa el menu de pausa
+    // y su reloj se para, asi que no habria forma de seguir ni de salir
+    if (this.breathPause?.active) return;
     if (this.finished) return;
     const next = on ?? !this.paused;
     if (next === this.paused) return;
