@@ -662,7 +662,7 @@ export class SadnessDaysGame extends MinigameBase {
     this.doorMat.emissive.set('#ffd166');
     this.doorMat.emissiveIntensity = 0.6;
     this.feedback.flash(new THREE.Vector3(1.4, 1.5, -0.5), { color: '#ffe9a8', intensity: 4, duration: 1.6 });
-    this.audio.play('success', { volume: 0.55 });
+    this.audio.play('logro', { volume: 0.55 });
     this.say('LA PUERTA ESTÁ ABIERTA', 2600);
     this.dayBox.querySelector('[data-sleep]').hidden = true;
   }

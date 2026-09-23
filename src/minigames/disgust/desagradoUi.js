@@ -32,7 +32,7 @@ const _v = new THREE.Vector3();
  * Linea de guia: el UNICO texto fijo. `guiar` fija la instruccion; `avisar`
  * muestra un resultado breve y vuelve sola a la instruccion.
  */
-export function crearGuia(game) {
+export function crearGuia(game, onCambio = null) {
   const el = document.createElement('div');
   el.className = 'dc-guia';
   el.hidden = true;
@@ -54,6 +54,7 @@ export function crearGuia(game) {
     el.classList.add('is-pop');
     el.hidden = !t;
     if (boton) el.appendChild(boton);
+    onCambio?.();                       // el juego reencuadra: la guia nunca tapa
   };
   return {
     el,
@@ -75,8 +76,8 @@ export function crearGuia(game) {
       return boton;
     },
     sinBoton() { boton?.remove(); boton = null; },
-    ocultar() { el.hidden = true; },
-    mostrar() { el.hidden = !(base.texto || timer); },
+    ocultar() { el.hidden = true; onCambio?.(); },
+    mostrar() { el.hidden = !(base.texto || timer); onCambio?.(); },
     dispose() { if (timer) clearTimeout(timer); el.remove(); }
   };
 }
@@ -85,14 +86,16 @@ export function crearGuia(game) {
  * Anclas: nodos DOM que siguen a un punto de la escena (etiquetas y botones
  * sobre totems, entradas, fragmentos). `poner(id, el, pos)`; `update()` cada frame.
  */
-export function crearAnclas(game, contenedor) {
+export function crearAnclas(game, contenedor, zonaSegura = null) {
   const lista = new Map();
   const p = { x: 0, y: 0 };
   return {
-    poner(id, el, pos, { desplazaY = 0 } = {}) {
+    poner(id, el, pos, { desplazaY = 0, fijo = null } = {}) {
       this.quitar(id);
       contenedor.appendChild(el);
-      lista.set(id, { el, pos: pos.clone(), desplazaY });
+      // `fijo` = { fx, fy } en fracciones de la zona libre: la etiqueta se
+      // coloca en rejilla en vez de seguir al objeto (pantallas muy bajas)
+      lista.set(id, { el, pos: pos.clone(), desplazaY, fijo });
       return el;
     },
     mover(id, pos) { const a = lista.get(id); if (a) a.pos.copy(pos); },
@@ -101,14 +104,55 @@ export function crearAnclas(game, contenedor) {
     limpiar() { for (const id of [...lista.keys()]) this.quitar(id); },
     update() {
       if (!game.renderer) return;
+      const r = game.renderer.domElement.getBoundingClientRect();
+      // franjas ocupadas por los carteles: ninguna etiqueta entra ahi ni se
+      // sale de la pantalla (clave en un movil tumbado)
+      const z = zonaSegura?.() ?? { arriba: 0, abajo: 0 };
       for (const a of lista.values()) {
         aPantalla(game, a.pos, p);
-        a.el.style.transform = `translate(${p.x}px, ${p.y + a.desplazaY}px) translate(-50%, -50%)`;
+        const arriba = z.arriba ?? 0;
+        const abajo = z.abajo ?? 0;
+        let x = a.fijo ? a.fijo.fx * r.width : p.x;
+        let y = a.fijo ? arriba + a.fijo.fy * Math.max(0, r.height - arriba - abajo) : p.y + a.desplazaY;
+        const w2 = a.el.offsetWidth / 2;
+        const h2 = a.el.offsetHeight / 2;
+        x = Math.max(w2 + 4, Math.min(r.width - w2 - 4, x));
+        const minY = (z.arriba ?? 0) + h2 + 4;
+        const maxY = r.height - (z.abajo ?? 0) - h2 - 4;
+        y = maxY > minY ? Math.max(minY, Math.min(maxY, y)) : (minY + maxY) / 2;
+        a.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
         a.el.style.visibility = p.detras ? 'hidden' : '';
       }
     },
     dispose() { this.limpiar(); }
   };
+}
+
+/**
+ * Encuadre con franjas reservadas arriba y abajo: la escena 3D se dibuja solo
+ * en el hueco libre entre los carteles del HUD, asi que en un movil tumbado
+ * (poca altura) los totems y los fragmentos no quedan nunca debajo de la guia.
+ * `arriba` y `abajo` son alturas en pixeles de pantalla.
+ */
+export function encuadrar(game, arriba = 0, abajo = 0) {
+  if (!game.renderer || !game.camera) return;
+  const r = game.renderer.domElement.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width));
+  const h = Math.max(1, Math.round(r.height));
+  const a = Math.max(0, Math.min(Math.round(arriba), Math.round(h * 0.35)));
+  const b = Math.max(0, Math.min(Math.round(abajo), Math.round(h * 0.35)));
+  const alto = h + a + b;
+  game.camera.aspect = w / alto;
+  if (a || b) game.camera.setViewOffset(w, alto, 0, b, w, h);
+  else game.camera.clearViewOffset();
+  game.camera.updateProjectionMatrix();
+}
+
+/** Alto en pixeles de un elemento del HUD visible (0 si esta oculto) */
+export function altoDe(el, extra = 10) {
+  if (!el || el.hidden || !el.isConnected) return 0;
+  const r = el.getBoundingClientRect();
+  return r.height ? r.height + extra : 0;
 }
 
 /** Lectura en voz alta opcional (solo cuando el jugador pulsa el boton) */

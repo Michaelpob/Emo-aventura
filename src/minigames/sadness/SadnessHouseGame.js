@@ -27,6 +27,7 @@
 
 import * as THREE from 'three';
 import { MinigameBase } from '../../engine/MinigameBase.js';
+import { SadnessMusic } from '../../engine/SadnessMusic.js';
 import { createGround, createSky, createLights, GEO, scatterInstanced, makeAvatar, animateAvatar } from '../../engine/worldkit.js';
 import { addReward, completeActivity, recordReevaluation, setInitialIntensity, setPlan } from '../../data/gameState.js';
 
@@ -131,6 +132,7 @@ export class SadnessHouseGame extends MinigameBase {
     super({ ...opts, mode: 'third' });
     this.progress = Object.fromEntries(TASKS.map((t) => [t.id, 0]));
     this.groupsDone = 0;
+    this.stepVolume = 0.14;
     this.floor = 0;          // impulso ganado: no baja nunca
     this.bonus = 0;          // impulso reciente: se apaga si te paras
     this.idleTime = 0;
@@ -623,7 +625,12 @@ export class SadnessHouseGame extends MinigameBase {
       keys: [['W A S D', 'moverte'], ['Arrastra', 'mirar'], ['E', 'usar'], ['Mantener E', 'regar / sintonizar']],
       touch: [['Joystick', 'moverte'], ['Arrastra', 'mirar'], ['E', 'usar'], ['Mantener E', 'regar / sintonizar']]
     });
-    this.ambientWind = this.audio.ambient('wind', { volume: 0.12, rate: 0.7 });
+    this.ambientWind = this.audio.ambient('wind', { volume: 0.09, rate: 0.7 });
+    // musica de la isla: empieza recogida y se abre con cada tarea hecha
+    this.music = new SadnessMusic(this.audio);
+    this.music.setVolume(0.75, 0);
+    this.music.start();
+    this.music.setProgreso(0);
     this.say('TODO PESA · EMPIEZA POR ALGO', 2600);
   }
 
@@ -647,7 +654,9 @@ export class SadnessHouseGame extends MinigameBase {
   completeGroup(taskId) {
     this.groupsDone += 1;
     this.advanceObjective();
-    this.audio.play('success', { volume: 0.3 });
+    this.audio.play('logro', { volume: 0.5 });
+    this.music?.acento();
+    this.music?.setProgreso(this.groupsDone / TASKS.length);
     this.say(DONE_SAY[taskId] ?? 'HECHO', 2000);
     this.later(() => this.showStrategy(taskId), 700);
     completeActivity(`sadness-casa-${taskId}`, 4);
@@ -913,7 +922,8 @@ export class SadnessHouseGame extends MinigameBase {
     this.mailItem.done = true;
     this.mailboxMat.emissiveIntensity = 0;
     if (this.replyFlag) { this.mailbox.remove(this.replyFlag); this.replyFlag = null; }
-    this.audio.play('success', { volume: 0.3 });
+    this.audio.play('logro', { volume: 0.45 });
+    this.music?.acento();
     this.showNote({ title: 'Te contestaron', text: `«${this.message.reply}»`, seconds: 9 });
     this.later(() => this.showStrategy('respuesta'), 9500);
     this.say('ALGUIEN TE CONTESTÓ', 2200);
@@ -933,7 +943,8 @@ export class SadnessHouseGame extends MinigameBase {
     if (this.interactables.active === this.doorItem) this.interactables.setActive(null);
     this.feedback.flash(new THREE.Vector3(1.4, 1.5, -0.5), { color: '#ffe9a8', intensity: 4, duration: 1.6 });
     this.audio.play('creak', { volume: 0.5, rate: 0.7 });
-    this.later(() => this.audio.play('success', { volume: 0.35 }), 350);
+    this.later(() => this.audio.play('logro', { volume: 0.55 }), 350);
+    this.music?.setProgreso(1);
     this.say('LA PUERTA ESTÁ ABIERTA · SAL POR ELLA', 2600);
   }
 
@@ -1080,6 +1091,7 @@ export class SadnessHouseGame extends MinigameBase {
   }
 
   onReset() {
+    this.music?.setProgreso(0);
     this.cancelDial();
     this.holding = false;
     this.thought = null;
@@ -1218,6 +1230,8 @@ export class SadnessHouseGame extends MinigameBase {
   }
 
   onDispose() {
+    this.music?.stop();
+    this.music = null;
     this.cancelDial();
     this.pourNode?.stop();
     Object.values(this.geo ?? {}).forEach((geo) => geo.dispose());

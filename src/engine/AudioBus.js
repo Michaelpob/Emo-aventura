@@ -116,10 +116,20 @@ const soft = (p) => Math.min(1, p * 8) * Math.pow(1 - p, 1.6);
 const RECIPES = {
   step:      (ctx) => noiseBuffer(ctx, 0.12, 900, (p) => decay(p) * 0.5),
   stepRun:   (ctx) => noiseBuffer(ctx, 0.1, 1400, (p) => decay(p) * 0.7),
+  // paso sobre hierba: grave, corto y sin chasquido (islas tranquilas)
+  stepSoft:  (ctx) => noiseBuffer(ctx, 0.16, 260, (p) => Math.pow(1 - p, 3.2) * 0.32),
   interact:  (ctx) => toneBuffer(ctx, 0.18, 520, 720, soft, 2),
   collect:   (ctx) => toneBuffer(ctx, 0.32, 660, 1180, bell, 3),
   // logro: mas suave que el resto (suena al completar cosas en todas las islas)
   success:   (ctx) => toneBuffer(ctx, 0.9, 392, 784, (p) => bell(p) * 0.45, 4),
+  // logro calido: tres notas de celesta (Do-Mi-Sol) que suben y se apagan.
+  // Sin glissando ni voces desafinadas: suena a musica, no a pitido.
+  logro:     (ctx) => mixBuffers(ctx, [
+    chordBuffer(ctx, 1.9, [523.25], (p) => Math.min(1, p * 30) * Math.pow(1 - p, 2.6) * 0.5),
+    chordBuffer(ctx, 1.9, [659.25], (p) => (p < 0.1 ? 0 : Math.min(1, (p - 0.1) * 30) * Math.pow(1 - p, 2.4) * 0.42)),
+    chordBuffer(ctx, 1.9, [783.99], (p) => (p < 0.2 ? 0 : Math.min(1, (p - 0.2) * 30) * Math.pow(1 - p, 2.2) * 0.36)),
+    chordBuffer(ctx, 1.9, [1046.5], (p) => (p < 0.3 ? 0 : Math.min(1, (p - 0.3) * 24) * Math.pow(1 - p, 2.0) * 0.2))
+  ]),
   soften:    (ctx) => toneBuffer(ctx, 0.28, 300, 220, soft, 2),   // "error" amable
   light:     (ctx) => toneBuffer(ctx, 0.7, 300, 900, bell, 3),
   // inhalar sube en brillo; exhalar empieza claro y se apaga. Sin graves: aire, no oleaje
@@ -196,25 +206,29 @@ const RECIPES = {
   lakeRough: (ctx) => noiseBuffer(ctx, 4.0, 1100, (p) => 0.2 + 0.16 * Math.abs(Math.sin(p * Math.PI * 14)) * (0.6 + 0.4 * Math.sin(p * Math.PI * 4))), // agua revuelta
   brook:     (ctx) => noiseBuffer(ctx, 3.0, 1900, (p) => 0.14 + 0.07 * Math.sin(p * Math.PI * 22) * Math.sin(p * Math.PI * 6)),  // arroyo fino
   leaves:    (ctx) => noiseBuffer(ctx, 5.0, 2600, (p) => 0.05 + 0.09 * Math.pow(0.5 + 0.5 * Math.sin(p * Math.PI * 2), 3)),      // viento en las hojas
-  windChime: (ctx) => chordBuffer(ctx, 2.6, [1567.98, 1975.53, 2349.32], (p) => Math.pow(1 - p, 2.6) * 0.5),                     // campana de viento
+  // campana de viento: una octava mas abajo y con la entrada suavizada; la
+  // version aguda anterior se oia como un silbido por encima de todo
+  windChime: (ctx) => chordBuffer(ctx, 3.0, [783.99, 987.77, 1174.66], (p) => Math.min(1, p * 12) * Math.pow(1 - p, 2.8) * 0.3),
   splash:    (ctx) => noiseBuffer(ctx, 0.3, 1400, (p) => Math.min(1, p * 10) * Math.pow(1 - p, 2.6) * 0.8),                        // paso en el agua
   // colibri: no canta, zumban sus alas (un ronroneo agudo que se acerca) y suelta dos chips finisimos
   birdHum:   (ctx) => mixBuffers(ctx, [
     toneBuffer(ctx, 1.1, 200, 236, (p) => bell(p) * (0.6 + 0.4 * Math.abs(Math.sin(p * Math.PI * 2 * 44))) * 0.3, 7),
-    toneBuffer(ctx, 1.1, 6200, 5800, (p) => (p > 0.4 && p < 0.46 ? bell((p - 0.4) / 0.06) : p > 0.56 && p < 0.62 ? bell((p - 0.56) / 0.06) : 0) * 0.22, 1)
+    toneBuffer(ctx, 1.1, 3800, 3600, (p) => (p > 0.4 && p < 0.46 ? bell((p - 0.4) / 0.06) : p > 0.56 && p < 0.62 ? bell((p - 0.56) / 0.06) : 0) * 0.12, 1)
   ]),
-  birdDown:  (ctx) => toneBuffer(ctx, 0.9, 2600, 1500, (p) => (p < 0.3 ? bell(p / 0.3) : p < 0.62 ? bell((p - 0.32) / 0.3) : bell((p - 0.64) / 0.36)) * 0.42, 1), // mirlo: tres notas que bajan
-  birdChip:  (ctx) => toneBuffer(ctx, 0.7, 3900, 3700, (p) => (Math.sin(p * Math.PI * 2 * 5) > 0.4 ? 1 : 0) * 0.4, 1),           // carbonero: chip chip chip
+  birdDown:  (ctx) => toneBuffer(ctx, 0.9, 1500, 900, (p) => (p < 0.3 ? bell(p / 0.3) : p < 0.62 ? bell((p - 0.32) / 0.3) : bell((p - 0.64) / 0.36)) * 0.3, 1), // mirlo: tres notas que bajan, aflautadas
+  birdChip:  (ctx) => toneBuffer(ctx, 0.7, 2300, 2200, (p) => (Math.sin(p * Math.PI * 2 * 5) > 0.4 ? 1 : 0) * bell(p) * 0.26, 1),  // carbonero: chip chip chip, corto y sin filo
   birdDove:  (ctx) => toneBuffer(ctx, 1.2, 520, 470, (p) => (p < 0.35 ? bell(p / 0.35) : p > 0.45 ? bell((p - 0.45) / 0.55) * 0.85 : 0) * 0.5, 2), // tortola: arrullo
-  birdRise:  (ctx) => toneBuffer(ctx, 0.55, 1800, 3200, (p) => Math.pow(bell(p), 0.8) * 0.4, 1),                                  // petirrojo: silbido que sube
+  // petirrojo: el silbido que subia era el mas estridente de la isla. Ahora
+  // sube menos, dura mas y entra y sale despacio: sigue reconociendose y ya no aturde.
+  birdRise:  (ctx) => toneBuffer(ctx, 0.85, 1000, 1600, (p) => Math.pow(bell(p), 1.6) * 0.2, 1),
   // sapo: dos croares graves y roncos (carraca a 26 Hz), mas lento y bajo que la rana del pantano
   toad:      (ctx) => toneBuffer(ctx, 1.15, 118, 96, (p) => (p < 0.42 ? bell(p / 0.42) : p > 0.55 ? bell((p - 0.55) / 0.45) * 0.9 : 0) * (0.55 + 0.45 * Math.abs(Math.sin(p * Math.PI * 2 * 26))) * 0.75, 7),
   // grillo: un solo grillo, cuatro cri-cri agudos a ritmo de relojito
-  cricket:   (ctx) => toneBuffer(ctx, 1.25, 4300, 4300, (p) => {
+  cricket:   (ctx) => toneBuffer(ctx, 1.25, 3200, 3200, (p) => {
     const c = p * 4.5;
     const f = c - Math.floor(c);
     const on = c < 4 && f < 0.5 ? Math.sin(Math.PI * f / 0.5) : 0;
-    return on * (Math.sin(p * Math.PI * 2 * 70) > 0 ? 1 : 0.35) * 0.42;
+    return on * (Math.sin(p * Math.PI * 2 * 70) > 0 ? 1 : 0.35) * 0.24;
   }, 1),
 
 };

@@ -310,7 +310,7 @@ export class SadnessRestoreGame extends MinigameBase {
     this.feedback.burst(this.controller.position.clone().add(new THREE.Vector3(0, 1.5, 0)), {
       count: 40, color: '#ffe9a8', speed: 4.5, life: 2, gravity: -0.8
     });
-    this.audio.play('success', { volume: 0.6 });
+    this.audio.play('logro', { volume: 0.6 });
     this.later(() => {
       const p = new THREE.Vector3(0, this.ground.userData.heightAt(0, -4), -4);
       this.openPortal(p, { color: '#ffe9a8', label: 'Seguir camino' });

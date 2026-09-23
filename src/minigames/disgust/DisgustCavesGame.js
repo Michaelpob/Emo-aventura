@@ -14,7 +14,7 @@ import { CUEVAS, CUEVAS_TEXTOS as T, RESPUESTAS } from './DesagradoTextos.js';
 import { crearCaverna, crearEntrada, crearTotem, spriteElemento, crearPantano, crearMesaPiedra, crearBosque, crearCristales } from './desagradoAssets.js';
 import { crearSonidosDesagrado } from './desagradoSonidos.js';
 import { leerDesagrado, registrarRespuesta, marcarCuevaCompletada, terminarCuevas, reiniciarCuevas, resumenCuevas } from './desagradoStore.js';
-import { escapar, ndcDe, aPantalla, crearGuia, crearAnclas, leerEnVozAlta, callarVoz } from './desagradoUi.js';
+import { escapar, ndcDe, aPantalla, crearGuia, crearAnclas, encuadrar, altoDe, leerEnVozAlta, callarVoz } from './desagradoUi.js';
 
 const ISLAND = 'disgust';
 const POS_ELEMENTO = new THREE.Vector3(0, 3.3, 0.4);      // donde aparece cada elemento (arriba, en el centro)
@@ -107,14 +107,43 @@ export class DisgustCavesGame extends MinigameBase {
     this.sonidos = crearSonidosDesagrado(this.audio);
     this.buildHud();
     this.buildInput();
+    this.ajustarEncuadre();
+  }
+
+  /**
+   * La escena se dibuja solo en el hueco libre entre el mapa de cuevas
+   * (arriba) y la guia (abajo): en un movil tumbado los totems ya no quedan
+   * tapados por los carteles.
+   */
+  ajustarEncuadre() {
+    if (!this.renderer) return;
+    const z = this.zonaSegura();
+    encuadrar(this, z.arriba, z.abajo);
+  }
+
+  zonaSegura() {
+    return { arriba: altoDe(this.mapaEl, 14), abajo: altoDe(this.guia?.el, 18) };
+  }
+
+  /** Alto en pixeles del hueco libre entre los carteles */
+  altoLibre() {
+    const r = this.renderer?.domElement.getBoundingClientRect();
+    if (!r) return 600;
+    const z = this.zonaSegura();
+    return r.height - z.arriba - z.abajo;
+  }
+
+  _resize() {
+    super._resize();
+    this.ajustarEncuadre();
   }
 
   buildHud() {
     this.anclasEl = document.createElement('div');
     this.anclasEl.className = 'dc-anclas';
     this.el.hud.appendChild(this.anclasEl);
-    this.anclas = crearAnclas(this, this.anclasEl);
-    this.guia = crearGuia(this);
+    this.anclas = crearAnclas(this, this.anclasEl, () => this.zonaSegura());
+    this.guia = crearGuia(this, () => this.ajustarEncuadre());
 
     // mapa de cuevas (arriba, centro): marca las completadas
     this.mapaEl = document.createElement('div');
@@ -362,7 +391,7 @@ export class DisgustCavesGame extends MinigameBase {
     const etiqueta = document.createElement('div');
     etiqueta.className = 'dc-elemento';
     etiqueta.innerHTML = `<small>${T.pregunta}</small><strong>${escapar(datos.nombre)}</strong>`;
-    this.anclas.poner('elemento', etiqueta, POS_ELEMENTO, { desplazaY: -92 });
+    this.anclas.poner('elemento', etiqueta, POS_ELEMENTO, { desplazaY: this.altoLibre() < 320 ? -58 : -92 });
     this.elemento = { datos, sprite, libre: false };
     this.renderLabel();
     this.feedback.tween({

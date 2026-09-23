@@ -31,6 +31,8 @@ export class MinigameBase {
     this.paused = false;
     this.finished = false;
     this.objective = { done: 0, total: 0 };
+    this.stepVolume = 0.25;                                   // volumen de los pasos
+    this.stepSounds = { walk: 'step', run: 'stepRun' };        // sonido de los pasos
     this.bars = new Map();
     this.rafId = null;
     this.startInfo = null;
@@ -95,7 +97,11 @@ export class MinigameBase {
     this.interactables = new InteractableManager({ camera: this.camera, hud: this.el.hud });
 
     this.controller.on('interact', () => this.interactables.interact());
-    this.controller.on('step', ({ running }) => this.audio.play(running ? 'stepRun' : 'step', { volume: 0.25 }));
+    // cada isla puede bajar o cambiar sus pasos (la Calma los quiere casi mudos)
+    this.controller.on('step', ({ running }) => {
+      if (this.stepVolume <= 0) return;
+      this.audio.play(running ? this.stepSounds.run : this.stepSounds.walk, { volume: this.stepVolume * (running ? 1 : 0.85) });
+    });
     this.controller.on('jump', () => this.audio.play('interact', { volume: 0.18, rate: 1.5 }));
 
     this._initInput();

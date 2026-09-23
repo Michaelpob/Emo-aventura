@@ -6,7 +6,8 @@
 //      exhalacion la aquieta hasta que refleja el cielo.
 //   2. ¿Quien canta?: siete voces escondidas en el bosque del oeste (cinco
 //      pajaros, un sapo y un grillo) que solo cantan si te quedas quieto.
-//      Se localiza el canto mirando hacia el y hay que adivinar de quien es
+//      No se buscan: al pararte en el bosque una voz canta para ti y hay que
+//      adivinar de quien es
 //      (las opciones dicen como suena cada voz: se aprende escuchando, no de
 //      memoria); al acertar, el animal aparece y viene a posarse cerca.
 //   3. El estanque musical: nenufares que son notas de kalimba (pentatonica,
@@ -83,7 +84,7 @@ const MIN_NOTES = 8;
 const MAX_NOTES = 24;
 
 // Niveles base del ambiente: bajos a proposito, manda el sonido de cada actividad
-const AMBIENT = { rough: 0.34, calm: 0.26, leaves: 0.2, brook: 0.6, chime: 0.4, farBird: 0.22, music: 0.7 };
+const AMBIENT = { rough: 0.34, calm: 0.26, leaves: 0.2, brook: 0.6, chime: 0.24, farBird: 0.16, music: 0.7 };
 // Mezcla por actividad: cuanto se deja oir cada capa (1 = nivel base)
 const MIX = {
   lake: { lake: 1, leaves: 1, brook: 1, extras: true, music: 1, solo: false },
@@ -95,8 +96,7 @@ const MIX = {
 };
 
 const QUIET_TO_SING = 0.4;      // quietud minima para que canten
-const LOCK_SECONDS = 1.8;       // tiempo mirando hacia el canto para que aparezca
-const LOCK_ANGLE = Math.cos(0.3);
+const LISTEN_SECONDS = 3.2;     // lo que dura la escucha antes de preguntar quien canta
 
 const clamp01 = (t) => Math.max(0, Math.min(1, t));
 const smooth = (t) => { const u = clamp01(t); return u * u * (3 - 2 * u); };
@@ -145,6 +145,9 @@ export class CalmLakeGame extends MinigameBase {
     this.agitation = 1;          // 1 = lago revuelto · 0 = espejo
     this.calmTarget = 1;
     this.quiet = 0;              // quietud del jugador (bosque)
+    this.stepVolume = 0.07;      // los pasos casi no se oyen: manda el ambiente
+    this.stepSounds = { walk: 'stepSoft', run: 'stepSoft' };
+    this.turno = null;           // voz que esta sonando ahora para adivinarla
     this.hushUntil = 0;
     this.animals = [];
     this.quiz = null;            // la pregunta «¿quien canta?» abierta
@@ -1005,8 +1008,8 @@ export class CalmLakeGame extends MinigameBase {
       eyebrow: 'Isla de la Calma',
       goal: 'Escucha la isla: el lago, las voces del bosque y el estanque',
       hint: 'Aquí no hay prisa. Cuanto más despacio vayas, más cosas se dejan ver y oír.',
-      keys: [['W A S D', 'moverte'], ['Ratón', 'mirar'], ['E', 'sentarte · escuchar'], ['Quieto', 'las voces cantan']],
-      touch: [['Joystick', 'moverte'], ['Arrastra', 'mirar'], ['E', 'sentarte · escuchar'], ['Quieto', 'las voces cantan']]
+      keys: [['W A S D', 'moverte'], ['Ratón', 'mirar'], ['E', 'sentarte en el banco'], ['Quieto', 'las voces cantan para ti']],
+      touch: [['Joystick', 'moverte'], ['Arrastra', 'mirar'], ['E', 'sentarte en el banco'], ['Quieto', 'las voces cantan para ti']]
     });
     this.startSound();
     this.enterStage(0);
@@ -1058,7 +1061,7 @@ export class CalmLakeGame extends MinigameBase {
       this.pointBeacon(FOREST.x + 4, FOREST.z);
       this.later(() => this.showNote({
         title: 'Siete voces escondidas',
-        text: 'En el bosque del oeste viven cinco pájaros, un sapo y un grillo, y solo cantan si te quedas quieto. Ve despacio, escucha de dónde viene la voz y mira hacia allí. Cuando la tengas, te preguntaré quién canta: fíjate en cómo suena.'
+        text: 'En el bosque del oeste viven cinco pájaros, un sapo y un grillo, y solo cantan si te quedas quieto. No hace falta buscarlos: entra en el bosque, párate y escucha. Cuando una voz cante, te preguntaré de quién era: fíjate en cómo suena.'
       }), 1200);
     } else if (i === 2) {
       this.setObjective(MIN_NOTES, '♪');
@@ -1131,7 +1134,7 @@ export class CalmLakeGame extends MinigameBase {
     this.feedback.tweenValue(this.sunPath.material, 'opacity', 0.5, 3.5);
     this.feedback.tweenValue(this.sunDisc.material, 'opacity', 0.75, 3.5);
     this.audio.play('success', { volume: 0.35 });
-    this.audio.play('windChime', { volume: 0.4 });
+    this.audio.play('windChime', { volume: 0.28 });
     this.music.setLayers(2);
     this.say('EL AGUA ES UN ESPEJO', 3000);
     const run = this.runId;
@@ -1189,10 +1192,6 @@ export class CalmLakeGame extends MinigameBase {
 
   updateAnimals(dt) {
     const p = this.controller.position;
-    const cam = this.camera;
-    cam.getWorldDirection(_dir);
-    let candidate = null;
-    let bestLock = 0;
     const canSing = this.quiet >= QUIET_TO_SING && this.time > this.hushUntil && !this.quiz;
 
     this.animals.forEach((a) => {
@@ -1214,27 +1213,14 @@ export class CalmLakeGame extends MinigameBase {
       }
 
       if (a.state === 'hidden' && this.stage === 1) {
+        // fuera de turno cantan de fondo, mas bajito, para que el bosque viva
         a.nextSing -= dt;
         if (a.nextSing <= 0) {
           a.nextSing = a.def.every[0] + Math.random() * (a.def.every[1] - a.def.every[0]);
-          if (canSing) {
-            this.audio.playAt(a.def.sound, a.anchor, { volume: 0.35 + 0.55 * this.quiet, refDistance: 7 });
+          if (canSing && !this.turno) {
+            this.audio.playAt(a.def.sound, a.anchor, { volume: 0.2 + 0.25 * this.quiet, refDistance: 7 });
             a.singing = 0.8;
-            a.lastSang = this.time;
           }
-        }
-        // localizar: quieto, cerca y mirando hacia donde canta
-        _to.copy(a.anchor.position).sub(cam.position);
-        const dist = _to.length();
-        _to.normalize();
-        const facing = _dir.dot(_to) > LOCK_ANGLE;
-        const heard = this.time - (a.lastSang ?? -99) < 6;
-        if (canSing && dist < 11 && facing && heard) {
-          a.lock = Math.min(1, a.lock + dt / LOCK_SECONDS);
-          if (a.lock > bestLock) { bestLock = a.lock; candidate = a; }
-          if (a.lock >= 1) this.askWho(a);
-        } else {
-          a.lock = Math.max(0, a.lock - dt * 0.6);
         }
       } else if (a.state === 'moving' && a.flight) {
         const f = a.flight;
@@ -1266,12 +1252,42 @@ export class CalmLakeGame extends MinigameBase {
       }
     });
 
-    // anillo de escucha
-    if (candidate && candidate.lock > 0.05) {
-      this.focusEl.hidden = false;
-      this.focusEl.style.setProperty('--p', candidate.lock.toFixed(3));
-    } else {
+    this.updateTurno(dt, canSing);
+  }
+
+  /**
+   * «Sientate y escucha»: no hay que buscar al animal ni mirar hacia el. Si te
+   * quedas quieto en el bosque, una voz canta para ti (dos veces) y despues se
+   * pregunta de quien era. Si te mueves, el turno se cancela y vuelve la calma.
+   */
+  updateTurno(dt, canSing) {
+    if (this.stage !== 1 || this.quiz) { this.focusEl.hidden = true; return; }
+    if (!canSing || !this.inForest()) {
+      if (this.turno) { this.turno = null; this.focusEl.hidden = true; }
+      return;
+    }
+    if (!this.turno) {
+      const pendientes = this.animals.filter((a) => a.state === 'hidden');
+      if (!pendientes.length) { this.focusEl.hidden = true; return; }
+      const a = pendientes[Math.floor(Math.random() * pendientes.length)];
+      this.turno = { animal: a, t: 0, cantos: 0 };
+    }
+    const t = this.turno;
+    t.t += dt;
+    // canta al empezar el turno y otra vez a la mitad; luego, la pregunta
+    if (t.cantos === 0 || (t.cantos === 1 && t.t > LISTEN_SECONDS * 0.5)) {
+      t.cantos += 1;
+      this.audio.playAt(t.animal.def.sound, t.animal.anchor, { volume: 0.85, refDistance: 9 });
+      t.animal.singing = 0.8;
+      t.animal.lastSang = this.time;
+    }
+    this.focusEl.hidden = false;
+    this.focusEl.style.setProperty('--p', Math.min(1, t.t / LISTEN_SECONDS).toFixed(3));
+    if (t.t >= LISTEN_SECONDS) {
+      const a = t.animal;
+      this.turno = null;
       this.focusEl.hidden = true;
+      this.askWho(a);
     }
   }
 
@@ -1431,7 +1447,7 @@ export class CalmLakeGame extends MinigameBase {
     this.animals.forEach((a, i) => {
       this.later(() => this.audio.playAt(a.def.sound, a.mesh, { volume: 0.5, refDistance: 6 }), i * 550);
     });
-    this.audio.play('windChime', { volume: 0.35 });
+    this.audio.play('windChime', { volume: 0.26 });
     this.music.setLayers(3);
     this.later(() => {
       this.showNote({
@@ -1542,7 +1558,7 @@ export class CalmLakeGame extends MinigameBase {
   pondDone_() {
     this.pondDone = true;
     this.audio.play('success', { volume: 0.35 });
-    this.audio.play('windChime', { volume: 0.4 });
+    this.audio.play('windChime', { volume: 0.28 });
     completeActivity('calm-estanque', 10);
     this.showNote({
       title: 'Esa melodía la hiciste tú',
@@ -1574,7 +1590,7 @@ export class CalmLakeGame extends MinigameBase {
     // campanas de viento junto al inicio, con una racha
     this.nextChime -= dt;
     if (this.nextChime <= 0) {
-      this.nextChime = 10 + Math.random() * 14;
+      this.nextChime = 16 + Math.random() * 18;
       if (extras) {
         this.audio.playAt('windChime', this.chimeSpot, { volume: AMBIENT.chime, refDistance: 6 });
         this.chimeGust = 1;

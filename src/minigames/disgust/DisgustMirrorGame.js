@@ -14,7 +14,7 @@ import { addReward, completeActivity, setIslandLevel } from '../../data/gameStat
 import { ESPEJO_TEXTOS as T, ESCENAS, SENALES, RONDAS_ESPEJO } from './DesagradoTextos.js';
 import { crearCaverna, crearEspejo, crearFragmento, crearPropEscena } from './desagradoAssets.js';
 import { registrarRonda, terminarEspejo, reiniciarEspejo, leerDesagrado, confusionesOrdenadas } from './desagradoStore.js';
-import { escapar, ndcDe, crearGuia, crearAnclas, leerEnVozAlta, callarVoz } from './desagradoUi.js';
+import { escapar, ndcDe, crearGuia, crearAnclas, encuadrar, altoDe, leerEnVozAlta, callarVoz } from './desagradoUi.js';
 
 const ISLAND = 'disgust';
 const ESPEJO_POS = new THREE.Vector3(0, 3.7, -2.2);
@@ -85,14 +85,50 @@ export class DisgustMirrorGame extends MinigameBase {
     this.buildHud();
     this.buildInput();
     this.setObjective(RONDAS_ESPEJO.length, '🪞');
+    this.ajustarEncuadre();
+  }
+
+  /** El espejo y los fragmentos caben entre la tarjeta de la escena y la guia */
+  ajustarEncuadre() {
+    if (!this.renderer) return;
+    const z = this.zonaSegura();
+    encuadrar(this, z.arriba, z.abajo);
+  }
+
+  zonaSegura() {
+    return { arriba: altoDe(this.escenaEl, 14), abajo: altoDe(this.guia?.el, 18) };
+  }
+
+  /** Pantalla demasiado baja para colgar las etiquetas de cada fragmento */
+  compacto() {
+    const r = this.renderer?.domElement.getBoundingClientRect();
+    if (!r) return false;
+    const z = this.zonaSegura();
+    return r.height - z.arriba - z.abajo < 360;
+  }
+
+  /** Cuanto se acercan los fragmentos al espejo segun el hueco libre */
+  compresion() {
+    const r = this.renderer?.domElement.getBoundingClientRect();
+    if (!r) return { x: 1, y: 1 };
+    const z = this.zonaSegura();
+    const libre = r.height - z.arriba - z.abajo;
+    const y = libre < 260 ? 0.52 : libre < 340 ? 0.68 : libre < 440 ? 0.84 : 1;
+    const x = r.width < 520 ? 0.82 : 1;
+    return { x, y };
+  }
+
+  _resize() {
+    super._resize();
+    this.ajustarEncuadre();
   }
 
   buildHud() {
     this.anclasEl = document.createElement('div');
     this.anclasEl.className = 'dc-anclas';
     this.el.hud.appendChild(this.anclasEl);
-    this.anclas = crearAnclas(this, this.anclasEl);
-    this.guia = crearGuia(this);
+    this.anclas = crearAnclas(this, this.anclasEl, () => this.zonaSegura());
+    this.guia = crearGuia(this, () => this.ajustarEncuadre());
     this.escenaEl = document.createElement('div');
     this.escenaEl.className = 'dm-escena';
     this.escenaEl.hidden = true;
@@ -150,7 +186,10 @@ export class DisgustMirrorGame extends MinigameBase {
     senales.forEach((senal, k) => {
       const mesh = crearFragmento(k);
       const [x, y] = ORBITA[k];
-      const base = new THREE.Vector3(x, y, 0.6);
+      // en pantallas bajas los fragmentos se acercan al espejo para que las
+      // ocho etiquetas quepan en el hueco libre
+      const c = this.compresion();
+      const base = new THREE.Vector3(x * c.x, ESPEJO_POS.y + (y - ESPEJO_POS.y) * c.y, 0.6);
       mesh.position.copy(base).add(new THREE.Vector3(0, -2, 0));
       mesh.material.opacity = 0;
       mesh.userData.fase = k * 0.8;
@@ -161,7 +200,9 @@ export class DisgustMirrorGame extends MinigameBase {
       etiqueta.innerHTML = `<b>${senal.icono}</b><span>${escapar(senal.texto)}</span>`;
       const f = { senal, mesh, estado: 'libre', base };
       etiqueta.addEventListener('click', () => this.elegir(f));
-      this.anclas.poner(`frag-${senal.id}`, etiqueta, base, { desplazaY: 54 });
+      // en pantallas bajas las ocho etiquetas se reparten en dos columnas
+      const fijo = this.compacto() ? { fx: k % 2 ? 0.845 : 0.155, fy: 0.13 + Math.floor(k / 2) * 0.25 } : null;
+      this.anclas.poner(`frag-${senal.id}`, etiqueta, base, { desplazaY: 54, fijo });
       this.fragmentos.push(f);
       this.feedback.tween({ from: 0, to: 1, duration: 0.6 + k * 0.08, onUpdate: (t) => { mesh.position.y = base.y - 2 * (1 - t); mesh.material.opacity = t; } });
     });
@@ -174,6 +215,7 @@ export class DisgustMirrorGame extends MinigameBase {
   ponerEscena(escena) {
     this.escenaEl.hidden = false;
     this.escenaEl.innerHTML = `<b>${escena.icono}</b><span><strong>${escapar(escena.titulo)}</strong>${escapar(escena.texto)}</span>`;
+    this.ajustarEncuadre();
     if (this.prop) { this.scene.remove(this.prop); this.prop = null; }
     // PLACEHOLDER_PROP_ESCENA
     this.prop = crearPropEscena(escena.prop);
@@ -283,6 +325,7 @@ export class DisgustMirrorGame extends MinigameBase {
     this.fase = 'fin';
     this.guia.ocultar();
     this.escenaEl.hidden = true;
+    this.ajustarEncuadre();
     this.anclas.limpiar();
     this.espejo.userData.grietas.material.opacity = 0;
     this.espejo.userData.huecos.forEach((h) => { h.visible = false; });
