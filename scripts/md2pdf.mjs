@@ -145,58 +145,60 @@ function markdown(src) {
 /* ------------------------------------------------------------------ estilos */
 
 const CSS = `
+  /* Blanco y negro: solo negro y grises neutros, para imprimir en laser */
   @page { size: A4; margin: 20mm 18mm 18mm; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: "Segoe UI", "Calibri", system-ui, sans-serif; font-size: 10.5pt; line-height: 1.55; color: #1c2230; }
-  h1, h2, h3, h4 { color: #143a5e; line-height: 1.25; margin: 0 0 8px; break-after: avoid; }
-  h1 { font-size: 20pt; margin-top: 0; padding-bottom: 6px; border-bottom: 3px solid #2f7fb8; }
-  h2 { font-size: 14pt; margin-top: 22px; padding-bottom: 4px; border-bottom: 1px solid #cfdcea; }
-  h3 { font-size: 11.5pt; margin-top: 16px; color: #1d5e8c; }
-  h4 { font-size: 10.5pt; margin-top: 12px; color: #33506e; }
+  body { margin: 0; font-family: "Segoe UI", "Calibri", system-ui, sans-serif; font-size: 10.5pt; line-height: 1.55; color: #000; }
+  h1, h2, h3, h4 { color: #000; line-height: 1.25; margin: 0 0 8px; break-after: avoid; }
+  h1 { font-size: 20pt; margin-top: 0; padding-bottom: 6px; border-bottom: 2.5px solid #000; }
+  h2 { font-size: 14pt; margin-top: 22px; padding-bottom: 4px; border-bottom: 1px solid #9a9a9a; }
+  h3 { font-size: 11.5pt; margin-top: 16px; color: #1a1a1a; }
+  h4 { font-size: 10.5pt; margin-top: 12px; color: #333; }
   p { margin: 0 0 8px; }
-  a { color: #1d5e8c; text-decoration: none; }
-  strong { color: #10263d; }
+  a { color: #000; text-decoration: underline; text-underline-offset: 2px; }
+  strong { color: #000; }
   ul, ol { margin: 0 0 10px; padding-left: 20px; }
   li { margin: 2px 0; break-inside: avoid; }
   ul.anidada { margin: 2px 0; }
-  code { font-family: "Consolas", "Courier New", monospace; font-size: 9pt; background: #eef3f8; border: 1px solid #dbe5ef; border-radius: 3px; padding: 0 3px; }
-  pre.codigo { background: #f5f8fb; border: 1px solid #dbe5ef; border-left: 3px solid #2f7fb8; border-radius: 4px; padding: 8px 10px; margin: 0 0 10px; overflow: hidden; break-inside: avoid; }
+  code { font-family: "Consolas", "Courier New", monospace; font-size: 9pt; background: #f0f0f0; border: 1px solid #c8c8c8; border-radius: 3px; padding: 0 3px; }
+  pre.codigo { background: #f4f4f4; border: 1px solid #c8c8c8; border-left: 3px solid #555; border-radius: 3px; padding: 8px 10px; margin: 0 0 10px; overflow: hidden; break-inside: avoid; }
   pre.codigo code { background: none; border: 0; padding: 0; font-size: 8.6pt; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
-  blockquote { margin: 0 0 10px; padding: 7px 12px; background: #fff8e6; border-left: 3px solid #e0a11a; border-radius: 0 4px 4px 0; }
+  blockquote { margin: 0 0 10px; padding: 7px 12px; background: #f4f4f4; border-left: 3px solid #555; border-radius: 0 3px 3px 0; }
   blockquote p:last-child { margin-bottom: 0; }
   table { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 9.2pt; break-inside: auto; }
   thead { display: table-header-group; }
   tr { break-inside: avoid; }
-  th { background: #143a5e; color: #fff; text-align: left; font-weight: 600; padding: 5px 7px; border: 1px solid #143a5e; }
-  td { padding: 5px 7px; border: 1px solid #cfdcea; vertical-align: top; }
-  tbody tr:nth-child(even) td { background: #f5f8fb; }
-  hr { border: 0; border-top: 1px solid #dbe5ef; margin: 16px 0; }
-  .casilla { color: #2f7fb8; font-size: 11pt; }
+  th { background: #1a1a1a; color: #fff; text-align: left; font-weight: 600; padding: 5px 7px; border: 1px solid #1a1a1a; }
+  td { padding: 5px 7px; border: 1px solid #9a9a9a; vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #f2f2f2; }
+  hr { border: 0; border-top: 1px solid #c8c8c8; margin: 16px 0; }
+  .casilla { color: #000; font-size: 11pt; }
 
   /* portada */
   .portada { height: 247mm; display: flex; flex-direction: column; justify-content: center; text-align: center; break-after: page; }
-  .portada__sello { width: 46mm; height: 3px; background: #2f7fb8; margin: 0 auto 10mm; }
-  .portada h1 { border: 0; font-size: 30pt; color: #143a5e; margin-bottom: 4mm; }
-  .portada__sub { font-size: 14pt; color: #2f7fb8; margin-bottom: 2mm; }
-  .portada__lema { font-size: 11pt; font-style: italic; color: #56657a; margin-bottom: 14mm; }
-  .portada__datos { display: inline-block; text-align: left; font-size: 10pt; color: #33506e; border-top: 2px solid #2f7fb8; padding-top: 5mm; }
-  .portada__datos b { color: #143a5e; }
+  .portada__sello { width: 46mm; height: 3px; background: #000; margin: 0 auto 10mm; }
+  .portada h1 { border: 0; font-size: 30pt; color: #000; margin-bottom: 4mm; }
+  .portada__sub { font-size: 14pt; color: #333; margin-bottom: 2mm; }
+  .portada__lema { font-size: 11pt; font-style: italic; color: #555; margin-bottom: 14mm; }
+  .portada__datos { display: inline-block; text-align: left; font-size: 10pt; color: #1a1a1a; border-top: 2px solid #000; padding-top: 5mm; }
+  .portada__datos b { color: #000; }
 
   /* indice */
   .indice { break-after: page; }
   .indice h1 { margin-bottom: 10px; }
   .indice ol { list-style: none; padding: 0; margin: 0; counter-reset: n1; }
   .indice li { margin: 0; }
-  .indice .n1 { font-weight: 600; color: #143a5e; padding: 5px 0 5px; border-bottom: 1px dotted #cfdcea; }
-  .indice .n2 { padding: 2px 0 2px 14px; color: #33506e; font-size: 9.8pt; }
-  .indice .n3 { padding: 1px 0 1px 30px; color: #56657a; font-size: 9.3pt; }
+  .indice .n1 { font-weight: 600; color: #000; padding: 5px 0 5px; border-bottom: 1px dotted #b4b4b4; }
+  .indice .n2 { padding: 2px 0 2px 14px; color: #1a1a1a; font-size: 9.8pt; }
+  .indice .n3 { padding: 1px 0 1px 30px; color: #444; font-size: 9.3pt; }
+  .indice a { text-decoration: none; }
   .doc { break-before: page; }
   .doc:first-of-type { break-before: auto; }
 `;
 
 /** Plantilla de pie de pagina: numeracion */
 const pie = (titulo) => `
-  <div style="width:100%;font-size:8pt;color:#7b8798;font-family:'Segoe UI',sans-serif;padding:0 18mm;display:flex;justify-content:space-between;">
+  <div style="width:100%;font-size:8pt;color:#555;font-family:'Segoe UI',sans-serif;padding:0 18mm;display:flex;justify-content:space-between;">
     <span>${titulo}</span><span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
   </div>`;
 const cabecera = '<div></div>';
@@ -279,7 +281,7 @@ const tocGeneral = [];
 const cuerpo = partes.map((p) => {
   tocGeneral.push({ nivel: 1, texto: p.titulo, id: slug(p.titulo) });
   p.toc.filter((t) => t.nivel === 2).forEach((t) => tocGeneral.push({ nivel: 2, texto: t.texto, id: t.id }));
-  return `<section class="doc"><h1 id="${slug(p.titulo)}">${esc(p.titulo)}</h1><p style="color:#56657a;margin-bottom:14px">${esc(p.sub)}</p>${p.html}</section>`;
+  return `<section class="doc"><h1 id="${slug(p.titulo)}">${esc(p.titulo)}</h1><p style="color:#333;margin-bottom:14px">${esc(p.sub)}</p>${p.html}</section>`;
 }).join('\n');
 await aPdf(
   paginaHtml({ titulo: 'Documentación del proyecto', subtitulo: 'Manual de usuario · Manual de administrador · Referencias y normas', meta: META, cuerpoHtml: cuerpo, toc: tocGeneral }),
