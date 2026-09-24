@@ -209,11 +209,14 @@ export class CalmLakeGame extends MinigameBase {
     this.controller.yaw = 0;
     this.controller.cfg.walkSpeed = 3.8;
     this.controller.cfg.runSpeed = 6.4;
-    // pasos: en el agua chapotean
+    // pasos: casi mudos en tierra (stepVolume) y un chapoteo suave en el agua
     this.controller.events.step.length = 0;
     this.controller.on('step', ({ running }) => {
       const wet = this.inWater();
-      this.audio.play(wet ? 'splash' : (running ? 'stepRun' : 'step'), { volume: wet ? 0.3 : 0.2 });
+      const v = this.stepVolume * (running ? 1 : 0.85);
+      if (wet) { this.audio.play('splash', { volume: 0.16 }); return; }
+      if (v <= 0) return;
+      this.audio.play(running ? this.stepSounds.run : this.stepSounds.walk, { volume: v });
     });
 
     this.breathPause = new BreathPause(this);

@@ -167,7 +167,7 @@ export class DisgustCavesGame extends MinigameBase {
 
   renderMapa() {
     this.mapaEl.innerHTML = `<span class="dc-mapa__titulo">${T.hud.mapa}</span>${CUEVAS.map((c) => `
-      <span class="dc-mapa__cueva ${this.completadas.has(c.id) ? 'is-done' : ''} ${this.cueva?.id === c.id ? 'is-on' : ''}" style="--c:${c.color}"><b>${c.icono}</b>${c.corto}${this.completadas.has(c.id) ? ' ✓' : ''}</span>`).join('')}`;
+      <span class="dc-mapa__cueva ${this.completadas.has(c.id) ? 'is-done' : ''} ${this.cueva?.id === c.id ? 'is-on' : ''}" style="--c:${c.color}"><b>${c.icono}</b><i class="dc-mapa__nombre">${c.corto}</i>${this.completadas.has(c.id) ? ' ✓' : ''}</span>`).join('')}`;
   }
 
   renderLabel() {

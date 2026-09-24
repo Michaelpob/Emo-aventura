@@ -34,17 +34,51 @@ const MIN_OVERLAP = 0.28;         // menos solape que esto = el bloque se cae
 const HELP_USES = 2;
 const PAUSE_TO_UNBLOCK = 1.5;     // segundos parado para soltar la mano bloqueada
 
-// Cada bloque que se cae trae una frase corta de animo: la frustracion sube,
-// y justo ahi conviene una voz que recuerde que se puede seguir.
-const FALL_CHEERS = [
-  'SE CAYÓ · TRANQUILO, VIENE OTRO',
-  'SE CAYÓ · RESPIRA Y SIGUE',
-  'SE CAYÓ · CADA INTENTO CUENTA',
-  'SE CAYÓ · TÚ PUEDES',
-  'SE CAYÓ · NO PASA NADA, DE NUEVO',
-  'SE CAYÓ · LA TORRE SIGUE AHÍ',
-  'SE CAYÓ · UN PASO A LA VEZ'
-];
+// Cada reves trae su letrero de animo: la frustracion sube justo ahi, y ese
+// es el momento de una voz que recuerde que se puede seguir. Las frases se
+// van turnando para que no se repita siempre la misma.
+const CARTELES = {
+  caida: {
+    icono: '🧱',
+    titulo: 'SE CAYÓ',
+    frases: [
+      'Vuelve a intentarlo: la torre sigue ahí.',
+      'Nadie acierta todos. Ahí viene otro bloque.',
+      'Respira y suelta el siguiente con calma.',
+      'Cada intento te dice dónde poner el próximo.',
+      'Tú puedes: un bloque a la vez.',
+      'Esto molesta, y molestarse es normal. Sigue.',
+      'Si se te va la mano, para un momento y vuelve.',
+      'No empezaste de cero: lo de abajo sigue en pie.'
+    ]
+  },
+  rafaga: {
+    icono: '🌬️',
+    titulo: 'LA RÁFAGA TUMBÓ LA TORRE',
+    frases: [
+      'No fue culpa tuya. Vuelve a subir.',
+      'A veces se cae por algo que no depende de ti.',
+      'Lo que aprendiste construyendo no se lo lleva el viento.',
+      'Enfádate si quieres, y pon el siguiente bloque.'
+    ]
+  },
+  bloqueo: {
+    icono: '✋',
+    titulo: 'SE TE VA LA MANO',
+    frases: [
+      'Mantén «Parar»: la frustración baja y la mano vuelve.',
+      'Parar no es rendirse. Respira y sigues tú.'
+    ]
+  },
+  vuelta: {
+    icono: '🌿',
+    titulo: 'LA MANO VUELVE',
+    frases: [
+      'Pararte funcionó. Sigue a tu ritmo.',
+      'Así se regula: parar, respirar, volver.'
+    ]
+  }
+};
 
 // Con cuanta frustracion llega el jugador: fija el ritmo, las rafagas y lo que
 // sube el medidor con cada reves.
@@ -386,8 +420,7 @@ export class FrustrationTowerGame extends MinigameBase {
       this.spawnDebris(x, this.topY + BLOCK_H / 2, w, 0, (x < baseX ? -1 : 1) * 1.5);
       this.stats.lost += 1;
       this.addFrus(18);
-      this.fallCheer = ((this.fallCheer ?? -1) + 1) % FALL_CHEERS.length;
-      this.say(FALL_CHEERS[this.fallCheer], 2600);
+      this.cartel('caida');
       this.audio.play('thud', { volume: 0.5, rate: 0.8 });
       this.shakeBy(0.25);
       this.later(() => { if (this.phase === 'play') this.newSlider(); }, 500);
@@ -461,7 +494,7 @@ export class FrustrationTowerGame extends MinigameBase {
     this.levels = Math.max(0, this.levels);
     this.addFrus(25);
     this.shakeBy(0.5);
-    this.say('LA RÁFAGA TUMBÓ LA TORRE', 1800);
+    this.cartel('rafaga');
     this.audio.play('thud', { volume: 0.6, rate: 0.7 });
     this.feedback.burst(new THREE.Vector3(this.topX, this.topY + 1, 0), { count: 30, color: '#c9d6a0', speed: 6, life: 1.2, gravity: -1 });
     this.renderer.shadowMap.needsUpdate = true;
@@ -484,7 +517,7 @@ export class FrustrationTowerGame extends MinigameBase {
   /** La mano se bloquea: el bloque tiembla y no se puede soltar hasta parar */
   block() {
     this.phase = 'blocked';
-    this.say('SE TE VA LA MANO · PARA UN MOMENTO', 0);
+    this.cartel('bloqueo', 0);
     this.audio.play('soften', { volume: 0.4 });
     this.pauseBar.show(true);
     this.pauseBar.set(0);
@@ -505,7 +538,7 @@ export class FrustrationTowerGame extends MinigameBase {
     } else {
       this.audio.unduck(0.6);
       if (this.phase === 'play') this.clearSay();
-      if (this.phase === 'blocked') this.say('SE TE VA LA MANO · PARA UN MOMENTO', 0);
+      if (this.phase === 'blocked') this.cartel('bloqueo', 0);
     }
   }
 
@@ -535,6 +568,45 @@ export class FrustrationTowerGame extends MinigameBase {
     this.say('ALGUIEN TE SOSTIENE EL BLOQUE', 1600);
     this.audio.play('chime', { volume: 0.35, rate: 1.1 });
     this.renderLabel();
+  }
+
+  /**
+   * Letrero de animo en mitad de la pantalla. `ms = 0` lo deja fijo hasta que
+   * otro lo sustituya (mano bloqueada). Mientras se lee, los avisos cortos no
+   * lo tapan.
+   */
+  cartel(tipo, ms = 4200) {
+    const c = CARTELES[tipo];
+    if (!c) return;
+    this.cartelTurno = this.cartelTurno ?? {};
+    const i = ((this.cartelTurno[tipo] ?? -1) + 1) % c.frases.length;
+    this.cartelTurno[tipo] = i;
+    clearTimeout(this._cartelT);
+    this.el.center.innerHTML = `
+      <div class="fr-cartel" data-tipo="${tipo}">
+        <b><span aria-hidden="true">${c.icono}</span> ${c.titulo}</b>
+        <span>${c.frases[i]}</span>
+      </div>
+    `;
+    this.cartelHasta = ms ? performance.now() + ms : Infinity;
+    if (ms) {
+      this._cartelT = this.later(() => {
+        if (this.el.center.querySelector('.fr-cartel')) this.el.center.innerHTML = '';
+        this.cartelHasta = 0;
+      }, ms);
+    }
+  }
+
+  /** Los avisos cortos esperan a que termine el letrero de animo */
+  say(text, ms = 1600) {
+    if (this.cartelHasta && performance.now() < this.cartelHasta) return;
+    super.say(text, ms);
+  }
+
+  clearSay() {
+    this.cartelHasta = 0;
+    clearTimeout(this._cartelT);
+    super.clearSay();
   }
 
   note(key) {
@@ -620,7 +692,8 @@ export class FrustrationTowerGame extends MinigameBase {
           this.frus = Math.min(this.frus, 40);
           this.frusBar.set(this.frus / 100);
           this.pauseBar.show(false);
-          this.say('PULSO RECUPERADO', 1500);
+          this.clearSay();
+          this.cartel('vuelta', 3000);
           this.audio.play('breathOut', { volume: 0.4 });
         }
       }

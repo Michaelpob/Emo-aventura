@@ -86,6 +86,46 @@ export function crearGuia(game, onCambio = null) {
  * Anclas: nodos DOM que siguen a un punto de la escena (etiquetas y botones
  * sobre totems, entradas, fragmentos). `poner(id, el, pos)`; `update()` cada frame.
  */
+/**
+ * Etiquetas que no se pisan: las que se solapan se apartan en vertical (y, si
+ * no cabe, en horizontal) sin salirse del hueco libre. En un movil tumbado
+ * cuatro carteles seguidos se montaban unos sobre otros y no se leia ninguno.
+ */
+function separar(items, pasadas = 6) {
+  const HUECO = 6;
+  for (let k = 0; k < pasadas; k += 1) {
+    let movido = false;
+    for (let i = 0; i < items.length; i += 1) {
+      for (let j = i + 1; j < items.length; j += 1) {
+        const a = items[i];
+        const b = items[j];
+        const solapeX = a.w2 + b.w2 + HUECO - Math.abs(a.x - b.x);
+        const solapeY = a.h2 + b.h2 + HUECO - Math.abs(a.y - b.y);
+        if (solapeX <= 0 || solapeY <= 0) continue;
+        movido = true;
+        const arriba = a.y <= b.y ? a : b;
+        const abajo = arriba === a ? b : a;
+        const sitioArriba = arriba.y - arriba.minY;
+        const sitioAbajo = abajo.maxY - abajo.y;
+        if (sitioArriba + sitioAbajo > solapeY) {
+          // se reparte el empujon segun el sitio que tiene cada una
+          const total = sitioArriba + sitioAbajo || 1;
+          arriba.y = Math.max(arriba.minY, arriba.y - solapeY * (sitioArriba / total));
+          abajo.y = Math.min(abajo.maxY, abajo.y + solapeY * (sitioAbajo / total));
+        } else {
+          // sin alto libre: se separan de lado
+          const izq = a.x <= b.x ? a : b;
+          const der = izq === a ? b : a;
+          const empuje = Math.min(solapeX / 2, 24);
+          izq.x = Math.max(izq.w2 + 4, izq.x - empuje);
+          der.x = der.x + empuje;
+        }
+      }
+    }
+    if (!movido) break;
+  }
+}
+
 export function crearAnclas(game, contenedor, zonaSegura = null) {
   const lista = new Map();
   const p = { x: 0, y: 0 };
@@ -108,20 +148,27 @@ export function crearAnclas(game, contenedor, zonaSegura = null) {
       // franjas ocupadas por los carteles: ninguna etiqueta entra ahi ni se
       // sale de la pantalla (clave en un movil tumbado)
       const z = zonaSegura?.() ?? { arriba: 0, abajo: 0 };
+      const arriba = z.arriba ?? 0;
+      const abajo = z.abajo ?? 0;
+      const puestas = [];
       for (const a of lista.values()) {
         aPantalla(game, a.pos, p);
-        const arriba = z.arriba ?? 0;
-        const abajo = z.abajo ?? 0;
         let x = a.fijo ? a.fijo.fx * r.width : p.x;
         let y = a.fijo ? arriba + a.fijo.fy * Math.max(0, r.height - arriba - abajo) : p.y + a.desplazaY;
         const w2 = a.el.offsetWidth / 2;
         const h2 = a.el.offsetHeight / 2;
         x = Math.max(w2 + 4, Math.min(r.width - w2 - 4, x));
-        const minY = (z.arriba ?? 0) + h2 + 4;
-        const maxY = r.height - (z.abajo ?? 0) - h2 - 4;
+        const minY = arriba + h2 + 4;
+        const maxY = r.height - abajo - h2 - 4;
         y = maxY > minY ? Math.max(minY, Math.min(maxY, y)) : (minY + maxY) / 2;
-        a.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
-        a.el.style.visibility = p.detras ? 'hidden' : '';
+        const oculta = !!p.detras;
+        a.el.style.visibility = oculta ? 'hidden' : '';
+        if (!oculta) puestas.push({ el: a.el, x, y, w2, h2, minY, maxY });
+        else a.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+      }
+      separar(puestas);
+      for (const q of puestas) {
+        q.el.style.transform = `translate(${q.x}px, ${q.y}px) translate(-50%, -50%)`;
       }
     },
     dispose() { this.limpiar(); }
