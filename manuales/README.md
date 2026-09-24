@@ -8,6 +8,21 @@ Sitio publicado: **https://michaelpob.github.io/Emo-aventura/**
 
 ---
 
+## En PDF (para imprimir o entregar)
+
+Los mismos documentos, maquetados con portada, tabla de contenido y numeracion
+de paginas, estan en [`manuales/pdf/`](pdf/):
+
+| Archivo | Contenido |
+|---|---|
+| [EMO-AVENTURA-documentacion-completa.pdf](pdf/EMO-AVENTURA-documentacion-completa.pdf) | Los tres manuales en un solo documento, con indice general |
+| [Manual-de-usuario.pdf](pdf/Manual-de-usuario.pdf) | Solo el manual de usuario |
+| [Manual-de-administrador.pdf](pdf/Manual-de-administrador.pdf) | Solo el manual de administrador |
+| [Referencias-y-normas.pdf](pdf/Referencias-y-normas.pdf) | Solo referencias y normas |
+
+Se regeneran a partir de los `.md` con el guion de conversion (Markdown -> HTML
+-> PDF con Edge sin cabeza); si cambias un manual, vuelve a generarlos.
+
 ## Los tres documentos
 
 | Documento | Para quién | Qué contiene |
