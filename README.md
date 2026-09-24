@@ -11,6 +11,14 @@ progreso": se juega moviéndose, mirando, empujando, saltando y sosteniendo.
 ninguna decisión del jugador resta puntos, vidas ni progreso. No hay *game over*,
 solo reintento.
 
+## Documentacion
+
+La documentacion completa del proyecto esta en [`manuales/`](manuales/README.md):
+
+- [Manual de usuario](manuales/MANUAL-DE-USUARIO.md) — que hace cada juego y como se juega, controles, progreso, accesibilidad y guia para docentes.
+- [Manual de administrador](manuales/MANUAL-DE-ADMINISTRADOR.md) — instalacion, compilacion y despliegue, estructura, arquitectura, datos, como editar contenido y como anadir islas.
+- [Referencias y normas](manuales/REFERENCIAS-Y-NORMAS.md) — marco conceptual, bibliografia en APA y normas tecnicas, de accesibilidad, de contenido, de uso y de datos.
+
 ## Ejecutar
 
 ```bash
