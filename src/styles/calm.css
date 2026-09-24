@@ -161,7 +161,8 @@
 .cl-who__hint { margin: 8px 0 0; font-size: 0.82rem; line-height: 1.4; color: rgba(255, 255, 255, 0.82); }
 
 @media (max-width: 720px) {
-  .cl-stage { top: 60px; font-size: 0.68rem; padding: 6px 14px; }
+  /* arriba del todo: debajo quedaba tapado por la nota de la etapa */
+  .cl-stage { top: 12px; font-size: 0.68rem; padding: 6px 14px; max-width: calc(100% - 240px); overflow: hidden; text-overflow: ellipsis; }
   .cl-melody { bottom: 4%; }
   .cl-focus i { width: 54px; height: 54px; }
 }

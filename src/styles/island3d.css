@@ -303,6 +303,18 @@
 .i3d-panel__actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
 .i3d-panel__hint { margin-top: 14px; font-size: 0.78rem; color: rgba(255, 255, 255, 0.55); }
 .i3d-panel--card { max-height: 80vh; max-height: 80dvh; overflow-y: auto; text-align: left; }
+/* En un movil el texto de cierre es mas alto que la tarjeta: los botones se
+   quedan pegados abajo para que «Continuar» se vea sin tener que desplazar. */
+.i3d-panel { --panel-bg: rgba(10, 18, 26, 0.94); background: var(--panel-bg); }
+.i3d-panel--card .i3d-panel__actions {
+  position: sticky;
+  bottom: -22px;
+  z-index: 1;
+  margin: 12px -22px -22px;
+  padding: 12px 22px 16px;
+  background: var(--panel-bg);
+  box-shadow: 0 -10px 18px var(--panel-bg);
+}
 .i3d-panel--card h3 { text-align: center; }
 
 .i3d-btn {
@@ -790,6 +802,14 @@
 .i3d-breath__cycles i { font-style: normal; color: rgba(255, 255, 255, 0.3); transition: color 400ms ease; }
 .i3d-breath__cycles i.is-on { color: var(--lung); text-shadow: 0 0 10px var(--lung); }
 
+@media (max-height: 560px) {
+  /* el contador sube a la esquina (abajo mandan las barras y los botones) y
+     los puntos del objetivo se colocan justo debajo, sin taparse */
+  .i3d .i3d-wave { bottom: auto; top: 8px; right: 10px; font-size: 0.7rem; padding: 4px 9px; }
+  .i3d .i3d-wave b { font-size: 0.86rem; }
+  .i3d .i3d__objective { top: 34px; right: 12px; font-size: 0.86rem; gap: 5px; }
+}
+
 @media (max-height: 520px) {
   /* con poco alto, el aviso central baja para no montarse sobre la nota de arriba */
   .i3d__center { top: auto; bottom: 21%; }
@@ -993,7 +1013,32 @@
 .bp-skip { margin-top: 10px; font-size: 0.85rem; min-height: 38px; }
 .bp-skip[hidden] { display: none; }
 
+/* Mientras se respira manda el circulo: la nota y el aviso central se apartan
+   (antes se leian por debajo de la tarjeta). */
+.i3d.is-breathing .i3d__notes,
+.i3d.is-breathing .i3d__center { opacity: 0; transition: opacity 240ms ease; pointer-events: none; }
+
+@media (max-height: 560px) {
+  /* movil tumbado: la tarjeta se encoge para seguir viendo la escena */
+  .bp-layer { padding: 8px 8px max(4%, 54px); background: rgba(4, 8, 14, 0.2); }
+  .bp-card { width: min(280px, 100%); padding: 8px 14px 10px; border-radius: 18px; }
+  .bp-eyebrow { margin: 0 0 4px; font-size: 0.66rem; }
+  .bp-circle { width: 88px; height: 88px; margin: 2px auto; }
+  .bp-phase { font-size: 0.82rem; }
+  .bp-hint { margin: 4px 0 0; font-size: 0.76rem; }
+  .bp-cycles { margin: 6px 0 0; gap: 6px; font-size: 0.7rem; }
+  .bp-skip { margin-top: 6px; font-size: 0.78rem; min-height: 32px; padding: 6px 12px; }
+}
+
 /* boton "Salir al mapa" en la primera tarjeta de cada isla */
 .i3d-intro__actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
 .i3d-intro__exit { font-size: 0.88rem; opacity: 0.85; }
 .i3d-intro__exit:hover { opacity: 1; }
+
+
+/* La casa en marcha: con la lista de tareas a la derecha, la nota se corre a
+   la izquierda para no taparla (movil tumbado). */
+@media (max-height: 560px) {
+  .i3d--sadness .i3d__notes { justify-items: start; padding-left: 8px; }
+  .i3d--sadness .i3d-note { width: min(430px, calc(100% - 220px)); }
+}

@@ -135,6 +135,7 @@ export class DisgustCavesGame extends MinigameBase {
 
   _resize() {
     super._resize();
+    this.renderLabel();
     this.ajustarEncuadre();
   }
 
@@ -171,8 +172,15 @@ export class DisgustCavesGame extends MinigameBase {
   }
 
   renderLabel() {
+    if (!this.waveEl) return;        // el primer _resize() ocurre antes del HUD
     if (this.cueva) {
-      this.waveEl.innerHTML = `${escapar(this.cueva.nombre)} · ${T.hud.progreso} <b>${Math.min(this.cueva.elementos.length, this.indice + 1)}</b> de ${this.cueva.elementos.length}`;
+      // en pantallas estrechas el nombre largo se montaba con el mapa de cuevas
+      const corto = window.innerWidth < 780;
+      const nombre = escapar(corto ? this.cueva.corto : this.cueva.nombre);
+      const n = Math.min(this.cueva.elementos.length, this.indice + 1);
+      this.waveEl.innerHTML = corto
+        ? `${nombre} <b>${n}</b>/${this.cueva.elementos.length}`
+        : `${nombre} · ${T.hud.progreso} <b>${n}</b> de ${this.cueva.elementos.length}`;
     } else {
       this.waveEl.innerHTML = `${T.hud.mapa} <b>${this.completadas.size}</b> de ${CUEVAS.length}`;
     }

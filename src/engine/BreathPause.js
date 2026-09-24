@@ -34,6 +34,9 @@ export class BreathPause {
       g._resetStick?.();
       g.releaseButtons?.();
       g.audio?.duck(0.35);
+      // mientras se respira, fuera avisos y notas: solo el circulo
+      g.clearSay?.();
+      g.root?.classList.add('is-breathing');
 
       const layer = document.createElement('div');
       layer.className = 'bp-layer';
@@ -65,6 +68,7 @@ export class BreathPause {
         clearInterval(iv);
         layer.classList.add('is-out');
         setTimeout(() => layer.remove(), 420);
+        g.root?.classList.remove('is-breathing');
         g.controller.frozen = false;
         g.audio?.unduck();
         this.active = false;

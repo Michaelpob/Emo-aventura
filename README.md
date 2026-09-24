@@ -3,7 +3,7 @@
 > "Vive la aventura de descubrir el poder de tus emociones"
 
 Mundo 3D jugable sobre reconocimiento y regulación emocional. Desde un mapa
-central se entra a cinco islas y **cada una tiene una mecánica de juego distinta**,
+central se entra a seis islas y **cada una tiene una mecánica de juego distinta**,
 derivada de la emoción que representa. Nada de "texto + botón + barra de
 progreso": se juega moviéndose, mirando, empujando, saltando y sosteniendo.
 
@@ -29,7 +29,7 @@ Dentro de las islas que se caminan: **WASD** moverse · **SHIFT** correr ·
 pausa · **F3** medidor de rendimiento. En táctil: joystick izquierdo, arrastre
 derecho para la cámara y botones de saltar/interactuar.
 
-## Las cinco islas
+## Las seis islas
 
 | Isla | Emoción | Vista | Verbo | Reto |
 |---|---|---|---|---|
@@ -116,7 +116,7 @@ entrega sus herramientas al cruzar el portal; el progreso que ve el jugador son
 las islas completadas y los puntos (no hay insignias). **Todas las islas
 están abiertas desde el principio**: se puede entrar a cualquiera sin haber
 jugado otra antes. El orden Miedo → Ira → Desagrado solo numera los capítulos
-de la aventura; las cinco islas cuentan en el contador del mapa y en Mi progreso.
+de la aventura; las seis islas cuentan en el contador del mapa y en Mi progreso.
 Al terminar una isla se puede **volver a jugar** desde la pantalla de cierre, sin
 pasar por el mapa.
 

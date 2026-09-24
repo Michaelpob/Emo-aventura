@@ -130,3 +130,16 @@
   }
   .emo-dialog, .emo-choices__card, .emo-panel__card { background: #fff; }
 }
+
+
+/* Movil tumbado: el panel de progreso cabe de una vez (antes el aro y las dos
+   cifras ocupaban toda la pantalla y la lista de islas quedaba fuera). */
+@media (max-height: 560px) {
+  .progress { gap: 10px; }
+  .progress__ring { width: 84px; height: 84px; }
+  .progress__ring span { font-size: 1.05rem; }
+  .progress__stats { gap: 8px; }
+  .progress__stat { padding: 6px 10px; }
+  .progress__stat b { font-size: 1.05rem; }
+  .modal__head h2, .modal h2 { font-size: 1.1rem; }
+}

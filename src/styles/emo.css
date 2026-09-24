@@ -1183,3 +1183,19 @@
   0%, 45% { transform: rotate(0deg); }
   70%, 100% { transform: rotate(-90deg); }
 }
+
+
+/* Movil tumbado: en la pantalla final el boton se queda pegado abajo (antes
+   habia que desplazar hasta el fondo para encontrarlo). */
+@media (max-height: 620px) {
+  .final { gap: 10px; }
+  .final__title { font-size: clamp(1.1rem, 4.4vh, 1.7rem); }
+  .final__lead, .final__note { font-size: 0.86rem; }
+  .final__badge { padding: 8px 6px; }
+  .final .emo-btn--primary {
+    position: sticky;
+    bottom: 0;
+    margin-top: 6px;
+    box-shadow: 0 -14px 20px var(--emo-paper, #0e1b24);
+  }
+}

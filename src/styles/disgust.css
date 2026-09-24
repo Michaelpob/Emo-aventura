@@ -80,7 +80,7 @@
 .dc-elemento small { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dc-sol); }
 .dc-elemento strong { font-size: 1.1rem; }
 
-.dc-panel { width: min(560px, 100%); max-height: calc(100% - 20px); overflow-y: auto; overscroll-behavior: contain; }
+.dc-panel { --panel-bg: #14122a; width: min(560px, 100%); max-height: calc(100% - 20px); overflow-y: auto; overscroll-behavior: contain; }
 .dc-cuevas-resumen { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .dc-cuevas-resumen li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 8px 12px; border-radius: 12px; border: 2px solid var(--c, #fff); background: rgba(255, 255, 255, 0.06); font-size: 0.9rem; }
 .dc-cuevas-resumen b { grid-row: span 2; font-size: 1.4rem; }
@@ -151,8 +151,10 @@
   .dc-elemento strong { font-size: 0.92rem; }
   .dm-fragmento { max-width: 168px; font-size: 0.74rem; padding: 5px 9px; gap: 6px; }
   .dm-fragmento b { font-size: 1.05rem; }
-  /* el contador se va arriba a la derecha: abajo manda la guia */
-  .i3d-wave { font-size: 0.7rem; padding: 4px 8px; bottom: auto; top: 8px; right: 10px; }
+  /* el contador se va arriba a la derecha: abajo manda la guia (la regla
+     comun esta en island3d.css; aqui solo se acorta el texto) */
+  /* solo el hueco a la derecha del mapa de cuevas */
+  .i3d-wave { max-width: calc(50% - 112px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
