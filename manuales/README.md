@@ -39,12 +39,12 @@ Se regeneran a partir de los `.md` con el guion de conversion (Markdown -> HTML
 
 | # | Isla | Nombre | Juegos que contiene |
 |---|---|---|---|
-| 1 | 😨 Miedo | Isla del Miedo | **Bosque de la Noche** (encender 5 faroles con la linterna que la respiración recarga) · **La Casa** (comprobar 5 lugares sosteniendo la mirada) |
-| 2 | 😠 Enojo | Al rojo vivo | **Las rocas al rojo** (esperar a que se enfríen; dejar pasar las chispas) · **Las grietas** (seguir cada grieta hasta lo que la encendió) · **La respiración 4-4-4-4** |
-| 3 | 🤢 Desagrado | Las Cuevas del Desagrado | **Las cuatro cuevas** (olores, sabores, imágenes y sonidos: 24 elementos a tres tótems, sin respuestas correctas) · **El espejo de las señales** (elegir las señales de desagrado en 3 escenas y reparar el espejo) |
-| 4 | 😢 Tristeza | La casa en marcha | **Seis tareas** (ventanas, cartas, leña, regar, radio y mensaje) con impulso que crece y música que se abre |
-| 5 | 😤 Frustración | La torre y el valle | **La torre** (12 bloques, ráfagas de viento y estrategias: parar, paso corto, pedir ayuda) · **El valle de los orbes** (12 orbes saltando entre plataformas) |
-| 6 | 😌 Calma | El lago sereno | **El lago espejo** (exhalar hasta que el agua refleje el cielo) · **¿Quién canta?** (7 voces que cantan al quedarte quieto) · **El estanque musical** (nenúfares que son notas) |
+| 1 | Miedo | Isla del Miedo | **Bosque de la Noche** (encender 5 faroles con la linterna que la respiración recarga) · **La Casa** (comprobar 5 lugares sosteniendo la mirada) |
+| 2 | Enojo | Al rojo vivo | **Las rocas al rojo** (esperar a que se enfríen; dejar pasar las chispas) · **Las grietas** (seguir cada grieta hasta lo que la encendió) · **La respiración 4-4-4-4** |
+| 3 | Desagrado | Las Cuevas del Desagrado | **Las cuatro cuevas** (olores, sabores, imágenes y sonidos: 24 elementos a tres tótems, sin respuestas correctas) · **El espejo de las señales** (elegir las señales de desagrado en 3 escenas y reparar el espejo) |
+| 4 | Tristeza | La casa en marcha | **Seis tareas** (ventanas, cartas, leña, regar, radio y mensaje) con impulso que crece y música que se abre |
+| 5 | Frustración | La torre y el valle | **La torre** (12 bloques, ráfagas de viento y estrategias: parar, paso corto, pedir ayuda) · **El valle de los orbes** (12 orbes saltando entre plataformas) |
+| 6 | Calma | El lago sereno | **El lago espejo** (exhalar hasta que el agua refleje el cielo) · **¿Quién canta?** (7 voces que cantan al quedarte quieto) · **El estanque musical** (nenúfares que son notas) |
 
 ### Juegos complementarios (autocontenidos)
 

@@ -73,7 +73,7 @@ No hay que instalar nada, ni crear una cuenta, ni dar datos personales.
 5. Toca una isla para ver su ficha y pulsa **Jugar**.
 
 > Puedes cambiar tu perfil cuando quieras desde el botón de edición junto a tu
-> nombre, y consultar **Mi progreso** (📊) desde el inicio o el mapa.
+> nombre, y consultar **Mi progreso** desde el inicio o el mapa.
 
 **Todas las islas están abiertas desde el principio.** No hace falta terminar
 una para entrar en otra; el orden solo numera los capítulos de la historia.
@@ -93,8 +93,8 @@ una para entrar en otra; el orden solo numera los capítulos de la historia.
 | Correr | **SHIFT** | (según el juego) |
 | Saltar | **SPACE** | Botón de saltar |
 | Interactuar / sostener | **E** (mantener donde toque) | Botón **E** |
-| Pausa | **ESC** | Botón ❚❚ arriba a la izquierda |
-| Silenciar | Botón 🔊 | Botón 🔊 |
+| Pausa | **ESC** | Botón de pausa, arriba a la izquierda |
+| Silenciar | Botón de sonido | Botón de sonido |
 | Medidor de rendimiento | **F3** | — |
 
 En las islas de cámara fija (Enojo, Frustración nivel 1, Desagrado) **todo se
@@ -113,14 +113,14 @@ juega tocando o arrastrando**: no hay que caminar.
 
 ## 5. El mapa: las seis islas
 
-| Isla | Emoción | Nombre | Cómo se juega | Recompensa |
-|---|---|---|---|---|
-| 😨 | Miedo | Isla del Miedo (Bosque de la Noche + La Casa) | 1.ª persona, caminar | Lupa de la Realidad |
-| 😠 | Enojo | Al rojo vivo | Cámara fija, tocar | Gota de Calma |
-| 🤢 | Desagrado | Las Cuevas del Desagrado | Cámara fija, arrastrar o tocar | Semilla de Aceptación y Estrella del Presente |
-| 😢 | Tristeza | La casa en marcha | 3.ª persona, caminar | Cristal del Recuerdo Positivo |
-| 😤 | Frustración | La torre y el valle | Cámara fija → 3.ª persona | Llave de la Paciencia |
-| 😌 | Calma | El lago sereno | 1.ª persona, caminar | Pluma de la Calma |
+| Emoción | Nombre | Cómo se juega | Recompensa |
+|---|---|---|---|
+| Miedo | Isla del Miedo (Bosque de la Noche + La Casa) | 1.ª persona, caminar | Lupa de la Realidad |
+| Enojo | Al rojo vivo | Cámara fija, tocar | Gota de Calma |
+| Desagrado | Las Cuevas del Desagrado | Cámara fija, arrastrar o tocar | Semilla de Aceptación y Estrella del Presente |
+| Tristeza | La casa en marcha | 3.ª persona, caminar | Cristal del Recuerdo Positivo |
+| Frustración | La torre y el valle | Cámara fija → 3.ª persona | Llave de la Paciencia |
+| Calma | El lago sereno | 1.ª persona, caminar | Pluma de la Calma |
 
 Al terminar una isla se abre un **portal** que cruzas por tu propia voluntad, y
 después puedes leer una **tarjeta final opcional** con la explicación de lo que
@@ -194,15 +194,15 @@ que quieras, en el orden que quieras, y cada uno termina por separado. El botón
 ### Nivel 1 · Las cuatro cuevas del desagrado
 
 - **Dónde:** una caverna con cuatro entradas, una por cada sentido:
-  **👃 El pantano de los olores**, **👅 La cueva de los sabores**,
-  **👁️ El bosque de las imágenes** y **👂 La caverna de los sonidos**.
+  **El pantano de los olores**, **La cueva de los sabores**,
+  **El bosque de las imágenes** y **La caverna de los sonidos**.
 - **Cómo se juega:** entras a la cueva que quieras. Aparecen **seis cosas, de
   una en una**, y frente a ti hay **tres tótems** con caritas:
   **«Me da desagrado»**, **«Me da igual»** y **«Me agrada»**.
   **Arrastra** el elemento hasta el tótem que diga lo que sientes **o toca
   directamente el tótem** (las dos formas valen).
 - **Sonidos:** en la caverna de los sonidos cada elemento suena (máximo 3
-  segundos), con el nombre escrito en pantalla y un botón **🔁 Repetir sonido**
+  segundos), con el nombre escrito en pantalla y un botón **Repetir sonido**
   para quien juegue sin audio o quiera escucharlo otra vez.
 - **No hay respuestas correctas.** Nadie puede responder por ti.
 - **Al completar las cuatro cuevas** ves un resumen — *«De 24 elementos, X te
@@ -354,7 +354,7 @@ el ritmo lo marca quien juega.
   | Frustración | Llave de la Paciencia · Escalera de Pasos · Mano Amiga |
   | Calma | Pluma de la Calma |
 
-- **Mi progreso (📊):** islas completadas, puntos, herramientas, estrategias,
+- **Mi progreso:** islas completadas, puntos, herramientas, estrategias,
   reevaluaciones (intensidad al entrar → estrategia → intensidad al salir) y los
   compromisos pequeños que elegiste.
 - **Al completar las seis islas** se abre la pantalla final de la aventura.
@@ -366,7 +366,7 @@ usas otro dispositivo o borras los datos del navegador, empiezas de cero.
 
 ## 14. Accesibilidad y comodidad
 
-- **Silenciar** (🔊) siempre visible; el juego es jugable sin sonido: cada
+- **Silenciar** siempre visible; el juego es jugable sin sonido: cada
   sonido lleva su **nombre escrito**.
 - **Reducir movimiento** en el menú de pausa: quita temblores de cámara y
   animaciones fuertes. Se recuerda para todas las islas.
@@ -401,7 +401,7 @@ Sí, desde la pantalla de cierre («Volver a jugar») o entrando otra vez desde 
 mapa. También puedes **reiniciar** desde el menú de pausa.
 
 **No oigo nada / no quiero sonido.**
-Pulsa 🔊 para silenciar. Todo el contenido está también escrito.
+Pulsa el botón de sonido para silenciar. Todo el contenido está también escrito.
 
 **Va lento o se ve entrecortado.**
 Cierra otras pestañas, activa **Reducir movimiento** y usa el teléfono en

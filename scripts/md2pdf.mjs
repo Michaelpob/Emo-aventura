@@ -175,7 +175,7 @@ const CSS = `
 
   /* portada */
   .portada { height: 247mm; display: flex; flex-direction: column; justify-content: center; text-align: center; break-after: page; }
-  .portada__sello { font-size: 42pt; letter-spacing: 6px; margin-bottom: 8mm; }
+  .portada__sello { width: 46mm; height: 3px; background: #2f7fb8; margin: 0 auto 10mm; }
   .portada h1 { border: 0; font-size: 30pt; color: #143a5e; margin-bottom: 4mm; }
   .portada__sub { font-size: 14pt; color: #2f7fb8; margin-bottom: 2mm; }
   .portada__lema { font-size: 11pt; font-style: italic; color: #56657a; margin-bottom: 14mm; }
@@ -202,8 +202,12 @@ const pie = (titulo) => `
 const cabecera = '<div></div>';
 
 /** Quita el bloque de tabla de contenido escrito a mano en el .md (lo genera el PDF) */
+// pictogramas fuera: los manuales van sin dibujos
+const PICTOS = /[\u{1F300}-\u{1FAFF}\u{2190}-\u{21FF}\u{2300}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
+
 function limpiar(md) {
   return md
+    .replace(PICTOS, '')
     // todo lo anterior al primer apartado ya esta en la portada del PDF
     .replace(/^[\s\S]*?(?=\n## )/, '')
     .replace(/## Tabla de contenido[\s\S]*?(?=\n---\n)/, '')
@@ -220,7 +224,7 @@ function paginaHtml({ titulo, subtitulo, meta, cuerpoHtml, toc, conPortada = tru
     </section>` : '';
   const portada = conPortada ? `
     <section class="portada">
-      <div class="portada__sello">🏝️</div>
+      <div class="portada__sello" aria-hidden="true"></div>
       <h1>${esc(titulo)}</h1>
       <div class="portada__sub">${esc(subtitulo)}</div>
       <div class="portada__lema">«Vive la aventura de descubrir el poder de tus emociones»</div>

@@ -385,7 +385,7 @@ this.audio.playAt('miSonido', objeto3D, { volume: 0.8, refDistance: 6 });
   `setVolume()`, `duck()` y un control de intensidad (`setLayers` / `setProgreso`).
 - **Pasos:** cada isla puede ajustarlos con `this.stepVolume` y
   `this.stepSounds` (la Calma los deja casi mudos con `stepSoft`).
-- **Silencio:** el botón 🔊 actúa sobre el `master`; **todo** debe colgar de él
+- **Silencio:** el botón  actúa sobre el `master`; **todo** debe colgar de él
   (incluidos los sonidos posicionales) para que el silencio sea real.
 - **Regla de diseño sonoro:** sin sonidos que sobresalten, sin agudos
   estridentes sostenidos y con entrada suave (*fade in*) en los sonidos largos.
@@ -473,7 +473,7 @@ Puntos a cubrir en cada isla antes de publicar:
 | `pnpm: command not found` | pnpm no está en el PATH | Usar `corepack pnpm …` |
 | El build no cambia nada visible | No se recompiló `/docs` o no se publicó | `corepack pnpm build` y commitear `/docs` |
 | Va a tirones | GPU limitada o muchas pestañas | Activar *Reducir movimiento*, cerrar pestañas; `F3` para medir |
-| No suena nada | El navegador exige un gesto previo para el audio | Tocar la pantalla; comprobar el botón 🔊 |
+| No suena nada | El navegador exige un gesto previo para el audio | Tocar la pantalla; comprobar el botón de sonido |
 | Un juego se queda trabado tras ESC | Estado de pausa mal restaurado | Ya corregido en el motor; reiniciar desde la pausa |
 | `/docs` siempre aparece modificado en git | Sello de versión por diseño | Si solo compilaste para probar: `git checkout -- docs` |
 
