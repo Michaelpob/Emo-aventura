@@ -12,6 +12,7 @@ import {
   ISLAND_CHAIN
 } from '../data/gameState.js';
 import { openProgress, openFinal } from './screens.js';
+import { trackEvent } from '../services/tracking.js';
 
 export class EmotionIslandApp {
   constructor(root) {
@@ -30,6 +31,7 @@ export class EmotionIslandApp {
     this.completed = new Set([...legacy, ...gameState.completedIslands]);
     this.currentMinigame = null;
     this.player = getPlayer();
+    this.inicioPartida = 0;      // marca de tiempo para medir cuanto duro la partida
   }
 
   syncWorldState() {
@@ -115,10 +117,12 @@ export class EmotionIslandApp {
             <button class="text-action" type="button" data-progress>Mi progreso</button>
           </div>
         </section>
+        ${this.renderAdminButton()}
       `;
       this.overlayRoot.querySelector('[data-start]').addEventListener('click', () => this.showMap());
       this.overlayRoot.querySelector('[data-edit-profile]').addEventListener('click', () => this.showProfile(true));
       this.overlayRoot.querySelector('[data-progress]').addEventListener('click', () => openProgress(this.root));
+      this.bindAdminButton();
     } else {
       this.overlayRoot.innerHTML = `
         <section class="start-screen">
@@ -128,9 +132,30 @@ export class EmotionIslandApp {
           <p>Vive la aventura de descubrir el poder de tus emociones: reconocelas, entiende su intensidad y aprende a regularlas.</p>
           <button class="primary-action" type="button" data-create-profile>Crear mi perfil</button>
         </section>
+        ${this.renderAdminButton()}
       `;
       this.overlayRoot.querySelector('[data-create-profile]').addEventListener('click', () => this.showProfile(false));
+      this.bindAdminButton();
     }
+  }
+
+  /**
+   * Boton discreto de administracion (esquina superior derecha). Solo en el
+   * inicio y en el mapa: dentro de los minijuegos esa esquina es del HUD.
+   */
+  renderAdminButton() {
+    return `
+      <button class="admin-link" type="button" data-admin aria-label="Panel de administración" title="Panel de administración">
+        <span class="admin-link__icon" aria-hidden="true">🔐</span>
+        <span class="admin-link__text">Administrador</span>
+      </button>
+    `;
+  }
+
+  bindAdminButton() {
+    this.overlayRoot.querySelector('[data-admin]')?.addEventListener('click', () => {
+      window.location.href = './admin.html';
+    });
   }
 
   showProfile(isEditing) {
@@ -243,6 +268,7 @@ export class EmotionIslandApp {
       <div class="controls-hint">
         Toca una isla para entrar &middot; arrastra para girar el mapa
       </div>
+      ${this.renderAdminButton()}
     `;
 
     const editBtn = this.overlayRoot.querySelector('[data-edit-profile]');
@@ -250,6 +276,19 @@ export class EmotionIslandApp {
       editBtn.addEventListener('click', () => this.showProfile(true));
     }
     this.overlayRoot.querySelector('[data-progress]')?.addEventListener('click', () => openProgress(this.root));
+    this.bindAdminButton();
+  }
+
+  /**
+   * Cierra la partida en las estadisticas anonimas (completada o abandonada)
+   * con su duracion. Nunca bloquea ni muestra nada al jugador.
+   */
+  registrarFinDePartida(tipo, result = null) {
+    if (!this.inicioPartida) return;
+    const duracion = Date.now() - this.inicioPartida;
+    this.inicioPartida = 0;
+    const isla = result?.islandId ?? this.currentMinigame?.island?.id ?? null;
+    if (isla) trackEvent(isla, tipo, { durationMs: duracion, minigame: this.currentMinigame?.island?.minigame });
   }
 
   renderIslandButton(island) {
@@ -270,6 +309,7 @@ export class EmotionIslandApp {
     const island = islands.find((item) => item.id === id);
     if (!island) return;
     this.state = 'island';
+    trackEvent(id, 'island_view');            // estadistica anonima, sin esperar
     this.world.focusOnIsland(id);
 
     // todas las islas estan abiertas: nunca hay panel de "bloqueada"
@@ -297,6 +337,8 @@ export class EmotionIslandApp {
   launchMinigame(island) {
     const Game = minigameRegistry[island.minigame] ?? minigameRegistry['coming-soon'];
     this.state = 'game';
+    this.inicioPartida = Date.now();
+    trackEvent(island.id, 'game_start', { minigame: island.minigame });
     this.overlayRoot.innerHTML = '';
     this.world.setPaused(true);
     this.currentMinigame = new Game({
@@ -310,6 +352,7 @@ export class EmotionIslandApp {
   }
 
   exitMinigame() {
+    this.registrarFinDePartida('game_exit');
     this.currentMinigame?.dispose();
     this.currentMinigame = null;
     this.world.setPaused(false);
@@ -317,6 +360,7 @@ export class EmotionIslandApp {
   }
 
   showResult(result) {
+    this.registrarFinDePartida(result?.success ? 'game_complete' : 'game_exit', result);
     this.currentMinigame?.dispose();
     this.currentMinigame = null;
     this.world.setPaused(false);

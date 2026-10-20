@@ -10,11 +10,16 @@ import './styles/calm.css';
 import './styles/frustration.css';
 import './styles/responsive.css';
 import { EmotionIslandApp } from './ui/EmotionIslandApp.js';
+import { iniciarTracking } from './services/tracking.js';
 
 const root = document.querySelector('#app');
 const app = new EmotionIslandApp(root);
 
 app.start();
+
+// Estadisticas anonimas de uso: reenvia lo que quedara pendiente sin red.
+// Si no hay configuracion de Supabase, no hace nada.
+iniciarTracking();
 
 // Punto de entrada para depuracion y pruebas automatizadas del recorrido.
 window.emoAventura = app;

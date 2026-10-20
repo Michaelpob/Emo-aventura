@@ -4,3 +4,8 @@ dist/
 .DS_Store
 Thumbs.db
 .claude/
+
+# variables de entorno (claves): nunca se suben
+.env
+.env.local
+.env.*.local

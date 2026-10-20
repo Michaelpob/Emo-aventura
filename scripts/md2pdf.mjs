@@ -246,6 +246,7 @@ const META = [
 const DOCS = [
   { archivo: 'MANUAL-DE-USUARIO.md', pdf: 'Manual-de-usuario.pdf', titulo: 'Manual de usuario', sub: 'Guía para jugar, para docentes y para familias' },
   { archivo: 'MANUAL-DE-ADMINISTRADOR.md', pdf: 'Manual-de-administrador.pdf', titulo: 'Manual de administrador', sub: 'Instalación, despliegue, arquitectura y mantenimiento' },
+  { archivo: 'PANEL-ADMIN-CONFIGURACION.md', pdf: 'Panel-admin-configuracion.pdf', titulo: 'Panel de administración', sub: 'Configuración paso a paso de las estadísticas y del acceso privado' },
   { archivo: 'REFERENCIAS-Y-NORMAS.md', pdf: 'Referencias-y-normas.pdf', titulo: 'Referencias y normas', sub: 'Marco conceptual, bibliografía y normas del proyecto' }
 ];
 
@@ -284,7 +285,7 @@ const cuerpo = partes.map((p) => {
   return `<section class="doc"><h1 id="${slug(p.titulo)}">${esc(p.titulo)}</h1><p style="color:#333;margin-bottom:14px">${esc(p.sub)}</p>${p.html}</section>`;
 }).join('\n');
 await aPdf(
-  paginaHtml({ titulo: 'Documentación del proyecto', subtitulo: 'Manual de usuario · Manual de administrador · Referencias y normas', meta: META, cuerpoHtml: cuerpo, toc: tocGeneral }),
+  paginaHtml({ titulo: 'Documentación del proyecto', subtitulo: 'Manual de usuario · Manual de administrador · Panel de administración · Referencias y normas', meta: META, cuerpoHtml: cuerpo, toc: tocGeneral }),
   join(SALIDA, 'EMO-AVENTURA-documentacion-completa.pdf'),
   'EMO-AVENTURA · Documentación del proyecto'
 );

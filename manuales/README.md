@@ -15,21 +15,23 @@ de paginas, estan en [`manuales/pdf/`](pdf/):
 
 | Archivo | Contenido |
 |---|---|
-| [EMO-AVENTURA-documentacion-completa.pdf](pdf/EMO-AVENTURA-documentacion-completa.pdf) | Los tres manuales en un solo documento, con indice general |
+| [EMO-AVENTURA-documentacion-completa.pdf](pdf/EMO-AVENTURA-documentacion-completa.pdf) | Todos los manuales en un solo documento, con indice general |
 | [Manual-de-usuario.pdf](pdf/Manual-de-usuario.pdf) | Solo el manual de usuario |
 | [Manual-de-administrador.pdf](pdf/Manual-de-administrador.pdf) | Solo el manual de administrador |
 | [Referencias-y-normas.pdf](pdf/Referencias-y-normas.pdf) | Solo referencias y normas |
+| [Panel-admin-configuracion.pdf](pdf/Panel-admin-configuracion.pdf) | Puesta en marcha del panel de administracion, paso a paso |
 
 Se regeneran a partir de los `.md` con el guion de conversion (Markdown -> HTML
 -> PDF con Edge sin cabeza); si cambias un manual, vuelve a generarlos.
 
-## Los tres documentos
+## Los documentos
 
 | Documento | Para quién | Qué contiene |
 |---|---|---|
 | **[Manual de usuario](MANUAL-DE-USUARIO.md)** | Jugadores, docentes, familias | Cómo empezar, controles, **qué hace cada juego y cómo se juega**, progreso, accesibilidad, preguntas frecuentes y guía rápida para docentes |
 | **[Manual de administrador](MANUAL-DE-ADMINISTRADOR.md)** | Responsable técnico | Requisitos, instalación, compilación y despliegue, estructura, arquitectura, datos guardados, cómo editar contenido, cómo añadir islas, pruebas y resolución de problemas |
 | **[Referencias y normas](REFERENCIAS-Y-NORMAS.md)** | Evaluadores y equipo | Marco conceptual, trazabilidad teoría → mecánica, bibliografía en APA, normas técnicas, de accesibilidad, de contenido, de uso y de datos |
+| **[Panel de administración](PANEL-ADMIN-CONFIGURACION.md)** | Quien administra el proyecto | Paso a paso, en lenguaje sencillo, para dejar funcionando las estadísticas anónimas y el acceso privado al panel |
 
 ---
 
@@ -63,7 +65,9 @@ Se regeneran a partir de los `.md` con el guion de conversion (Markdown -> HTML
 4. **Sin respuestas correctas** donde se pregunta qué siente el jugador.
 5. **Accesible:** silencio, texto para todo sonido, alternativa al arrastre,
    reducción de movimiento y buen contraste.
-6. **Privado:** todo se guarda en el dispositivo; no hay cuentas ni servidores.
+6. **Privado:** el progreso se guarda en el dispositivo y el jugador no tiene
+   cuenta; solo se envían estadísticas anónimas de uso, sin ningún dato
+   personal.
 
 ---
 
@@ -74,7 +78,8 @@ Se regeneran a partir de los `.md` con el guion de conversion (Markdown -> HTML
 | Tecnología | JavaScript ES2022 · three.js · Vite · Web Audio API |
 | Instalación | Ninguna: se abre en el navegador |
 | Publicación | GitHub Pages desde `/docs` en `main` |
-| Datos | `localStorage` del navegador, sin backend |
+| Datos | `localStorage` del navegador; estadísticas anónimas opcionales en Supabase |
+| Panel de administración | `admin.html`, página aparte con acceso de un solo administrador |
 | Público | 13 años en adelante |
 | Duración | 10–20 min por isla · 90–120 min la aventura completa |
 

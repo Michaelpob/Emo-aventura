@@ -359,8 +359,15 @@ el ritmo lo marca quien juega.
   compromisos pequeños que elegiste.
 - **Al completar las seis islas** se abre la pantalla final de la aventura.
 
-Todo esto **se guarda en tu dispositivo** (no se envía a ningún servidor). Si
-usas otro dispositivo o borras los datos del navegador, empiezas de cero.
+Todo esto **se guarda en tu dispositivo**. Si usas otro dispositivo o borras
+los datos del navegador, empiezas de cero.
+
+Lo único que sale de tu dispositivo son **estadísticas anónimas de uso**: a qué
+isla entraste, si empezaste o terminaste la partida, cuánto duró y si juegas en
+teléfono, tableta o computador. **No se envía** tu nombre, tu avatar, tu color
+favorito, tus puntos ni tus respuestas. Sirven para saber qué islas se usan más
+y mejorar el juego. Si prefieres que no se registre nada, añade `?notrack=1` al
+final de la dirección.
 
 ---
 
@@ -434,8 +441,10 @@ te desborda, habla con una persona adulta de confianza o con un profesional.
   ejemplo, en el Miedo o el Desagrado), puede salir con **ESC → Salir al mapa**
   sin perder nada. Ninguna escena contiene sangre, vómito explícito ni imágenes
   repulsivas: el desagrado se sugiere con caricatura e iconos.
-- **Datos:** no se recoge ningún dato personal; todo se queda en el dispositivo.
-  Ver el documento *Referencias y normas*, §Privacidad.
+- **Datos:** no se recoge ningún dato personal. El progreso se queda en el
+  dispositivo; solo se envían estadísticas anónimas de uso (qué isla, qué tipo
+  de evento, cuánto duró y tipo de dispositivo). Ver el documento
+  *Referencias y normas*, §Privacidad.
 
 ---
 

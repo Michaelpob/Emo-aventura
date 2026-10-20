@@ -10,6 +10,8 @@
     "fps": "node scripts/measure-fps.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "chart.js": "^4.5.1",
     "three": "^0.179.1",
     "vite": "^7.1.3"
   },

@@ -1399,3 +1399,56 @@ p {
 }
 
 
+
+/* ---------------------------------------------- acceso de administracion */
+/* Discreto, arriba a la derecha, solo en el inicio y en el mapa: dentro de
+   los minijuegos esa esquina la ocupan los objetivos del HUD. */
+.admin-link {
+  position: absolute;
+  top: clamp(14px, 4vw, 34px);
+  right: clamp(14px, 4vw, 34px);
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid rgba(16, 44, 54, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #102c36;
+  font-weight: 900;
+  cursor: pointer;
+  opacity: 0.85;
+  pointer-events: auto;
+  transition: transform 160ms ease, opacity 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-link:hover,
+.admin-link:focus-visible {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 44, 54, 0.12);
+}
+
+.admin-link__icon { font-size: 1.05rem; line-height: 1; }
+
+/* El HUD y la pantalla de inicio dejan libre la esquina del boton: en vez de
+   empujar su contenido, se les limita el ancho para que nunca lleguen ahi. */
+.map-hud,
+.start-screen {
+  max-width: calc(100% - var(--admin-hueco, 212px) - clamp(14px, 4vw, 34px));
+}
+
+/* Pantallas estrechas: solo el icono (44x44) y hueco mas pequeno */
+@media (max-width: 720px) {
+  .admin-link {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .admin-link__text { display: none; }
+  .map-hud,
+  .start-screen { max-width: calc(100% - 58px - clamp(14px, 4vw, 34px)); }
+}

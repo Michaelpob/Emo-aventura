@@ -33,9 +33,19 @@ export default defineConfig({
     emptyOutDir: true,
     assetsDir: 'assets',
     rollupOptions: {
+      // dos paginas: el juego y el panel de administracion (docs/admin.html)
+      input: {
+        main: resolve(process.cwd(), 'index.html'),
+        admin: resolve(process.cwd(), 'admin.html')
+      },
       output: {
-        // three cambia rara vez: en su propio chunk se cachea entre versiones
-        manualChunks: { three: ['three'] }
+        // three cambia rara vez: en su propio chunk se cachea entre versiones.
+        // El panel NO carga three: va en su propio chunk de supabase+chart.
+        manualChunks: {
+          three: ['three'],
+          supabase: ['@supabase/supabase-js'],
+          chart: ['chart.js']
+        }
       }
     }
   }

@@ -39,7 +39,8 @@ desplegar el proyecto.
 | Empaquetador | [Vite](https://vitejs.dev) ^7.1 |
 | Gestor de paquetes | pnpm (vía corepack) |
 | Audio | Web Audio API — **todo el sonido se sintetiza en el navegador**, sin archivos |
-| Persistencia | `localStorage` del navegador (sin servidor, sin cuentas) |
+| Persistencia | `localStorage` del navegador: el juego no necesita cuentas ni servidor |
+| Estadísticas | Opcionales: eventos anónimos en [Supabase](https://supabase.com) y panel propio en `admin.html` |
 | Publicación | GitHub Pages desde la carpeta `/docs` de la rama `main` |
 | URL pública | https://michaelpob.github.io/Emo-aventura/ |
 | Dependencias en tiempo de ejecución | Solo three.js (se empaqueta) |
@@ -144,7 +145,9 @@ el artefacto se versiona en el repositorio.
 
 ```
 Emo-aventura/
-├── index.html                  punto de entrada
+├── index.html                  punto de entrada del juego
+├── admin.html                  punto de entrada del panel (pagina aparte)
+├── .env.example                plantilla de variables (Supabase); el .env no se sube
 ├── vite.config.js              build -> /docs, sello de version, copia de documentos
 ├── package.json                scripts y dependencias
 ├── docs/                       SALIDA compilada · lo que publica GitHub Pages
@@ -154,7 +157,10 @@ Emo-aventura/
 ├── manuales/                   ESTA documentacion
 │   ├── MANUAL-DE-USUARIO.md
 │   ├── MANUAL-DE-ADMINISTRADOR.md
-│   └── REFERENCIAS-Y-NORMAS.md
+│   ├── REFERENCIAS-Y-NORMAS.md
+│   └── PANEL-ADMIN-CONFIGURACION.md
+├── supabase/
+│   └── schema.sql              tablas, permisos y funciones del panel
 ├── scripts/
 │   ├── build-docs.py           build alternativo sin Node
 │   ├── measure-fps.mjs         medicion de rendimiento
@@ -186,6 +192,8 @@ Emo-aventura/
     │   └── player.js           perfil del jugador
     ├── three/WorldScene.js     mapa 3D principal (hub)
     ├── ui/                     EmotionIslandApp.js (navegacion) y screens.js
+    ├── services/               supabaseClient.js (carga perezosa) y tracking.js
+    ├── admin/                  el panel: main.js, auth.js, dashboard.js, charts.js
     └── styles/                 island3d.css + hojas por isla
 ```
 
@@ -281,7 +289,8 @@ Para poner un juego alternativo en el mapa basta con cambiar el campo
 
 ## 8. Datos: qué se guarda y dónde
 
-**No hay servidor.** Todo vive en `localStorage` del navegador del jugador:
+**El progreso del jugador no sale de su navegador.** Todo vive en
+`localStorage`:
 
 | Clave | Contenido | Módulo |
 |---|---|---|
@@ -303,6 +312,55 @@ JSON.parse(localStorage.getItem('emoaventura.desagrado'));
 
 Los juegos autocontenidos (`valle-luz`, `valle-bruma`) dejan su telemetría en
 `sessionLog` / `sessionLogs` (consola).
+
+### Estadísticas anónimas de uso (Supabase)
+
+Además de lo anterior, el juego envía **eventos anónimos** a Supabase para el
+panel de administración. Es **opcional**: si las variables de entorno están
+vacías, no se envía nada y el juego funciona igual.
+
+| Archivo | Papel |
+|---|---|
+| `.env` (a partir de `.env.example`) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ADMIN_EMAIL`, `VITE_TRACK_DEV`. **No se sube al repositorio** |
+| `src/services/supabaseClient.js` | Carga la librería con `import()` dinámico; devuelve `null` si falta configuración |
+| `src/services/tracking.js` | `trackEvent(isla, tipo, extra)`, cola de reintentos y reglas de apagado |
+| `supabase/schema.sql` | Tablas, índices, políticas RLS y las cinco funciones `admin_*` |
+| `src/admin/` + `admin.html` | El panel: página aparte, sin Three.js ni minijuegos |
+
+**Tabla `island_events`** (una fila por evento):
+
+| Columna | Valores |
+|---|---|
+| `island_id` | `sadness`, `anger`, `fear`, `disgust`, `frustration`, `calm` |
+| `event_type` | `island_view`, `game_start`, `game_complete`, `game_exit` |
+| `minigame` | identificador del minijuego (máximo 60 caracteres) |
+| `session_id` | UUID aleatorio guardado en `sessionStorage` |
+| `duration_ms` | 0 a 14 400 000 (4 horas) |
+| `device` | `mobile`, `tablet`, `desktop` |
+| `created_at` | fecha y hora del servidor |
+
+**Reglas que cumple el registro:**
+
+1. **Nunca bloquea el juego:** el envío no se espera (`await` fuera del flujo);
+   cualquier fallo se ignora en silencio.
+2. **Cola de reintentos:** hasta 50 eventos en `emoaventura.pendingEvents`; se
+   vacían al volver la conexión (evento `online`).
+3. **Sin datos personales:** no se envía perfil, puntos, intensidades ni
+   respuestas abiertas.
+4. **Apagado automático** si falta configuración, si la dirección lleva
+   `?notrack=1` o si se está en desarrollo sin `VITE_TRACK_DEV=true`.
+5. **Antirrebote** de 30 s para el mismo evento repetido y validación de las
+   seis islas antes de enviar.
+6. **Solo la clave `anon`** viaja al navegador; `service_role` no aparece en el
+   código ni en los manuales.
+
+Aparte de esto, `src/main.js` llama al contador público de visitas
+`abacus.jasoncameron.dev` en modo `no-cors`: solo suma una carga de página y no
+envía ni lee ningún dato. Se puede quitar borrando ese `fetch`.
+
+La puesta en marcha (crear el proyecto, pegar el `schema.sql`, el correo con el
+código y el `.env`) está en
+[Panel de administración · configuración paso a paso](PANEL-ADMIN-CONFIGURACION.md).
 
 ---
 

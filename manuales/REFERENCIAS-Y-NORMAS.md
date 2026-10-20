@@ -228,7 +228,7 @@ World Wide Web Consortium. (2023). *Web Content Accessibility Guidelines (WCAG)
 | Peso | Carga inicial contenida | `three` en *chunk* propio y cacheable; sin archivos de audio ni texturas externas |
 | Responsive | Desde 360 px de ancho | Encuadre 3D que reserva las franjas del HUD; carteles compactos en pantallas bajas |
 | Entrada | Ratón, teclado y táctil | Toda acción de arrastre tiene alternativa de toque simple |
-| Persistencia | `localStorage` | Sin *cookies*, sin sesiones de servidor |
+| Persistencia | `localStorage` en el juego; Supabase solo para eventos anónimos | Sin *cookies* de seguimiento; el juego nunca espera respuestas de red |
 | Publicación | Sitio estático | GitHub Pages desde `/docs` en `main` |
 
 ---
@@ -304,22 +304,61 @@ Referencia: **WCAG 2.2, nivel AA** (W3C, 2023). Compromisos concretos:
 
 ## 9. Privacidad y protección de datos
 
-- **No se recoge ningún dato personal.** No hay registro, ni correo, ni cuentas.
+- **No se recoge ningún dato personal.** El jugador no se registra, no da su
+  correo y no tiene cuenta.
 - El **nombre y avatar** los elige el jugador y pueden ser un apodo; se guardan
   **solo en su dispositivo**.
 - **Todo el progreso vive en `localStorage`** del navegador
   (`emo-aventura-state`, `emotion-islands-player`, `emotion-islands-progress`,
-  `emoaventura.desagrado`). **Nada se envía a ningún servidor**: el proyecto no
-  tiene backend ni analítica.
+  `emoaventura.desagrado`) y **no se envía a ningún servidor**.
 - **Sin cookies** de seguimiento ni de terceros.
+
+### Estadísticas anónimas de uso
+
+Desde la versión con panel de administración, el juego envía a un servicio
+alojado (Supabase) **eventos anónimos de uso**, con el único fin de saber qué
+islas se usan y poder mejorar el recurso.
+
+| Se envía | Ejemplo | No se envía |
+|---|---|---|
+| Isla visitada | `calm` | Nombre o apodo |
+| Tipo de evento | entrada a la isla, inicio, final o salida de la partida | Avatar y color favorito |
+| Minijuego | `calm-lake` | Puntos, herramientas e insignias |
+| Duración de la partida | `184000` ms | Intensidades y reevaluaciones |
+| Tipo de dispositivo | `mobile`, `tablet`, `desktop` | Respuestas de la Isla del Desagrado |
+| Fecha y hora | `2026-10-20 15:42` | Dirección IP en la interfaz de consulta |
+| Identificador de sesión | valor al azar que **se borra al cerrar la pestaña** | Cualquier dato que permita reidentificar a una persona |
+
+Garantías de diseño:
+
+1. **Anónimo y no reidentificable:** el identificador de sesión es aleatorio,
+   vive en `sessionStorage` y desaparece al cerrar la pestaña.
+2. **El juego nunca espera a la red:** el envío es en segundo plano; si falla,
+   el evento se guarda (máximo 50) y se reintenta más tarde. Sin conexión o con
+   el servicio caído, el juego funciona igual y no muestra ningún error.
+3. **Derecho a no participar:** añadir `?notrack=1` a la dirección desactiva
+   por completo el registro.
+4. **Permisos mínimos:** el público solo puede **insertar** eventos; no puede
+   leerlos ni modificarlos (políticas RLS). En el navegador viaja únicamente la
+   clave pública `anon`; la clave `service_role` no existe en el código.
+5. **Acceso restringido:** solo un correo de administrador, comprobado en la
+   base de datos, puede consultar los resúmenes, que siempre están **agregados**
+   (totales por isla, por día, por hora y por dispositivo).
+6. **Minimización:** no se registran los datos del perfil ni las respuestas
+   abiertas de ninguna isla.
+7. **Contador de visitas:** la página hace además una llamada a un contador
+   público (`abacus.jasoncameron.dev`) que solo suma una unidad por carga; no
+   envía ningún dato ni se lee su respuesta.
 - **Borrado:** limpiar los datos del sitio en el navegador elimina todo el
   progreso de forma inmediata e irreversible.
 - **Uso en aula:** si se usan equipos compartidos, conviene borrar los datos del
   sitio al terminar la sesión para que el siguiente estudiante empiece limpio.
-- **Investigación:** si se quisieran recoger datos para un estudio, haría falta
-  consentimiento informado (y de los tutores legales en menores de edad),
-  aprobación del comité correspondiente y un mecanismo de exportación explícito,
-  que **hoy no existe** en la aplicación.
+- **Investigación:** el panel permite exportar en CSV los **totales anónimos**
+  de uso, que no identifican a nadie. Para recoger datos individuales o
+  respuestas de los jugadores haría falta consentimiento informado (y de los
+  tutores legales en menores de edad), aprobación del comité correspondiente y
+  un mecanismo de exportación explícito, que **hoy no existe** en la
+  aplicación.
 
 ---
 
