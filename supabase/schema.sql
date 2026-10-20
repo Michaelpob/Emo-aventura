@@ -188,14 +188,16 @@ begin
     raise exception 'Acceso no autorizado';
   end if;
 
+  -- el alias `e` es obligatorio: sin el, `island_id` es ambiguo entre la
+  -- columna de la tabla y la columna de salida de la funcion (error 42702)
   return query
   select
-    (created_at at time zone 'America/Bogota')::date as dia,
-    island_id,
+    (e.created_at at time zone 'America/Bogota')::date as dia,
+    e.island_id,
     count(*)::bigint
-  from public.island_events
-  where created_at >= p_from and created_at < p_to
-    and event_type = 'island_view'
+  from public.island_events e
+  where e.created_at >= p_from and e.created_at < p_to
+    and e.event_type = 'island_view'
   group by 1, 2
   order by 1, 2;
 end;
