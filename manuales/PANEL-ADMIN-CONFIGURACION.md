@@ -57,17 +57,20 @@ ranking de las seis islas, gráficas por día y por hora, y tipo de dispositivo.
    - **Region:** la más cercana. Para Colombia, *South America (São Paulo)* o
      *East US*.
    - **Plan:** *Free*.
-4. Pulsa **Create new project** y espera uno o dos minutos a que termine de
+4. En **Security**, deja **Enable Data API** activado (lo necesita el juego) y
+   **desactiva Automatically expose new tables**: los permisos los da el
+   `schema.sql`, uno por uno. Es lo que recomienda el propio Supabase.
+5. Pulsa **Create new project** y espera uno o dos minutos a que termine de
    crearse.
 
 Cuando termine, ve a **Project Settings** (el engranaje, abajo a la izquierda)
-y luego a **API**. Deja esa pestaña abierta: de ahí saldrán dos datos para el paso 8.
+y luego a **API Keys**. De ahí salen los dos datos del paso 8.
 
 | Dato que verás | Para qué sirve |
 |---|---|
-| **Project URL** | Es `VITE_SUPABASE_URL` |
-| **anon public** (en *Project API keys*) | Es `VITE_SUPABASE_ANON_KEY` |
-| **service_role** | **No se usa nunca aquí.** No la copies a ningún archivo del proyecto |
+| **Project URL** (en la portada del proyecto) | Es `VITE_SUPABASE_URL` |
+| **Publishable key** (`sb_publishable_…`; en proyectos antiguos se llamaba **anon public**) | Es `VITE_SUPABASE_ANON_KEY`. Supabase la marca como segura para el navegador |
+| **Secret key** (`sb_secret_…`, antes **service_role**) | **No se usa nunca aquí.** No la copies a ningún archivo del proyecto |
 
 ---
 
@@ -170,6 +173,10 @@ que conviene poner un Gmail propio.
 El panel pide un **código**, no un enlace. Hay que decirle al correo que muestre
 el código.
 
+> Supabase solo deja editar las plantillas **después** de configurar el SMTP
+> del paso 6. Si ves el aviso *Set up custom SMTP to edit templates*, vuelve
+> atrás y termina ese paso primero.
+
 1. **Authentication** > **Emails** > pestaña **Templates** > plantilla
    **Magic Link**.
 2. Cambia el asunto por: `Tu código para el panel de EMO-AVENTURA`
@@ -203,8 +210,8 @@ En la carpeta del proyecto, en el computador donde se compila:
 
 ```bash
 VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-# la clave anon es muy larga; va completa, en una sola linea
-VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
+# la clave publica, completa y en una sola linea
+VITE_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxxxxx
 VITE_ADMIN_EMAIL=maicolpoveda115@gmail.com
 VITE_TRACK_DEV=false
 ```
@@ -212,11 +219,11 @@ VITE_TRACK_DEV=false
 | Regla | Por qué |
 |---|---|
 | El archivo `.env` **no se sube** al repositorio | Ya está en `.gitignore` |
-| Solo va la clave **anon** | Es pública por diseño; la seguridad la dan las políticas RLS del paso 3 |
-| La clave **service_role** jamás | Daría acceso total a la base de datos |
+| Solo va la clave **publishable** (*anon*) | Es pública por diseño; la seguridad la dan las políticas RLS del paso 3 |
+| La clave **secret** (*service_role*) jamás | Daría acceso total a la base de datos |
 | `VITE_TRACK_DEV=false` | Para que las pruebas en el computador no ensucien las estadísticas reales |
 
-> La clave `anon` acaba dentro de los archivos publicados en `docs/`, y eso es
+> La clave pública acaba dentro de los archivos publicados en `docs/`, y eso es
 > normal: cualquiera puede verla y **solo** le sirve para insertar eventos
 > anónimos, nunca para leerlos.
 

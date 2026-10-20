@@ -44,18 +44,41 @@ function estaApagado() {
 
 /* ------------------------------------------------------------- sesion */
 
+/**
+ * UUID v4 al azar. `crypto.randomUUID` solo existe en contexto seguro
+ * (https o localhost), asi que hay respaldos para una web servida por http.
+ */
+function uuid() {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      const b = crypto.getRandomValues(new Uint8Array(16));
+      b[6] = (b[6] & 0x0f) | 0x40;          // version 4
+      b[8] = (b[8] & 0x3f) | 0x80;          // variante
+      const h = [...b].map((n) => n.toString(16).padStart(2, '0')).join('');
+      return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+    }
+  } catch { /* sigue al ultimo respaldo */ }
+  // ultimo recurso: sirve de sobra para separar sesiones anonimas
+  const azar = () => Math.floor(Math.random() * 16).toString(16);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) =>
+    (c === 'x' ? azar() : ((Math.floor(Math.random() * 4) + 8).toString(16))));
+}
+
 /** Una sesion = una pestana abierta. Sin cookies, sin seguimiento entre visitas. */
 function getSessionId() {
   try {
     let id = window.sessionStorage.getItem(CLAVE_SESION);
     if (!id) {
-      id = crypto.randomUUID();
+      id = uuid();
       window.sessionStorage.setItem(CLAVE_SESION, id);
     }
     return id;
   } catch {
     // sin sessionStorage (modo privado antiguo): uno en memoria
-    if (!getSessionId._memoria) getSessionId._memoria = crypto.randomUUID();
+    if (!getSessionId._memoria) getSessionId._memoria = uuid();
     return getSessionId._memoria;
   }
 }
