@@ -32,6 +32,7 @@ Se regeneran a partir de los `.md` con el guion de conversion (Markdown -> HTML
 | **[Manual de administrador](MANUAL-DE-ADMINISTRADOR.md)** | Responsable técnico | Requisitos, instalación, compilación y despliegue, estructura, arquitectura, datos guardados, cómo editar contenido, cómo añadir islas, pruebas y resolución de problemas |
 | **[Referencias y normas](REFERENCIAS-Y-NORMAS.md)** | Evaluadores y equipo | Marco conceptual, trazabilidad teoría → mecánica, bibliografía en APA, normas técnicas, de accesibilidad, de contenido, de uso y de datos |
 | **[Panel de administración](PANEL-ADMIN-CONFIGURACION.md)** | Quien administra el proyecto | Paso a paso, en lenguaje sencillo, para dejar funcionando las estadísticas anónimas y el acceso privado al panel |
+| **[Qué muestran las estadísticas](Estadisticas-del-panel.docx)** (Word) | Quien consulta el panel | Qué significa cada tarjeta, el ranking, las cinco gráficas, el CSV y cómo leer los números sin malinterpretarlos |
 
 ---
 
