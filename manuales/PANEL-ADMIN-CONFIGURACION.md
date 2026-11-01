@@ -34,7 +34,7 @@ ranking de las seis islas, gráficas por día y por hora, y tipo de dispositivo.
 
 | Cosa | Detalle |
 |---|---|
-| Quién entra | **Un solo correo**: `maicolpoveda115@gmail.com` |
+| Quién entra | Solo los correos autorizados: `maicolpoveda115@gmail.com` y `leidy.diaz764@estufundes.edu.co` |
 | Dónde se guardan las estadísticas | Supabase (plan gratuito) |
 | Qué pasa si no se configura | El juego funciona igual y el panel avisa de que falta configurarlo |
 | Qué necesitas | Una cuenta de GitHub o de correo para entrar a Supabase, y una cuenta de Gmail para el envío de códigos |
@@ -105,8 +105,11 @@ Lo que acabas de crear:
 1. Menú izquierdo > **Authentication** > **Users**.
 2. Pulsa **Add user** > **Create new user**.
 3. Rellena:
-   - **Email:** `maicolpoveda115@gmail.com` (tiene que ser exactamente el mismo
-     que está en la tabla `admins` y en `VITE_ADMIN_EMAIL`).
+   - **Email:** el del administrador, exactamente igual que en la tabla
+     `admins` y en `VITE_ADMIN_EMAIL`.
+     Hoy son dos: `maicolpoveda115@gmail.com` y
+     `leidy.diaz764@estufundes.edu.co`, así que **este paso se repite una vez
+     por cada uno**, cada uno con su propia contraseña.
    - **Password:** una contraseña de al menos 10 caracteres con letras y
      números. Si prefieres crearla luego desde el propio panel, escribe
      cualquiera y después usa *¿Olvidaste tu contraseña?* (paso 10).
@@ -212,7 +215,7 @@ En la carpeta del proyecto, en el computador donde se compila:
 VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 # la clave publica, completa y en una sola linea
 VITE_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxxxxx
-VITE_ADMIN_EMAIL=maicolpoveda115@gmail.com
+VITE_ADMIN_EMAIL=maicolpoveda115@gmail.com,leidy.diaz764@estufundes.edu.co
 VITE_TRACK_DEV=false
 ```
 
@@ -264,8 +267,9 @@ aparece, para no molestar).
 ## 10. Primera entrada al panel
 
 1. Abre `admin.html` (o pulsa el botón **Administrador**).
-2. El usuario ya viene puesto: `maicolpoveda115@gmail.com`.
-3. Escribe la contraseña del paso 4 y pulsa **Entrar**.
+2. Escribe tu correo de administrador. Los dos campos salen vacíos a
+   propósito: cada persona escribe el suyo.
+3. Escribe tu contraseña del paso 4 y pulsa **Entrar**.
    - Marca **Mantener la sesión** solo en un computador de confianza. Si no la
      marcas, la sesión se cierra al cerrar la pestaña.
 
@@ -280,7 +284,7 @@ aparece, para no molestar).
 
 | Medida | Comportamiento |
 |---|---|
-| Correo ajeno | Aunque la contraseña fuera correcta, no entra |
+| Correo ajeno | Aunque la contraseña fuera correcta, no entra: ni siquiera se consulta al servidor |
 | 5 intentos fallidos | Bloqueo de 2 minutos con cuenta atrás |
 | Mensaje de error | Siempre genérico: no dice si el usuario existe |
 | 30 minutos sin tocar nada | Cierra la sesión solo |
@@ -340,7 +344,9 @@ con Excel (separador `;`).
 delete from public.island_events where created_at < '2026-01-01';
 ```
 
-**Cambiar o añadir administrador:**
+**Cambiar o añadir administrador:** hacen falta las tres cosas — la fila en
+`admins`, el usuario en *Authentication → Users* y el correo dentro de
+`VITE_ADMIN_EMAIL` (separados por comas, sin espacios), recompilando después.
 
 ```sql
 insert into public.admins (email) values ('otro@correo.com');

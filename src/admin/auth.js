@@ -1,6 +1,6 @@
 // PANEL DE ADMINISTRACION · acceso del administrador
 //
-// Un unico administrador (VITE_ADMIN_EMAIL). Dos caminos:
+// Administradores autorizados (VITE_ADMIN_EMAIL, uno o varios). Dos caminos:
 //   A. Primera vez / olvido: codigo de 6 digitos al correo -> crear contrasena.
 //   B. Entradas siguientes: usuario y contrasena.
 //
@@ -8,7 +8,7 @@
 // navegador solo queda la sesion que crea el propio cliente de Supabase.
 
 import { createClient } from '@supabase/supabase-js';
-import { ADMIN_EMAIL, estaConfigurado } from '../services/supabaseClient.js';  // solo constantes
+import { ADMIN_EMAILS, estaConfigurado } from '../services/supabaseClient.js';  // solo constantes
 
 const URL = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
 const ANON = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim();
@@ -42,15 +42,19 @@ export function getCliente() {
 
 /* --------------------------------------------------------- utilidades */
 
-export function normalizarUsuario(valor) {
-  const v = String(valor ?? '').trim().toLowerCase();
-  if (!v) return '';
-  if (v === 'admin' || v === 'administrador') return ADMIN_EMAIL;
-  return v;
+/** Correo tal y como se compara: sin espacios y en minusculas */
+export function normalizarCorreo(valor) {
+  return String(valor ?? '').trim().toLowerCase();
 }
 
+/**
+ * ¿Este correo puede entrar? Con la lista vacia decide la tabla `admins` de
+ * Supabase, que es la que de verdad protege los datos.
+ */
 export function esElAdministrador(correo) {
-  return Boolean(correo) && String(correo).trim().toLowerCase() === ADMIN_EMAIL;
+  const c = normalizarCorreo(correo);
+  if (!c) return false;
+  return ADMIN_EMAILS.length === 0 || ADMIN_EMAILS.includes(c);
 }
 
 export function segundosDeBloqueo() {
@@ -105,7 +109,7 @@ export async function entrarConClave(usuario, clave, recordar) {
   if (segundosDeBloqueo() > 0) {
     return { ok: false, mensaje: `Demasiados intentos. Vuelve a probar en ${segundosDeBloqueo()} s.` };
   }
-  const correo = normalizarUsuario(usuario);
+  const correo = normalizarCorreo(usuario);
   if (!esElAdministrador(correo)) {
     sumarFallo();
     return { ok: false, mensaje: 'Usuario o contraseña incorrectos.' };
@@ -129,13 +133,17 @@ export async function entrarConClave(usuario, clave, recordar) {
   }
 }
 
-/** A1. Pedir el codigo de 6 digitos al correo del administrador */
-export async function pedirCodigo() {
+/** A1. Pedir el codigo de 6 digitos al correo que se indique */
+export async function pedirCodigo(correo) {
   const sb = getCliente();
   if (!sb) return { ok: false, mensaje: 'El panel no está configurado todavía.' };
+  const email = normalizarCorreo(correo);
+  if (!esElAdministrador(email)) {
+    return { ok: false, mensaje: 'Ese correo no tiene acceso al panel.' };
+  }
   try {
     const { error } = await sb.auth.signInWithOtp({
-      email: ADMIN_EMAIL,
+      email,
       options: { shouldCreateUser: false }
     });
     if (error) {
@@ -152,13 +160,14 @@ export async function pedirCodigo() {
 }
 
 /** A2. Comprobar el codigo recibido */
-export async function verificarCodigo(codigo) {
+export async function verificarCodigo(correo, codigo) {
   const sb = getCliente();
   if (!sb) return { ok: false, mensaje: 'El panel no está configurado todavía.' };
+  const email = normalizarCorreo(correo);
   const token = String(codigo ?? '').replace(/\D/g, '');
   if (token.length !== 6) return { ok: false, mensaje: 'El código tiene 6 dígitos.' };
   try {
-    const { data, error } = await sb.auth.verifyOtp({ email: ADMIN_EMAIL, token, type: 'email' });
+    const { data, error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
     if (error || !data?.session) {
       const txt = String(error?.message ?? '').toLowerCase();
       if (txt.includes('expired')) return { ok: false, mensaje: 'El código ya venció. Pide uno nuevo.' };

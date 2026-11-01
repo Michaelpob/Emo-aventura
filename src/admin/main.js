@@ -76,12 +76,13 @@ VITE_ADMIN_EMAIL=${ADMIN_EMAIL || 'correo@ejemplo.com'}</pre>
 
 function pantallaLogin(mensaje = '', tipo = 'error') {
   tarjetaLogin(`
-    <p class="ad-login__sub">Acceso restringido. Solo el administrador del proyecto puede ver las estadísticas.</p>
+    <p class="ad-login__sub">Acceso restringido. Escribe tu correo de administrador
+      y tu contraseña para ver las estadísticas.</p>
     <form novalidate>
       <div class="ad-campo">
         <label for="usuario">Usuario</label>
-        <input id="usuario" name="usuario" type="text" autocomplete="username" value="${ADMIN_EMAIL}" />
-        <p class="ad-campo__pista">También puedes escribir «admin».</p>
+        <input id="usuario" name="usuario" type="email" autocomplete="username"
+               placeholder="correo@ejemplo.com" value="" />
       </div>
       <div class="ad-campo ad-clave">
         <label for="clave">Contraseña</label>
@@ -131,11 +132,12 @@ function pantallaLogin(mensaje = '', tipo = 'error') {
 
 function pantallaCodigo() {
   tarjetaLogin(`
-    <p class="ad-login__sub">Te enviamos un código de 6 dígitos al correo del administrador.
-      Con ese código podrás crear una contraseña nueva.</p>
+    <p class="ad-login__sub">Escribe tu correo de administrador y te enviamos un código
+      de 6 dígitos. Con ese código podrás crear una contraseña nueva.</p>
     <div class="ad-campo">
       <label for="correo">Correo del administrador</label>
-      <input id="correo" type="email" value="${ADMIN_EMAIL}" disabled />
+      <input id="correo" type="email" autocomplete="username"
+             placeholder="correo@ejemplo.com" value="" />
     </div>
     <div class="ad-acciones">
       <button class="btn" type="button" data-enviar>Enviar código</button>
@@ -147,22 +149,25 @@ function pantallaCodigo() {
 
   const el = (s) => raiz.querySelector(s);
   el('[data-volver]').addEventListener('click', () => pantallaLogin());
+  el('#correo').focus();
   el('[data-enviar]').addEventListener('click', async () => {
     const btn = el('[data-enviar]');
+    const correo = el('#correo').value.trim();
+    if (!correo) { aviso(el('[data-aviso]'), 'Escribe tu correo de administrador.'); return; }
     btn.disabled = true;
     btn.textContent = 'Enviando…';
-    const r = await pedirCodigo();
+    const r = await pedirCodigo(correo);
     btn.disabled = false;
     btn.textContent = 'Enviar código';
     if (!r.ok) { aviso(el('[data-aviso]'), r.mensaje); return; }
-    pantallaVerificar();
+    pantallaVerificar(correo);
   });
 }
 
-function pantallaVerificar() {
+function pantallaVerificar(correo) {
   tarjetaLogin(`
     <p class="ad-login__sub">Escribe el código de 6 dígitos que llegó a
-      <strong>${ADMIN_EMAIL}</strong>. Puedes pegarlo completo.</p>
+      <strong>${correo}</strong>. Puedes pegarlo completo.</p>
     <div class="ad-codigo" data-codigo>
       ${Array.from({ length: 6 }, (_, i) => `
         <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1"
@@ -216,9 +221,9 @@ function pantallaVerificar() {
 
   btnReenviar.addEventListener('click', async () => {
     btnReenviar.disabled = true;
-    const r = await pedirCodigo();
+    const r = await pedirCodigo(correo);
     aviso(el('[data-aviso]'), r.ok ? 'Código reenviado. Revisa tu correo.' : r.mensaje, r.ok ? 'ok' : 'error');
-    pantallaVerificar();
+    pantallaVerificar(correo);
   });
 
   el('[data-volver]').addEventListener('click', () => { clearInterval(reloj); pantallaLogin(); });
@@ -227,7 +232,7 @@ function pantallaVerificar() {
     const btn = el('[data-verificar]');
     btn.disabled = true;
     btn.textContent = 'Comprobando…';
-    const r = await verificarCodigo(leerCodigo());
+    const r = await verificarCodigo(correo, leerCodigo());
     btn.disabled = false;
     btn.textContent = 'Comprobar código';
     if (!r.ok) { aviso(el('[data-aviso]'), r.mensaje); return; }

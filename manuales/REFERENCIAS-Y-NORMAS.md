@@ -341,7 +341,7 @@ Garantías de diseño:
 4. **Permisos mínimos:** el público solo puede **insertar** eventos; no puede
    leerlos ni modificarlos (políticas RLS). En el navegador viaja únicamente la
    clave pública `anon`; la clave `service_role` no existe en el código.
-5. **Acceso restringido:** solo un correo de administrador, comprobado en la
+5. **Acceso restringido:** solo los correos de administración autorizados, comprobados en la
    base de datos, puede consultar los resúmenes, que siempre están **agregados**
    (totales por isla, por día, por hora y por dispositivo).
 6. **Minimización:** no se registran los datos del perfil ni las respuestas

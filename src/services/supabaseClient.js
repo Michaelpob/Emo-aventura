@@ -12,7 +12,17 @@ const URL = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
 const ANON = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim();
 
 /** Correo del unico administrador que puede entrar al panel */
-export const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL ?? '').trim().toLowerCase();
+/**
+ * Correos que pueden entrar al panel. En VITE_ADMIN_EMAIL van uno o varios
+ * separados por comas. Si se deja vacio, manda la tabla `admins` de Supabase.
+ */
+export const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAIL ?? '')
+  .split(',')
+  .map((c) => c.trim().toLowerCase())
+  .filter(Boolean);
+
+/** El primero de la lista, solo para mensajes de ayuda */
+export const ADMIN_EMAIL = ADMIN_EMAILS[0] ?? '';
 
 /** ¿Estan puestas las variables? (lo usa el panel para avisar) */
 export const estaConfigurado = Boolean(URL && ANON);

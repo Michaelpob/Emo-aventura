@@ -41,7 +41,8 @@ create table if not exists public.admins (
 );
 
 insert into public.admins (email)
-values ('maicolpoveda115@gmail.com')
+values ('maicolpoveda115@gmail.com'),
+       ('leidy.diaz764@estufundes.edu.co')
 on conflict (email) do nothing;
 
 -- ¿quien pregunta es el administrador? (compara el correo del token con la tabla)
