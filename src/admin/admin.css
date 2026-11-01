@@ -378,15 +378,17 @@ a { color: var(--azul-hondo); }
 .ad-islas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .ad-isla { padding: 0; overflow: hidden; text-align: left; border: 1px solid var(--borde); background: var(--vidrio); cursor: pointer; font: inherit; color: inherit; border-radius: 20px; box-shadow: var(--sombra); transition: transform 200ms var(--curva); }
 .ad-isla:hover { transform: translateY(-2px); }
-.ad-isla__franja { height: 8px; background: var(--c, var(--tinta)); }
-.ad-isla__cuerpo { padding: 14px 16px 16px; background: linear-gradient(180deg, color-mix(in srgb, var(--glow, #fff) 22%, transparent), transparent 60%); }
+.ad-isla__franja { display: block; height: 8px; background: var(--c, var(--tinta)); }
+.ad-isla__cuerpo { display: block; padding: 14px 16px 16px; background: linear-gradient(180deg, color-mix(in srgb, var(--glow, #fff) 22%, transparent), transparent 60%); }
 .ad-isla__cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .ad-isla__emoji { font-size: 1.6rem; }
 .ad-isla__nombre { font-weight: 900; color: var(--tinta); line-height: 1.1; }
 .ad-isla__emocion { font-size: 0.78rem; color: var(--tinta-tenue); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 .ad-isla__datos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 0.86rem; }
 .ad-isla__dato b { display: block; font-size: 1.15rem; font-weight: 900; color: var(--tinta); font-variant-numeric: tabular-nums; }
-.ad-isla__barra { height: 8px; margin: 10px 0 4px; border-radius: 999px; background: rgba(16, 44, 54, 0.08); overflow: hidden; }
+/* son <span>: sin display:block el navegador ignora la altura y la barra
+   se dibuja como un pegote enorme al pie de la tarjeta */
+.ad-isla__barra { display: block; height: 8px; margin: 10px 0 4px; border-radius: 999px; background: rgba(16, 44, 54, 0.08); overflow: hidden; }
 .ad-isla__barra i { display: block; height: 100%; background: var(--c, var(--tinta)); border-radius: 999px; }
 .ad-isla__pie { display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; color: var(--tinta-tenue); }
 .ad-isla__detalle { padding: 0 16px 16px; }
