@@ -444,3 +444,5 @@ a { color: var(--azul-hondo); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+.ad-descargas { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }

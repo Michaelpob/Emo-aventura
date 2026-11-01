@@ -335,8 +335,10 @@ jugador (`localStorage`).
 **Ver las filas en crudo:** Supabase > **Table Editor** > tabla
 `island_events`.
 
-**Descargar las estadísticas:** en el panel, botón **Descargar CSV**. Se abre
-con Excel (separador `;`).
+**Descargar las estadísticas:** en el panel, botón **Descargar Excel**. Crea un
+libro con seis hojas (resumen y ranking, por isla, por día, por hora,
+dispositivos y las cinco gráficas como imagen). Al lado queda **CSV simple**
+para quien prefiera los datos en crudo (separador `;`).
 
 **Borrar datos de prueba** (SQL Editor):
 

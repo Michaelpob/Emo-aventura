@@ -246,3 +246,43 @@ export function graficaIsla(idLienzo, dias, datos, color) {
 }
 
 export { NOMBRE_DISPOSITIVO };
+
+/* ------------------------------------------------- imagenes para el Excel */
+
+/** Titulo de cada grafica comparativa, tal como se ve en el panel */
+const TITULOS = {
+  'g-visitas-isla': 'Visitas por isla',
+  'g-partidas': 'Partidas iniciadas y completadas',
+  'g-dias': 'Visitas por día',
+  'g-horas': 'Visitas por hora del día',
+  'g-dispositivos': 'Tipo de dispositivo'
+};
+
+/** El lienzo es transparente; en Excel se veria sucio, asi que va sobre blanco */
+function sobreBlanco(lienzo) {
+  const copia = document.createElement('canvas');
+  copia.width = lienzo.width;
+  copia.height = lienzo.height;
+  const ctx = copia.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, copia.width, copia.height);
+  ctx.drawImage(lienzo, 0, 0);
+  return copia.toDataURL('image/png');
+}
+
+/** PNG de las cinco graficas comparativas, en el orden en que se ven */
+export function imagenesDeGraficas() {
+  return Object.keys(TITULOS)
+    .map((id) => {
+      const g = vivos.get(id);
+      if (!g?.canvas) return null;
+      return {
+        id,
+        titulo: TITULOS[id],
+        base64: sobreBlanco(g.canvas),
+        ancho: Math.round(g.canvas.clientWidth || 640),
+        alto: Math.round(g.canvas.clientHeight || 240)
+      };
+    })
+    .filter(Boolean);
+}

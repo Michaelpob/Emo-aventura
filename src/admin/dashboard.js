@@ -293,8 +293,12 @@ export function pintarTablero(host, datos, periodoTexto) {
 
     <section class="ad-seccion">
       <div class="tarjeta" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
-        <span class="ad-texto">Descarga los datos agregados por día e isla del periodo elegido.</span>
-        <button class="btn btn--sec" type="button" data-csv>⤓ Descargar CSV</button>
+        <span class="ad-texto">Descarga el periodo completo: hojas con el resumen, el ranking,
+          cada isla, los días, las horas, los dispositivos y las cinco gráficas.</span>
+        <span class="ad-descargas">
+          <button class="btn" type="button" data-excel>⤓ Descargar Excel</button>
+          <button class="btn btn--sec btn--chico" type="button" data-csv>CSV simple</button>
+        </span>
       </div>
     </section>`;
 
@@ -333,8 +337,34 @@ export function pintarTablero(host, datos, periodoTexto) {
     });
   });
 
-  // --- CSV
+  // --- descargas
   host.querySelector('[data-csv]')?.addEventListener('click', () => descargarCsv(dias, periodoTexto));
+
+  // El Excel carga su libreria al pulsar, no al abrir el panel
+  host.querySelector('[data-excel]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const texto = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Preparando…';
+    try {
+      const { descargarExcel } = await import('./excel.js');
+      await descargarExcel({
+        datos: { ...datos, islas, dispositivos },
+        orden: conPuesto,
+        etiquetas,
+        series,
+        horas: horasCompletas(horas),
+        periodoTexto
+      });
+    } catch (err) {
+      console.warn('[panel] no se pudo crear el Excel', err);
+      btn.textContent = 'No se pudo crear el Excel';
+      setTimeout(() => { btn.textContent = texto; btn.disabled = false; }, 2500);
+      return;
+    }
+    btn.textContent = texto;
+    btn.disabled = false;
+  });
 }
 
 function grafica(id, titulo, pie, ancha = false) {
