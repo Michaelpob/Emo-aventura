@@ -527,6 +527,7 @@ Puntos a cubrir en cada isla antes de publicar:
 | Síntoma | Causa probable | Solución |
 |---|---|---|
 | Pantalla en blanco al abrir | `localStorage` con progreso corrupto de una versión anterior | El arranque ya lo detecta y reinicia; si persiste, borra los datos del sitio |
+| El mapa cuenta menos islas de las terminadas | El jugador salió antes de pulsar «Continuar» en la tarjeta final, que es donde se marcaba la isla | `reconciliarIslas()` en `src/data/gameState.js` lo repara al cargar: una isla cuenta si guardó su actividad de cierre o si tiene sus dos niveles superados |
 | La página muestra una versión vieja | Caché del navegador | El sello `__BUILD__` fuerza recarga; si no, `Ctrl+F5` |
 | `pnpm: command not found` | pnpm no está en el PATH | Usar `corepack pnpm …` |
 | El build no cambia nada visible | No se recompiló `/docs` o no se publicó | `corepack pnpm build` y commitear `/docs` |

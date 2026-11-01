@@ -98,7 +98,11 @@ export function loadProgress() {
     console.warn('[emo-aventura] no se pudo leer el progreso, se inicia limpio', err);
     Object.assign(gameState, baseState());
   }
+  // Partidas de antes del arreglo: si una isla quedo terminada pero sin
+  // marcar, se recupera aqui y se guarda ya corregida.
+  const reparado = reconciliarIslas();
   recalcProgress();
+  if (reparado) saveProgress();
   return gameState;
 }
 
@@ -118,7 +122,48 @@ export function resetGame() {
   saveProgress();
 }
 
+/**
+ * Actividad que cada isla guarda nada mas terminar su ultimo reto, antes de
+ * la tarjeta de cierre. Sirve para saber que la isla esta hecha aunque el
+ * jugador saliera sin pulsar «Continuar».
+ */
+const CIERRE_DE_ISLA = {
+  fear: 'fear-casa-3d',
+  anger: 'anger-rojo-vivo',
+  disgust: 'disgust-isla',
+  sadness: 'sadness-casa-3d',
+  frustration: 'frustration-valle-3d',
+  calm: 'calm-isla-3d'
+};
+
+/** ¿Esta isla quedo terminada, aunque no se marcara en su momento? */
+function islaTerminada(id) {
+  if (gameState.completedActivities.includes(CIERRE_DE_ISLA[id])) return true;
+  // islas de dos niveles: con los dos superados, la isla esta hecha
+  const niveles = id === 'fear' ? gameState.fear : gameState.levels?.[id];
+  return !!(niveles && niveles.level1 && niveles.level2);
+}
+
+/**
+ * Pone al dia la lista de islas completadas. El cierre normal lo hace
+ * completeIsland(), pero si el jugador salio con ESC en la tarjeta final la
+ * isla se quedaba sin contar aunque la hubiera terminado entera: aqui se
+ * recupera a partir de lo que si quedo guardado.
+ */
+function reconciliarIslas() {
+  let cambio = false;
+  ISLAND_CHAIN.forEach((id) => {
+    if (gameState.completedIslands.includes(id)) return;
+    if (!islaTerminada(id)) return;
+    gameState.completedIslands.push(id);
+    if (BADGES[id] && !gameState.badges.includes(id)) gameState.badges.push(id);
+    cambio = true;
+  });
+  return cambio;
+}
+
 function recalcProgress() {
+  reconciliarIslas();
   const total = ISLAND_CHAIN.length;
   const done = ISLAND_CHAIN.filter((id) => gameState.completedIslands.includes(id)).length;
   gameState.progress = Math.round((done / total) * 100);
